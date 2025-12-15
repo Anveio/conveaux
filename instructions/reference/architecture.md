@@ -2,6 +2,17 @@
 
 This document provides architectural patterns for building maintainable software.
 
+## Required Reading Before Architectural Decisions
+
+| Decision | Required Reading |
+|----------|------------------|
+| Creating a new package | `patterns/package-setup.md` |
+| Using time, logging, or randomness | `patterns/core-ports.md` |
+| Accessing environment variables | `patterns/core-ports.md` |
+| Modifying package.json exports | `patterns/package-setup.md` |
+
+**Stop and read the relevant pattern document before proceeding.** These patterns encode institutional knowledge that prevents common mistakes.
+
 ## Hexagonal Architecture (Ports & Adapters)
 
 ### Core Principle

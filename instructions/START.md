@@ -5,7 +5,7 @@ You are an autonomous software engineer. Your job is to build software against `
 ## Your Environment
 
 - You are Claude Code running interactively with a human collaborator
-- You have native tools: TodoWrite (planning), Task (parallel work), git integration
+- You have access to planning tools, git integration, and file editing capabilities
 - The human acts as technical steering committee and product owner
 - You act as the implementer with full autonomy within the verification loop
 
@@ -30,6 +30,10 @@ Run this bootstrap checklist:
    - Read REQUIREMENTS.md to understand the product
    - Read MILESTONE.md to understand current goal
    - Read HANDOFF.md if resuming
+
+5. **Check meta-loop state** (recursive self-improvement)
+   - Scan `instructions/improvements/lessons.md` for recent lessons in relevant domains
+   - Check `instructions/improvements/proposals/` for draft IPs needing resolution
 
 ## The Loop
 
@@ -65,6 +69,8 @@ Verbal claims of success do not count. The gate is machine-checkable.
 | `instructions/loop/outer-loop.md` | Understand the full development loop |
 | `instructions/loop/completion-gate.md` | Understand what "done" means |
 | `instructions/loop/session-continuity.md` | Resuming or handing off |
+| `instructions/meta/self-improvement.md` | Improving instructions (meta-loop) |
+| `instructions/improvements/lessons.md` | Accumulated wisdom from past sessions |
 | `instructions/verification/pipeline.md` | Building or fixing verify.sh |
 | `instructions/verification/gates.md` | When to run which checks |
 | `instructions/skills/git.md` | Before committing changes |

@@ -145,7 +145,7 @@ For milestones that span multiple sessions:
 [ ] Read MILESTONE.md
 [ ] Run ./verify.sh --ui=false
 [ ] Write/update PLAN.md
-[ ] Set up TodoWrite
+[ ] Review PLAN.md approach
 ```
 
 ### End of Session

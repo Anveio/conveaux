@@ -4,10 +4,14 @@ This document defines exactly when work is "done". No ambiguity.
 
 ## The Hard Gate
 
-You are "done" ONLY when **BOTH** conditions are true:
+You are "done" ONLY when **ALL** conditions are true:
 
 1. `MILESTONE.md` contains the exact line: `Status: done`
 2. `./verify.sh --ui=false` exits with code `0`
+3. No draft IPs older than 2 sessions remain unresolved
+4. Any lessons learned during this milestone are recorded
+
+The first two are machine-checkable. The last two are self-verified.
 
 ## Machine-Checkable Contract
 
@@ -109,3 +113,21 @@ If you cannot complete the milestone:
 3. Document the blocker in MILESTONE.md
 4. Write HANDOFF.md with details
 5. Escalate to human
+
+## Instruction Quality Check
+
+At milestone completion, verify instructions haven't drifted:
+
+1. **Did I follow the instructions as written?**
+   - If no: Did the deviation work better? → Create IP
+   - If yes: Instructions are accurate
+
+2. **Did instructions cover the situations I encountered?**
+   - If no: Document the gap → Create IP
+   - If yes: Instructions are complete
+
+3. **Did any instruction slow me down unnecessarily?**
+   - If yes: Is the overhead justified? If not → Create IP
+   - If no: Instructions are efficient
+
+See `instructions/meta/self-improvement.md` for the full meta-loop protocol.

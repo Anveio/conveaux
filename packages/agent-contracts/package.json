@@ -1,0 +1,25 @@
+{
+	"name": "@conveaux/agent-contracts",
+	"version": "0.1.0",
+	"description": "TypeScript interfaces for the agent orchestrator system",
+	"type": "module",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"development": "./src/index.ts",
+			"source": "./src/index.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"scripts": {
+		"build": "tsc",
+		"dev": "tsc --watch",
+		"test": "echo 'No tests for contracts package'"
+	},
+	"files": [
+		"dist",
+		"src"
+	]
+}
