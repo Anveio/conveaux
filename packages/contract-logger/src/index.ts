@@ -22,15 +22,39 @@ export type TraceContext = {
 
 /**
  * Log context combining arbitrary fields with optional trace context.
+ * Include an `error` property with an Error instance for automatic serialization.
  */
 export type LogContext = LogFields & {
   readonly trace?: TraceContext;
+  readonly error?: Error;
 };
 
 /**
  * Log level for categorizing log entries.
  */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
+/**
+ * Options for configuring logger behavior.
+ */
+export interface LoggerOptions {
+  /**
+   * Minimum log level to emit. Logs below this level are silently dropped.
+   * @default 'debug' (all logs emitted)
+   */
+  readonly minLevel?: LogLevel;
+}
+
+/**
+ * Serialized representation of an Error for structured logging.
+ * Automatically extracted when an Error object is present in context.
+ */
+export interface SerializedError {
+  readonly name: string;
+  readonly message: string;
+  readonly stack?: string;
+  readonly cause?: SerializedError;
+}
 
 /**
  * Logger interface for structured logging.

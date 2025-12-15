@@ -13,7 +13,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 | Domain | Count | Last Updated |
 |--------|-------|--------------|
 | package-setup | 3 | 2024-12-15 |
-| core-abstractions | 1 | 2024-12-14 |
+| core-abstractions | 2 | 2024-12-15 |
 | documentation | 1 | 2024-12-15 |
 
 ---
@@ -125,3 +125,15 @@ const clock: Clock = {
 **Lesson**: When implementing actual code packages based on documented patterns, update documentation to reference real code rather than showing inline interface definitions. Single source of truth: interfaces in TypeScript files, documentation explains usage patterns.
 **Evidence**: `core-ports.md` showed inline `interface Logger { ... }` but we now have `@conveaux/contract-logger` package. Documentation updated to reference package imports.
 **Instruction Impact**: Refactored `instructions/reference/patterns/core-ports.md` (IP-001)
+
+---
+
+### Core Abstractions
+
+#### L-006: Contracts Must Never Contain Runtime Values
+
+**Date**: 2024-12-15
+**Context**: feat/improve-port-logger implementation
+**Lesson**: Contracts must contain only interfaces and types - never constants, functions, or any runtime values. If it emits JavaScript, it doesn't belong in a contract. Constants like `LOG_LEVEL_PRIORITY` belong in the port implementation, not the contract.
+**Evidence**: Attempted to add `export const LOG_LEVEL_PRIORITY = {...}` to `@conveaux/contract-logger`. This violated the "contracts are pure types" principle since constants emit JavaScript.
+**Instruction Impact**: Updated `instructions/reference/patterns/contract-port.md` to explicitly prohibit constants and add the rule "if it emits JS, it doesn't belong here"

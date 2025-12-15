@@ -5,12 +5,37 @@
  * All dependencies (channel, clock) are injected as contracts.
  */
 
-import type { Logger, LogContext, LogLevel } from '@conveaux/contract-logger';
+import type {
+  Logger,
+  LogContext,
+  LogLevel,
+  LoggerOptions,
+  SerializedError,
+} from '@conveaux/contract-logger';
 import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { Clock } from '@conveaux/contract-clock';
 
 // Re-export contract types for convenience
-export type { Logger, LogContext, LogLevel, LogFields, TraceContext } from '@conveaux/contract-logger';
+export type {
+  Logger,
+  LogContext,
+  LogLevel,
+  LogFields,
+  TraceContext,
+  LoggerOptions,
+  SerializedError,
+} from '@conveaux/contract-logger';
+
+/**
+ * Numeric priority for log levels (higher = more severe).
+ * Used internally for level filtering.
+ */
+const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
 
 /**
  * Dependencies required by the logger.
@@ -20,6 +45,8 @@ export interface LoggerDependencies {
   channel: OutChannel;
   /** Clock for timestamps */
   clock: Clock;
+  /** Optional logger configuration */
+  options?: LoggerOptions;
 }
 
 /**
@@ -29,7 +56,26 @@ interface LogEntry {
   timestamp: string;
   level: LogLevel;
   message: string;
+  error?: SerializedError;
   [key: string]: unknown;
+}
+
+/**
+ * Recursively serialize an Error object for structured logging.
+ * Extracts name, message, stack, and recursively handles cause chain.
+ */
+function serializeError(error: Error): SerializedError {
+  const serialized: SerializedError = {
+    name: error.name,
+    message: error.message,
+    stack: error.stack,
+  };
+
+  if (error.cause instanceof Error) {
+    return { ...serialized, cause: serializeError(error.cause) };
+  }
+
+  return serialized;
 }
 
 /**
@@ -53,21 +99,34 @@ interface LogEntry {
  * ```
  */
 export function createLogger(deps: LoggerDependencies): Logger {
-  const { channel, clock } = deps;
+  const { channel, clock, options } = deps;
+  const minLevel = options?.minLevel ?? 'debug';
+  const minPriority = LOG_LEVEL_PRIORITY[minLevel];
+
+  const shouldLog = (level: LogLevel): boolean => {
+    return LOG_LEVEL_PRIORITY[level] >= minPriority;
+  };
 
   const log = (level: LogLevel, message: string, context?: LogContext): void => {
+    if (!shouldLog(level)) {
+      return;
+    }
+
     const entry: LogEntry = {
       timestamp: clock.timestamp(),
       level,
       message,
     };
 
-    // Spread context fields into the entry (except 'trace' which is nested)
+    // Spread context fields into the entry (except 'trace' and 'error' which get special handling)
     if (context) {
-      const { trace, ...fields } = context;
+      const { trace, error, ...fields } = context;
       Object.assign(entry, fields);
       if (trace) {
         entry.trace = trace;
+      }
+      if (error instanceof Error) {
+        entry.error = serializeError(error);
       }
     }
 

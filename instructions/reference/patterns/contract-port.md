@@ -21,7 +21,10 @@ Contract packages contain **only**:
 Contract packages **never contain**:
 - Classes with implementations
 - Functions with runtime behavior
+- Constants or runtime values (e.g., `const LOG_LEVEL_PRIORITY = {...}`)
 - External dependencies (except other `@conveaux/contract-*` packages)
+
+**Rule**: If it emits JavaScript, it doesn't belong in a contract. Contracts compile to `.d.ts` only.
 
 ```typescript
 // Good: @conveaux/contract-logger
@@ -178,7 +181,8 @@ packages/port-{name}/
 
 ### Creating a Contract
 - [ ] Name follows `@conveaux/contract-{name}` pattern
-- [ ] Contains only interfaces and types
+- [ ] Contains only interfaces and types (no constants, no functions)
+- [ ] No runtime code (if it emits JS, it doesn't belong here)
 - [ ] No runtime dependencies
 - [ ] Exports are documented with JSDoc
 
