@@ -387,5 +387,46 @@ describe('createHighResolutionClock', () => {
       expect(clock1.now()).toBe(200); // 1200 - 1000
       expect(clock2.now()).toBe(100); // 1200 - 1100
     });
+
+    it('falls back to null when globalThis.performance is undefined', () => {
+      // Save original values
+      const globals = globalThis as {
+        performance?: unknown;
+        process?: unknown;
+      };
+      const originalPerformance = globals.performance;
+      const originalProcess = globals.process;
+
+      try {
+        // Remove performance and process from globalThis
+        globals.performance = undefined;
+        globals.process = undefined;
+
+        // Create clock with empty environment (triggers globalThis fallback)
+        // Since performance is undefined, falls back to null, then uses dateNow
+        const clock = createHighResolutionClock({
+          environment: {
+            // No overrides - should use globalThis.performance ?? null
+            // Since we deleted globalThis.performance, ?? null triggers
+          },
+        });
+
+        // Should still work using Date.now fallback
+        const t1 = clock.now();
+        expect(typeof t1).toBe('number');
+
+        const wall = clock.wallClockMs();
+        expect(typeof wall).toBe('number');
+        expect(wall).toBeGreaterThan(0);
+      } finally {
+        // Restore original values
+        if (originalPerformance !== undefined) {
+          globals.performance = originalPerformance;
+        }
+        if (originalProcess !== undefined) {
+          globals.process = originalProcess;
+        }
+      }
+    });
   });
 });
