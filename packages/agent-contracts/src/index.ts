@@ -193,10 +193,11 @@ export interface Logger {
   error(message: string, context?: Record<string, unknown>): void;
 }
 
-// High-resolution clock interface imported from @conveaux/contract-high-resolution-clock
-// See that package for the high-resolution monotonic clock interface
+// High-resolution clock and timestamper interfaces
 import type { HighResolutionClock } from '@conveaux/contract-high-resolution-clock';
+import type { Timestamper } from '@conveaux/contract-timestamper';
 export type { HighResolutionClock };
+export type { Timestamper };
 
 /**
  * Random port - replaces direct Math.random() and crypto usage.

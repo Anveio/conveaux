@@ -1,7 +1,7 @@
 {
-  "name": "@conveaux/agent-contracts",
+  "name": "@conveaux/contract-timestamper",
   "version": "0.1.0",
-  "description": "TypeScript interfaces for the agent orchestrator system",
+  "description": "Timestamper contract - interface for high-resolution nanosecond time sources",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,13 +15,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "echo 'No tests for contracts package'",
     "typecheck": "tsc --noEmit"
   },
   "files": ["dist", "src"],
-  "dependencies": {
-    "@conveaux/contract-high-resolution-clock": "*",
-    "@conveaux/contract-timestamper": "*"
+  "devDependencies": {
+    "typescript": "^5.7.2"
   }
 }

@@ -21,7 +21,8 @@
   },
   "files": ["dist", "src"],
   "dependencies": {
-    "@conveaux/contract-high-resolution-clock": "*"
+    "@conveaux/contract-high-resolution-clock": "*",
+    "@conveaux/contract-timestamper": "*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.8",
