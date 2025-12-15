@@ -10,10 +10,7 @@ export default defineConfig({
       thresholds: {
         lines: 100,
         functions: 100,
-        // 95% branches: the remaining 5% are ?? null fallbacks in resolveEnvironment
-        // for environments where globalThis.performance/process doesn't exist.
-        // These are unreachable in Node.js where both globals always exist.
-        branches: 95,
+        branches: 100,
         statements: 100,
       },
     },
