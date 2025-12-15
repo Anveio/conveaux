@@ -27,4 +27,5 @@ export {
   isString,
   getStringProperty,
   isGrepNoMatchError,
+  extractExecErrorOutput,
 } from './type-guards';

@@ -10,7 +10,7 @@
 import { runAgent } from './agent';
 import { getContextForTask, type Instructions } from './instructions';
 import { output } from './output';
-import { getErrorMessage } from './type-guards';
+import { extractExecErrorOutput } from './type-guards';
 
 export interface LoopConfig {
   mode: 'create' | 'improve';
@@ -263,16 +263,9 @@ async function runVerification(projectRoot: string): Promise<{ passed: boolean; 
 
     return { passed, output };
   } catch (error) {
-    // Extract stdout/stderr from exec error if available
-    const execError = error as { stdout?: string; stderr?: string };
-    const parts = [
-      execError.stdout,
-      execError.stderr,
-      getErrorMessage(error),
-    ].filter(Boolean);
     return {
       passed: false,
-      output: parts.join('\n'),
+      output: extractExecErrorOutput(error),
     };
   }
 }

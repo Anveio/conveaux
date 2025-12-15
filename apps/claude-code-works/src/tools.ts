@@ -14,6 +14,7 @@ import {
   getErrorMessage,
   getStringProperty,
   isGrepNoMatchError,
+  extractExecErrorOutput,
 } from './type-guards';
 
 const execAsync = promisify(exec);
@@ -177,14 +178,7 @@ export const runCommandTool: Tool = {
       const output = [stdout, stderr].filter(Boolean).join('\n');
       return output || '(command completed with no output)';
     } catch (error) {
-      // Extract stdout/stderr from exec error if available
-      const execError = error as { stdout?: string; stderr?: string };
-      const parts = [
-        execError.stdout,
-        execError.stderr,
-        getErrorMessage(error),
-      ].filter(Boolean);
-      return `Command failed:\n${parts.join('\n')}`;
+      return `Command failed:\n${extractExecErrorOutput(error)}`;
     }
   },
 };
