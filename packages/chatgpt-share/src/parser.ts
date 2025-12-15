@@ -2,6 +2,7 @@
  * HTML parsing for ChatGPT share pages.
  */
 
+import type { DateConstructor } from '@conveaux/contract-date';
 import { ParseError } from '@conveaux/contract-error';
 import * as cheerio from 'cheerio';
 
@@ -11,6 +12,14 @@ import type {
   ParsedConversation,
   ParsedMessage,
 } from './types.js';
+
+/**
+ * Dependencies required for parseHTML.
+ * These must be injected at composition time.
+ */
+export interface ParseHTMLDependencies {
+  readonly Date: DateConstructor;
+}
 
 interface NextDataProps {
   pageProps?: {
@@ -52,7 +61,8 @@ function findRootNode(mapping: Record<string, ConversationNode>): ConversationNo
 
 function walkConversationTree(
   mapping: Record<string, ConversationNode>,
-  startNode: ConversationNode
+  startNode: ConversationNode,
+  DateCtor: DateConstructor
 ): ParsedMessage[] {
   const messages: ParsedMessage[] = [];
   let currentNode: ConversationNode | undefined = startNode;
@@ -81,7 +91,7 @@ function walkConversationTree(
           };
 
           if (create_time) {
-            message.timestamp = new Date(create_time * 1000);
+            message.timestamp = new DateCtor(create_time * 1000);
           }
 
           messages.push(message);
@@ -104,10 +114,12 @@ function walkConversationTree(
 /**
  * Parses HTML from a ChatGPT share page into a structured conversation.
  *
+ * @param deps - Required dependencies (Date)
  * @param html - The HTML content of the share page
  * @returns The parsed conversation
  */
-export function parseHTML(html: string): ParsedConversation {
+export function parseHTML(deps: ParseHTMLDependencies, html: string): ParsedConversation {
+  const { Date: DateCtor } = deps;
   const $ = cheerio.load(html);
   const scriptTag = $('script#__NEXT_DATA__');
 
@@ -134,7 +146,7 @@ export function parseHTML(html: string): ParsedConversation {
     throw new ParseError('Could not parse conversation data');
   }
 
-  const messages = walkConversationTree(conversation.mapping, rootNode);
+  const messages = walkConversationTree(conversation.mapping, rootNode, DateCtor);
 
   if (messages.length === 0) {
     throw new ParseError('Conversation appears to be empty');
@@ -143,8 +155,8 @@ export function parseHTML(html: string): ParsedConversation {
   return {
     id: conversation.id,
     title: conversation.title || 'Untitled Conversation',
-    createdAt: new Date(conversation.create_time * 1000),
-    updatedAt: new Date(conversation.update_time * 1000),
+    createdAt: new DateCtor(conversation.create_time * 1000),
+    updatedAt: new DateCtor(conversation.update_time * 1000),
     messages,
   };
 }

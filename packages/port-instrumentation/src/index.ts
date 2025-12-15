@@ -5,6 +5,7 @@
  * timing metrics, and error capture.
  */
 
+import type { DateConstructor } from '@conveaux/contract-date';
 import type {
   InstrumentOptions,
   Instrumenter,
@@ -16,6 +17,7 @@ import type { LogContext, Logger, TraceContext } from '@conveaux/contract-logger
 import type { WallClock } from '@conveaux/contract-wall-clock';
 
 // Re-export all contract types for convenience
+export type { DateConstructor } from '@conveaux/contract-date';
 export type {
   Instrumenter,
   InstrumentOptions,
@@ -33,28 +35,16 @@ export type {
  * Dependencies required by the instrumenter.
  */
 export interface InstrumenterDependencies {
+  /** Date constructor for timestamp formatting */
+  readonly Date: DateConstructor;
   /** Logger for emitting instrumentation logs */
   readonly logger: Logger;
   /** Clock for timestamps */
   readonly clock: WallClock;
-  /** Optional: ID generator for trace/span IDs */
-  readonly generateId?: () => string;
+  /** ID generator for trace/span IDs */
+  readonly generateId: () => string;
   /** Optional: Handler for span lifecycle events */
   readonly spanHandler?: SpanHandler;
-}
-
-// =============================================================================
-// Default ID Generator
-// =============================================================================
-
-/**
- * Default ID generator using timestamp + random suffix.
- * Produces IDs like "m5abc123-x7y9z2".
- */
-function defaultGenerateId(): string {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 8);
-  return `${timestamp}-${random}`;
 }
 
 // =============================================================================
@@ -97,7 +87,7 @@ export function createInstrumenter(
   deps: InstrumenterDependencies,
   options?: InstrumenterOptions
 ): Instrumenter {
-  const { logger, clock, spanHandler, generateId = defaultGenerateId } = deps;
+  const { Date: DateCtor, logger, clock, generateId, spanHandler } = deps;
   const {
     defaultSuccessLevel = 'debug',
     defaultFailureLevel = 'error',
@@ -120,7 +110,7 @@ export function createInstrumenter(
     const createSpan = (operation: string, parentSpan?: Span): Span => {
       const spanId = generateId();
       const traceId = parentSpan?.traceId ?? generateId();
-      const startedAt = new Date(clock.nowMs()).toISOString();
+      const startedAt = new DateCtor(clock.nowMs()).toISOString();
 
       return {
         traceId,
@@ -137,9 +127,9 @@ export function createInstrumenter(
      */
     const completeSpan = (span: Span, error?: Error): Span => {
       const endMs = clock.nowMs();
-      const startMs = new Date(span.startedAt).getTime();
+      const startMs = new DateCtor(span.startedAt).getTime();
       const durationMs = endMs - startMs;
-      const endedAt = new Date(endMs).toISOString();
+      const endedAt = new DateCtor(endMs).toISOString();
 
       const completedSpan: Span = {
         ...span,

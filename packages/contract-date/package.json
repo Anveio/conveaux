@@ -1,7 +1,7 @@
 {
-  "name": "@conveaux/port-crypto",
+  "name": "@conveaux/contract-date",
   "version": "0.1.0",
-  "description": "Crypto port - cryptographic hashing implementation with platform injection",
+  "description": "Date contract - injectable Date constructor for timestamp formatting and parsing",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -12,17 +12,11 @@
     }
   },
   "scripts": {
-    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "files": ["src"],
-  "dependencies": {
-    "@conveaux/contract-crypto": "*",
-    "@conveaux/contract-encoding": "*"
-  },
   "devDependencies": {
     "@conveaux/tsconfig": "*",
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "typescript": "^5.7.2"
   }
 }

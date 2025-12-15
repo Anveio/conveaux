@@ -14,6 +14,7 @@ import type {
   HashInput,
   HashOptions,
 } from '@conveaux/contract-crypto';
+import type { TextEncoderConstructor } from '@conveaux/contract-encoding';
 
 // Re-export contract types for convenience
 export type {
@@ -43,6 +44,22 @@ type HashLike = {
  */
 type CryptoLike = {
   createHash(algorithm: string): HashLike;
+};
+
+// =============================================================================
+// Dependencies
+// =============================================================================
+
+/**
+ * Required dependencies for creating a Crypto instance.
+ * These must be injected at composition time.
+ */
+export type CryptoDependencies = {
+  /**
+   * TextEncoder constructor for string-to-bytes conversion.
+   * Inject the global TextEncoder from the host environment.
+   */
+  readonly TextEncoder: TextEncoderConstructor;
 };
 
 // =============================================================================
@@ -106,13 +123,6 @@ const isValidAlgorithm = (algorithm: string): algorithm is HashAlgorithm => {
   return SUPPORTED_ALGORITHMS.includes(algorithm as HashAlgorithm);
 };
 
-const toUint8Array = (data: HashInput): Uint8Array => {
-  if (typeof data === 'string') {
-    return new TextEncoder().encode(data);
-  }
-  return data;
-};
-
 type OverrideKey = keyof CryptoEnvironmentOverrides;
 
 /**
@@ -156,28 +166,37 @@ const resolveEnvironment = (overrides?: CryptoEnvironmentOverrides): CryptoEnvir
 /**
  * Creates a Crypto instance for hashing operations.
  *
+ * @param deps - Required dependencies (TextEncoder)
  * @param options - Optional configuration
  * @returns A Crypto instance
  *
  * @example
  * ```typescript
  * // Default usage - uses Node.js crypto
- * const crypto = createCrypto();
+ * const crypto = createCrypto({ TextEncoder });
  * const hash = crypto.hash('sha256', 'hello world');
  *
  * // Test usage - inject mock hash function
- * const mockCrypto = createCrypto({
+ * const mockCrypto = createCrypto({ TextEncoder }, {
  *   hashFn: () => 'mock-hash-result',
  * });
  *
  * // Disable host crypto (will throw on use)
- * const disabledCrypto = createCrypto({
+ * const disabledCrypto = createCrypto({ TextEncoder }, {
  *   environment: { crypto: null },
  * });
  * ```
  */
-export function createCrypto(options: CryptoOptions = {}): Crypto {
+export function createCrypto(deps: CryptoDependencies, options: CryptoOptions = {}): Crypto {
+  const { TextEncoder: TextEncoderCtor } = deps;
   const environment = resolveEnvironment(options.environment);
+
+  const toUint8Array = (data: HashInput): Uint8Array => {
+    if (typeof data === 'string') {
+      return new TextEncoderCtor().encode(data);
+    }
+    return data;
+  };
 
   const hashWithPlatform = (
     algorithm: HashAlgorithm,

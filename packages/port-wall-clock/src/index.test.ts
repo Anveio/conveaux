@@ -3,7 +3,7 @@ import { createWallClock } from './index.js';
 
 describe('createWallClock', () => {
   it('returns current time from Date.now by default', () => {
-    const clock = createWallClock();
+    const clock = createWallClock({ Date });
     const before = Date.now();
     const result = clock.nowMs();
     const after = Date.now();
@@ -14,7 +14,7 @@ describe('createWallClock', () => {
 
   it('uses custom nowMs when provided', () => {
     let time = 1702648800000;
-    const clock = createWallClock({ nowMs: () => time });
+    const clock = createWallClock({ Date }, { nowMs: () => time });
 
     expect(clock.nowMs()).toBe(1702648800000);
 
@@ -24,7 +24,7 @@ describe('createWallClock', () => {
 
   it('returns consistent values on multiple calls', () => {
     const fixedTime = 1702648800000;
-    const clock = createWallClock({ nowMs: () => fixedTime });
+    const clock = createWallClock({ Date }, { nowMs: () => fixedTime });
 
     expect(clock.nowMs()).toBe(fixedTime);
     expect(clock.nowMs()).toBe(fixedTime);
@@ -35,8 +35,8 @@ describe('createWallClock', () => {
     let time1 = 1000;
     let time2 = 2000;
 
-    const clock1 = createWallClock({ nowMs: () => time1 });
-    const clock2 = createWallClock({ nowMs: () => time2 });
+    const clock1 = createWallClock({ Date }, { nowMs: () => time1 });
+    const clock2 = createWallClock({ Date }, { nowMs: () => time2 });
 
     expect(clock1.nowMs()).toBe(1000);
     expect(clock2.nowMs()).toBe(2000);

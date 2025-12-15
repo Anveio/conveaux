@@ -127,6 +127,7 @@ describe('createInstrumenter', () => {
   describe('wrap - sync functions', () => {
     it('should instrument sync function and log success', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -154,6 +155,7 @@ describe('createInstrumenter', () => {
 
     it('should instrument sync function and log error', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -179,6 +181,7 @@ describe('createInstrumenter', () => {
 
     it('should use function name when operation not provided', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -196,6 +199,7 @@ describe('createInstrumenter', () => {
 
     it('should use anonymous when function has no name', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -209,6 +213,7 @@ describe('createInstrumenter', () => {
 
     it('should preserve this binding', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -231,6 +236,7 @@ describe('createInstrumenter', () => {
   describe('wrap - async functions', () => {
     it('should instrument async function and log success', async () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -257,6 +263,7 @@ describe('createInstrumenter', () => {
 
     it('should instrument async function and log error', async () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -282,6 +289,7 @@ describe('createInstrumenter', () => {
 
     it('should handle non-Error throws in async', async () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -305,6 +313,7 @@ describe('createInstrumenter', () => {
   describe('trace context', () => {
     it('should generate traceId and spanId', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -324,6 +333,7 @@ describe('createInstrumenter', () => {
 
     it('should inherit traceId from parent span', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -345,6 +355,7 @@ describe('createInstrumenter', () => {
   describe('options', () => {
     it('should respect rethrow: false', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -365,6 +376,7 @@ describe('createInstrumenter', () => {
 
     it('should respect rethrow: false for async', async () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -385,6 +397,7 @@ describe('createInstrumenter', () => {
 
     it('should use custom successLevel', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -401,6 +414,7 @@ describe('createInstrumenter', () => {
 
     it('should use custom failureLevel', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -419,6 +433,7 @@ describe('createInstrumenter', () => {
 
     it('should include custom context in logs', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -439,6 +454,7 @@ describe('createInstrumenter', () => {
   describe('execute and executeAsync', () => {
     it('should execute sync function once', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -452,6 +468,7 @@ describe('createInstrumenter', () => {
 
     it('should executeAsync once', async () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -469,6 +486,7 @@ describe('createInstrumenter', () => {
   describe('child instrumenter', () => {
     it('should create child with bound context', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -483,6 +501,7 @@ describe('createInstrumenter', () => {
 
     it('should merge child context with operation context', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -502,6 +521,7 @@ describe('createInstrumenter', () => {
 
     it('should allow nested child instrumenters', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -520,6 +540,7 @@ describe('createInstrumenter', () => {
   describe('startSpan and endSpan', () => {
     it('should create and complete span manually', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -541,6 +562,7 @@ describe('createInstrumenter', () => {
 
     it('should create nested spans with parent', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -555,6 +577,7 @@ describe('createInstrumenter', () => {
 
     it('should end span with error status', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -574,6 +597,7 @@ describe('createInstrumenter', () => {
   describe('getCurrentSpan', () => {
     it('should return undefined when no span active', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -584,6 +608,7 @@ describe('createInstrumenter', () => {
 
     it('should return current span during wrapped execution', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -607,6 +632,7 @@ describe('createInstrumenter', () => {
 
     it('should return current span during manual span', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -624,6 +650,7 @@ describe('createInstrumenter', () => {
     it('should call onSpanStart and onSpanEnd', () => {
       const spanHandler = createMockSpanHandler();
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -645,6 +672,7 @@ describe('createInstrumenter', () => {
     it('should call handler for manual spans', () => {
       const spanHandler = createMockSpanHandler();
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -663,6 +691,7 @@ describe('createInstrumenter', () => {
     it('should use default success level from options', () => {
       const instrumenter = createInstrumenter(
         {
+          Date,
           logger: mockLogger,
           clock: mockClock,
           generateId: mockGenerateId,
@@ -679,6 +708,7 @@ describe('createInstrumenter', () => {
     it('should use default failure level from options', () => {
       const instrumenter = createInstrumenter(
         {
+          Date,
           logger: mockLogger,
           clock: mockClock,
           generateId: mockGenerateId,
@@ -700,6 +730,7 @@ describe('createInstrumenter', () => {
     it('should apply base context to all operations', () => {
       const instrumenter = createInstrumenter(
         {
+          Date,
           logger: mockLogger,
           clock: mockClock,
           generateId: mockGenerateId,
@@ -717,6 +748,7 @@ describe('createInstrumenter', () => {
   describe('type preservation', () => {
     it('should preserve function return type', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -729,6 +761,7 @@ describe('createInstrumenter', () => {
 
     it('should preserve async function return type', async () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -743,6 +776,7 @@ describe('createInstrumenter', () => {
 
     it('should preserve function argument types', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -757,6 +791,7 @@ describe('createInstrumenter', () => {
 
     it('should handle void functions', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -779,6 +814,7 @@ describe('createInstrumenter', () => {
   describe('edge cases', () => {
     it('should handle function that returns Promise-like object', async () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -793,6 +829,7 @@ describe('createInstrumenter', () => {
 
     it('should handle functions with no arguments', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -804,6 +841,7 @@ describe('createInstrumenter', () => {
 
     it('should handle functions with many arguments', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,
@@ -818,6 +856,7 @@ describe('createInstrumenter', () => {
 
     it('should handle nested wrapped functions', () => {
       const instrumenter = createInstrumenter({
+        Date,
         logger: mockLogger,
         clock: mockClock,
         generateId: mockGenerateId,

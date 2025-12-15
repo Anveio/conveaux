@@ -52,7 +52,7 @@ describe('createLogger', () => {
   });
 
   it('should log trace messages', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     logger.trace('trace message');
 
     expect(mockChannel.lines).toHaveLength(1);
@@ -63,7 +63,7 @@ describe('createLogger', () => {
   });
 
   it('should log debug messages', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     logger.debug('test message');
 
     expect(mockChannel.lines).toHaveLength(1);
@@ -74,7 +74,7 @@ describe('createLogger', () => {
   });
 
   it('should log info messages', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     logger.info('info message');
 
     const entry = JSON.parse(getFirstLine(mockChannel.lines));
@@ -83,7 +83,7 @@ describe('createLogger', () => {
   });
 
   it('should log warn messages', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     logger.warn('warning');
 
     const entry = JSON.parse(getFirstLine(mockChannel.lines));
@@ -91,7 +91,7 @@ describe('createLogger', () => {
   });
 
   it('should log error messages', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     logger.error('error occurred');
 
     const entry = JSON.parse(getFirstLine(mockChannel.lines));
@@ -99,7 +99,7 @@ describe('createLogger', () => {
   });
 
   it('should log fatal messages', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     logger.fatal('fatal error');
 
     const entry = JSON.parse(getFirstLine(mockChannel.lines));
@@ -108,7 +108,7 @@ describe('createLogger', () => {
   });
 
   it('should include context fields in log entry', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     logger.info('request handled', { userId: '123', duration: 45 });
 
     const entry = JSON.parse(getFirstLine(mockChannel.lines));
@@ -117,7 +117,7 @@ describe('createLogger', () => {
   });
 
   it('should include trace context', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     logger.info('traced operation', {
       trace: {
         traceId: 'trace-123',
@@ -133,7 +133,7 @@ describe('createLogger', () => {
   });
 
   it('should append newline to each log entry', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     logger.info('message');
 
     expect(getFirstLine(mockChannel.lines).endsWith('\n')).toBe(true);
@@ -141,7 +141,7 @@ describe('createLogger', () => {
 
   describe('child logger', () => {
     it('should create child logger with bound context', () => {
-      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+      const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
       const child = logger.child({ requestId: 'req-1' });
 
       child.info('child message');
@@ -152,7 +152,7 @@ describe('createLogger', () => {
     });
 
     it('should merge child context with log context', () => {
-      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+      const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
       const child = logger.child({ requestId: 'req-1' });
 
       child.info('message', { extra: 'data' });
@@ -163,7 +163,7 @@ describe('createLogger', () => {
     });
 
     it('should allow nested child loggers', () => {
-      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+      const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
       const child1 = logger.child({ level1: 'a' });
       const child2 = child1.child({ level2: 'b' });
 
@@ -175,7 +175,7 @@ describe('createLogger', () => {
     });
 
     it('should override bound context with log context', () => {
-      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+      const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
       const child = logger.child({ key: 'bound' });
 
       child.info('message', { key: 'override' });
@@ -185,7 +185,7 @@ describe('createLogger', () => {
     });
 
     it('child logger should support all 6 log levels', () => {
-      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+      const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
       const child = logger.child({ component: 'test' });
 
       child.trace('t');
@@ -201,14 +201,14 @@ describe('createLogger', () => {
 
   describe('flush', () => {
     it('should return a promise that resolves', async () => {
-      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+      const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
 
       // flush() is a no-op for sync logger but should return a resolved promise
       await expect(logger.flush()).resolves.toBeUndefined();
     });
 
     it('child logger flush should return a promise that resolves', async () => {
-      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+      const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
       const child = logger.child({ component: 'test' });
 
       await expect(child.flush()).resolves.toBeUndefined();
@@ -227,6 +227,7 @@ describe('minLevel filtering', () => {
 
   it('should log all 6 levels when minLevel is trace', () => {
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'trace' },
@@ -244,6 +245,7 @@ describe('minLevel filtering', () => {
 
   it('should suppress trace when minLevel is debug', () => {
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'debug' },
@@ -261,6 +263,7 @@ describe('minLevel filtering', () => {
 
   it('should suppress trace and debug when minLevel is info', () => {
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'info' },
@@ -277,6 +280,7 @@ describe('minLevel filtering', () => {
 
   it('should suppress trace, debug, and info when minLevel is warn', () => {
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'warn' },
@@ -294,6 +298,7 @@ describe('minLevel filtering', () => {
 
   it('should only log error and fatal when minLevel is error', () => {
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'error' },
@@ -311,6 +316,7 @@ describe('minLevel filtering', () => {
 
   it('should only log fatal when minLevel is fatal', () => {
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'fatal' },
@@ -330,6 +336,7 @@ describe('minLevel filtering', () => {
 
   it('should default to trace level when no options provided', () => {
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
     });
@@ -342,6 +349,7 @@ describe('minLevel filtering', () => {
 
   it('should apply minLevel to child loggers', () => {
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'warn' },
@@ -369,7 +377,7 @@ describe('error serialization', () => {
   });
 
   it('should serialize basic Error', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     const error = new Error('Something went wrong');
 
     logger.error('operation failed', { error });
@@ -382,7 +390,7 @@ describe('error serialization', () => {
   });
 
   it('should serialize TypeError', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     const error = new TypeError('Invalid type');
 
     logger.error('type error', { error });
@@ -400,7 +408,7 @@ describe('error serialization', () => {
       }
     }
 
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     const error = new CustomError('Custom problem');
 
     logger.error('custom error', { error });
@@ -411,7 +419,7 @@ describe('error serialization', () => {
   });
 
   it('should serialize Error with cause chain', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     const rootCause = new Error('Root cause');
     const error = new Error('Wrapper error', { cause: rootCause });
 
@@ -426,7 +434,7 @@ describe('error serialization', () => {
   });
 
   it('should handle deeply nested cause chain', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     const level3 = new Error('Level 3');
     const level2 = new Error('Level 2', { cause: level3 });
     const level1 = new Error('Level 1', { cause: level2 });
@@ -440,7 +448,7 @@ describe('error serialization', () => {
   });
 
   it('should ignore non-Error cause', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     const error = new Error('Error with string cause', { cause: 'not an error' });
 
     logger.error('string cause', { error });
@@ -450,7 +458,7 @@ describe('error serialization', () => {
   });
 
   it('should preserve other context fields alongside error', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     const error = new Error('Test error');
 
     logger.error('failed operation', { error, userId: '123', operation: 'delete' });
@@ -472,7 +480,7 @@ describe('edge cases', () => {
   });
 
   it('should handle empty context object', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
 
     logger.info('message', {});
 
@@ -482,7 +490,7 @@ describe('edge cases', () => {
   });
 
   it('should handle undefined context', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
 
     logger.info('message', undefined);
 
@@ -492,7 +500,7 @@ describe('edge cases', () => {
   });
 
   it('should handle special characters in message', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
 
     logger.info('Message with "quotes" and \\backslashes\\');
 
@@ -502,7 +510,7 @@ describe('edge cases', () => {
   });
 
   it('should handle deeply nested child loggers (4+ levels)', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
     const child1 = logger.child({ l: 1 });
     const child2 = child1.child({ l: 2 });
     const child3 = child2.child({ l: 3 });
@@ -516,7 +524,7 @@ describe('edge cases', () => {
   });
 
   it('should handle context with null values', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
 
     logger.info('test', { nullField: null });
 
@@ -525,7 +533,7 @@ describe('edge cases', () => {
   });
 
   it('should handle context with array values', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
 
     logger.info('test', { items: [1, 2, 3] });
 
@@ -534,7 +542,7 @@ describe('edge cases', () => {
   });
 
   it('should handle context with nested objects', () => {
-    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: mockChannel, clock: mockClock });
 
     logger.info('test', { nested: { deep: { value: 'found' } } });
 
@@ -556,7 +564,7 @@ describe('channel error handling', () => {
         throw new Error('Write failed');
       },
     };
-    const logger = createLogger({ channel: throwingChannel, clock: mockClock });
+    const logger = createLogger({ Date, channel: throwingChannel, clock: mockClock });
 
     expect(() => logger.info('test')).toThrow('Write failed');
   });
@@ -818,6 +826,7 @@ describe('logger with custom formatter', () => {
     };
 
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
       options: { formatter: customFormatter },
@@ -830,6 +839,7 @@ describe('logger with custom formatter', () => {
 
   it('should use pretty formatter for human-readable output', () => {
     const logger = createLogger({
+      Date,
       channel: mockChannel,
       clock: mockClock,
       options: { formatter: createPrettyFormatter({ colors: false }) },
