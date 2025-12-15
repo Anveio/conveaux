@@ -151,3 +151,306 @@ describe('createLogger', () => {
     });
   });
 });
+
+describe('minLevel filtering', () => {
+  let mockChannel: ReturnType<typeof createMockChannel>;
+  let mockClock: Clock;
+
+  beforeEach(() => {
+    mockChannel = createMockChannel();
+    mockClock = createMockClock('2024-12-15T10:30:00.000Z');
+  });
+
+  it('should log all levels when minLevel is debug', () => {
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+      options: { minLevel: 'debug' },
+    });
+
+    logger.debug('debug msg');
+    logger.info('info msg');
+    logger.warn('warn msg');
+    logger.error('error msg');
+
+    expect(mockChannel.lines).toHaveLength(4);
+  });
+
+  it('should suppress debug when minLevel is info', () => {
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+      options: { minLevel: 'info' },
+    });
+
+    logger.debug('should be suppressed');
+    logger.info('should appear');
+
+    expect(mockChannel.lines).toHaveLength(1);
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.level).toBe('info');
+  });
+
+  it('should suppress debug and info when minLevel is warn', () => {
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+      options: { minLevel: 'warn' },
+    });
+
+    logger.debug('suppressed');
+    logger.info('suppressed');
+    logger.warn('should appear');
+    logger.error('should appear');
+
+    expect(mockChannel.lines).toHaveLength(2);
+  });
+
+  it('should only log error when minLevel is error', () => {
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+      options: { minLevel: 'error' },
+    });
+
+    logger.debug('suppressed');
+    logger.info('suppressed');
+    logger.warn('suppressed');
+    logger.error('should appear');
+
+    expect(mockChannel.lines).toHaveLength(1);
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.level).toBe('error');
+  });
+
+  it('should default to debug level when no options provided', () => {
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+    });
+
+    logger.debug('should appear');
+
+    expect(mockChannel.lines).toHaveLength(1);
+  });
+
+  it('should apply minLevel to child loggers', () => {
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+      options: { minLevel: 'warn' },
+    });
+    const child = logger.child!({ component: 'test' });
+
+    child.debug('suppressed');
+    child.info('suppressed');
+    child.warn('should appear');
+
+    expect(mockChannel.lines).toHaveLength(1);
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.component).toBe('test');
+  });
+});
+
+describe('error serialization', () => {
+  let mockChannel: ReturnType<typeof createMockChannel>;
+  let mockClock: Clock;
+
+  beforeEach(() => {
+    mockChannel = createMockChannel();
+    mockClock = createMockClock('2024-12-15T10:30:00.000Z');
+  });
+
+  it('should serialize basic Error', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const error = new Error('Something went wrong');
+
+    logger.error('operation failed', { error });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.error).toBeDefined();
+    expect(entry.error.name).toBe('Error');
+    expect(entry.error.message).toBe('Something went wrong');
+    expect(entry.error.stack).toBeDefined();
+  });
+
+  it('should serialize TypeError', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const error = new TypeError('Invalid type');
+
+    logger.error('type error', { error });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.error.name).toBe('TypeError');
+    expect(entry.error.message).toBe('Invalid type');
+  });
+
+  it('should serialize custom Error subclass', () => {
+    class CustomError extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'CustomError';
+      }
+    }
+
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const error = new CustomError('Custom problem');
+
+    logger.error('custom error', { error });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.error.name).toBe('CustomError');
+    expect(entry.error.message).toBe('Custom problem');
+  });
+
+  it('should serialize Error with cause chain', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const rootCause = new Error('Root cause');
+    const error = new Error('Wrapper error', { cause: rootCause });
+
+    logger.error('error with cause', { error });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.error.name).toBe('Error');
+    expect(entry.error.message).toBe('Wrapper error');
+    expect(entry.error.cause).toBeDefined();
+    expect(entry.error.cause.name).toBe('Error');
+    expect(entry.error.cause.message).toBe('Root cause');
+  });
+
+  it('should handle deeply nested cause chain', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const level3 = new Error('Level 3');
+    const level2 = new Error('Level 2', { cause: level3 });
+    const level1 = new Error('Level 1', { cause: level2 });
+
+    logger.error('deep chain', { error: level1 });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.error.message).toBe('Level 1');
+    expect(entry.error.cause.message).toBe('Level 2');
+    expect(entry.error.cause.cause.message).toBe('Level 3');
+  });
+
+  it('should ignore non-Error cause', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const error = new Error('Error with string cause', { cause: 'not an error' });
+
+    logger.error('string cause', { error });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.error.cause).toBeUndefined();
+  });
+
+  it('should preserve other context fields alongside error', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const error = new Error('Test error');
+
+    logger.error('failed operation', { error, userId: '123', operation: 'delete' });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.error).toBeDefined();
+    expect(entry.userId).toBe('123');
+    expect(entry.operation).toBe('delete');
+  });
+});
+
+describe('edge cases', () => {
+  let mockChannel: ReturnType<typeof createMockChannel>;
+  let mockClock: Clock;
+
+  beforeEach(() => {
+    mockChannel = createMockChannel();
+    mockClock = createMockClock('2024-12-15T10:30:00.000Z');
+  });
+
+  it('should handle empty context object', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+
+    logger.info('message', {});
+
+    expect(mockChannel.lines).toHaveLength(1);
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.message).toBe('message');
+  });
+
+  it('should handle undefined context', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+
+    logger.info('message', undefined);
+
+    expect(mockChannel.lines).toHaveLength(1);
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.message).toBe('message');
+  });
+
+  it('should handle special characters in message', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+
+    logger.info('Message with "quotes" and \\backslashes\\');
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.message).toContain('quotes');
+    expect(entry.message).toContain('backslashes');
+  });
+
+  it('should handle deeply nested child loggers (4+ levels)', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    const child1 = logger.child!({ l: 1 });
+    const child2 = child1.child!({ l: 2 });
+    const child3 = child2.child!({ l: 3 });
+    const child4 = child3.child!({ l: 4 });
+
+    child4.info('deep message');
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.l).toBe(4); // Last level wins due to merge
+    expect(entry.message).toBe('deep message');
+  });
+
+  it('should handle context with null values', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+
+    logger.info('test', { nullField: null });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.nullField).toBeNull();
+  });
+
+  it('should handle context with array values', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+
+    logger.info('test', { items: [1, 2, 3] });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.items).toEqual([1, 2, 3]);
+  });
+
+  it('should handle context with nested objects', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+
+    logger.info('test', { nested: { deep: { value: 'found' } } });
+
+    const entry = JSON.parse(mockChannel.lines[0]);
+    expect(entry.nested.deep.value).toBe('found');
+  });
+});
+
+describe('channel error handling', () => {
+  let mockClock: Clock;
+
+  beforeEach(() => {
+    mockClock = createMockClock('2024-12-15T10:30:00.000Z');
+  });
+
+  it('should propagate channel write errors', () => {
+    const throwingChannel: OutChannel = {
+      write(): void {
+        throw new Error('Write failed');
+      },
+    };
+    const logger = createLogger({ channel: throwingChannel, clock: mockClock });
+
+    expect(() => logger.info('test')).toThrow('Write failed');
+  });
+});
