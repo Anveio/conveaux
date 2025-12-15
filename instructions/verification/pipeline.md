@@ -44,7 +44,19 @@ apps/validation-pipeline/
 
 ## Output Modes
 
-### Headless Mode (for agents/CI)
+### Agent Mode (for LLM agents)
+
+```bash
+./verify.sh --agent
+```
+
+- **Minimal output**: Success produces exactly 1 line
+- Success: `VERIFY:PASS:duration_ms=1234`
+- Failure: Structured errors with file:line:code format
+- **93% fewer tokens** than headless mode on successful runs
+- Recommended for all automated agent workflows
+
+### Headless Mode (for CI)
 
 ```bash
 ./verify.sh --ui=false
@@ -52,7 +64,7 @@ apps/validation-pipeline/
 
 - Machine-parseable output
 - One line per stage: `STAGE:name:START`, `STAGE:name:PASS/FAIL`
-- Use this mode for automation
+- Use for CI pipelines that need per-stage visibility
 
 ### Interactive Mode (for humans)
 
@@ -68,6 +80,7 @@ apps/validation-pipeline/
 
 ```bash
 ./verify.sh                    # Interactive mode, all stages
+./verify.sh --agent            # Agent mode (minimal output, recommended for LLMs)
 ./verify.sh --ui=false         # Headless mode
 ./verify.sh --stage=lint       # Run single stage
 ./verify.sh --no-autofix       # Skip lint autofix

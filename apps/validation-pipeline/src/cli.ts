@@ -8,7 +8,7 @@ import { cwd } from 'node:process';
 import { Command } from 'commander';
 import { type NamedStageResult, collectBenchmarks, reportBenchmarks } from './benchmark/index.js';
 import type { StageName, StageResult } from './contracts/index.js';
-import { headless, interactive } from './reporters/index.js';
+import { agent, headless, interactive } from './reporters/index.js';
 import { DEFAULT_STAGE_ORDER, getStage } from './stages/index.js';
 
 const program = new Command();
@@ -21,6 +21,7 @@ program
   .option('--stage <name>', 'Run only a specific stage')
   .option('--no-autofix', 'Disable autofix for lint stage')
   .option('--ci', 'Run in CI mode (disables autofix, uses headless output)')
+  .option('--agent', 'Agent mode: minimal output optimized for LLM agents')
   .option('--benchmark', 'Enable benchmarking metrics output')
   .action(
     async (options: {
@@ -28,9 +29,10 @@ program
       stage?: string;
       autofix: boolean;
       ci?: boolean;
+      agent?: boolean;
       benchmark?: boolean;
     }) => {
-      const ui = options.ci ? false : options.ui !== 'false';
+      const ui = options.agent ? false : options.ci ? false : options.ui !== 'false';
       const autofix = options.ci ? false : options.autofix;
       const projectRoot = cwd();
 
@@ -46,11 +48,12 @@ program
         stages = [stageName];
       }
 
-      // Select reporter based on UI mode
-      const reporter = ui ? interactive : headless;
+      // Select reporter based on mode
+      // Priority: --agent > --ci/--ui=false > interactive
+      const reporter = options.agent ? agent : ui ? interactive : headless;
 
-      // Report pipeline start (headless only)
-      if (!ui) {
+      // Report pipeline start (headless only, agent mode is silent)
+      if (!(ui || options.agent)) {
         headless.reportPipelineStart();
       }
 
