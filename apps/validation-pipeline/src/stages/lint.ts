@@ -3,7 +3,7 @@
  */
 
 import type { Stage, StageContext, StageResult } from '../contracts/index.js';
-import { execCommand } from '../utils/exec.js';
+import { capOutput, execCommand } from '../utils/exec.js';
 
 export const lintStage: Stage = {
   name: 'lint',
@@ -19,6 +19,11 @@ export const lintStage: Stage = {
     const result = await execCommand(command, context.projectRoot);
     const durationMs = Date.now() - startTime;
 
+    // Capture output for benchmarking
+    const capturedOutput = context.benchmark
+      ? { stdout: capOutput(result.stdout), stderr: capOutput(result.stderr) }
+      : undefined;
+
     // Biome exits with 0 on success, non-zero on errors
     if (result.exitCode !== 0) {
       // Extract error summary from output
@@ -33,6 +38,7 @@ export const lintStage: Stage = {
         message: 'Lint check failed',
         durationMs,
         errors: errorLines.length > 0 ? errorLines : [output.slice(0, 500)],
+        output: capturedOutput,
       };
     }
 
@@ -40,6 +46,7 @@ export const lintStage: Stage = {
       success: true,
       message: context.autofix ? 'Lint check passed (fixes applied)' : 'Lint check passed',
       durationMs,
+      output: capturedOutput,
     };
   },
 };
