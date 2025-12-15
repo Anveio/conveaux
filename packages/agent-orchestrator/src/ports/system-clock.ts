@@ -1,25 +1,7 @@
 /**
  * System Clock implementation.
- * Uses JavaScript Date for time operations.
+ * Re-exports the high-resolution clock from @conveaux/port-clock.
  */
 
-import type { Clock } from '@conveaux/agent-contracts';
-
-/**
- * Creates a Clock that uses the system time.
- */
-export function createSystemClock(): Clock {
-  return {
-    now(): Date {
-      return new Date();
-    },
-
-    timestamp(): string {
-      return new Date().toISOString();
-    },
-
-    epochMs(): number {
-      return Date.now();
-    },
-  };
-}
+export { createSystemClock } from '@conveaux/port-clock';
+export type { Clock, ClockOptions, ClockEnvironmentOverrides } from '@conveaux/port-clock';

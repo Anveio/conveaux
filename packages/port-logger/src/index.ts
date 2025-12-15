@@ -113,7 +113,7 @@ export function createLogger(deps: LoggerDependencies): Logger {
     }
 
     const entry: LogEntry = {
-      timestamp: clock.timestamp(),
+      timestamp: new Date(clock.wallClockMs()).toISOString(),
       level,
       message,
     };

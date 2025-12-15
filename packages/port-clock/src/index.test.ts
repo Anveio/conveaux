@@ -1,49 +1,290 @@
-/**
- * Tests for port-clock.
- */
-
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { createSystemClock } from './index.js';
 
 describe('createSystemClock', () => {
-  const fixedDate = new Date('2024-12-15T10:30:00.000Z');
+  describe('now()', () => {
+    it('returns 0 on first call with default origin', () => {
+      const time = 1000;
+      const clock = createSystemClock({
+        readMs: () => time,
+      });
 
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(fixedDate);
+      // First call should be 0 (time - origin = 1000 - 1000 = 0)
+      expect(clock.now()).toBe(0);
+    });
+
+    it('returns elapsed time from origin', () => {
+      let time = 1000;
+      const clock = createSystemClock({
+        readMs: () => time,
+      });
+
+      // First call: 0
+      expect(clock.now()).toBe(0);
+
+      // Advance time
+      time = 1050;
+      expect(clock.now()).toBe(50);
+
+      time = 1100;
+      expect(clock.now()).toBe(100);
+    });
+
+    it('uses custom originMs when provided', () => {
+      const time = 1000;
+      const clock = createSystemClock({
+        readMs: () => time,
+        originMs: 500, // Custom origin
+      });
+
+      // 1000 - 500 = 500
+      expect(clock.now()).toBe(500);
+    });
+
+    it('guarantees monotonic non-decreasing time', () => {
+      let time = 100;
+      const clock = createSystemClock({
+        readMs: () => time,
+      });
+
+      const t1 = clock.now(); // 0
+      time = 150;
+      const t2 = clock.now(); // 50
+      time = 120; // Regress!
+      const t3 = clock.now(); // Should be >= t2, not 20
+
+      expect(t1).toBe(0);
+      expect(t2).toBe(50);
+      expect(t3).toBeGreaterThanOrEqual(t2);
+    });
+
+    it('handles multiple regressions', () => {
+      let time = 100;
+      const clock = createSystemClock({
+        readMs: () => time,
+      });
+
+      const readings: number[] = [];
+
+      clock.now(); // Initialize
+      time = 200;
+      readings.push(clock.now()); // 100
+
+      // Multiple regressions
+      for (let i = 0; i < 5; i++) {
+        time = 50; // Regress
+        readings.push(clock.now());
+      }
+
+      // Each reading should be >= previous
+      for (let i = 1; i < readings.length; i++) {
+        expect(readings[i]).toBeGreaterThanOrEqual(readings[i - 1]);
+      }
+    });
   });
 
-  afterEach(() => {
-    vi.useRealTimers();
+  describe('hrtime()', () => {
+    it('returns bigint from native hrtime when available', () => {
+      const mockHrtime = Object.assign(() => [0, 0] as [number, number], {
+        bigint: () => 123456789n,
+      });
+
+      const clock = createSystemClock({
+        environment: {
+          process: { hrtime: mockHrtime },
+        },
+      });
+
+      expect(clock.hrtime()).toBe(123456789n);
+    });
+
+    it('falls back to derived nanoseconds when no hrtime', () => {
+      let time = 1000;
+      const clock = createSystemClock({
+        readMs: () => time,
+        environment: {
+          process: null, // Disable process.hrtime
+        },
+      });
+
+      // First call: now() = 0, hrtime = 0 ns
+      expect(clock.hrtime()).toBe(0n);
+
+      // After 10ms: now() = 10, hrtime = 10_000_000 ns
+      time = 1010;
+      expect(clock.hrtime()).toBe(10_000_000n);
+    });
+
+    it('uses custom readHrtime when provided', () => {
+      const clock = createSystemClock({
+        readHrtime: () => 999_999_999n,
+      });
+
+      expect(clock.hrtime()).toBe(999_999_999n);
+    });
+
+    it('falls back when custom readHrtime returns undefined', () => {
+      let time = 1000;
+      const clock = createSystemClock({
+        readMs: () => time,
+        readHrtime: () => undefined,
+        environment: { process: null },
+      });
+
+      time = 1005; // 5ms elapsed
+      expect(clock.hrtime()).toBe(5_000_000n);
+    });
   });
 
-  it('should return current date from now()', () => {
-    const clock = createSystemClock();
-    const result = clock.now();
+  describe('wallClockMs()', () => {
+    it('returns current wall-clock time', () => {
+      let wallTime = 1702648800000; // Some epoch time
+      const clock = createSystemClock({
+        environment: {
+          dateNow: () => wallTime,
+        },
+      });
 
-    expect(result.getTime()).toBe(fixedDate.getTime());
+      expect(clock.wallClockMs()).toBe(wallTime);
+
+      wallTime += 1000;
+      expect(clock.wallClockMs()).toBe(1702648801000);
+    });
+
+    it('is independent of monotonic now()', () => {
+      let monotonicTime = 1000;
+      let wallTime = 1702648800000;
+
+      const clock = createSystemClock({
+        readMs: () => monotonicTime,
+        environment: {
+          dateNow: () => wallTime,
+        },
+      });
+
+      // wallClockMs uses dateNow, not the monotonic readMs
+      expect(clock.wallClockMs()).toBe(wallTime);
+
+      // Even if monotonic time regresses, wall time continues
+      monotonicTime = 500; // Regress monotonic
+      wallTime += 1000; // Wall time advances
+      expect(clock.wallClockMs()).toBe(1702648801000);
+    });
   });
 
-  it('should return ISO 8601 timestamp from timestamp()', () => {
-    const clock = createSystemClock();
-    const result = clock.timestamp();
+  describe('environment resolution', () => {
+    it('uses performance.now when available', () => {
+      let perfTime = 1000;
+      const mockPerformance = {
+        now: () => perfTime,
+      };
 
-    expect(result).toBe('2024-12-15T10:30:00.000Z');
+      const clock = createSystemClock({
+        environment: {
+          performance: mockPerformance,
+          process: null,
+        },
+      });
+
+      expect(clock.now()).toBe(0);
+
+      perfTime = 1100;
+      expect(clock.now()).toBe(100);
+    });
+
+    it('falls back to dateNow when performance is null', () => {
+      let dateTime = 1000;
+      const clock = createSystemClock({
+        environment: {
+          performance: null,
+          dateNow: () => dateTime,
+        },
+      });
+
+      expect(clock.now()).toBe(0);
+
+      dateTime = 1050;
+      expect(clock.now()).toBe(50);
+    });
+
+    it('uses default Date.now when no dateNow override', () => {
+      // This test verifies the default behavior works
+      const clock = createSystemClock({
+        environment: {
+          performance: null,
+          process: null,
+          // No dateNow override - should use Date.now
+        },
+      });
+
+      const t1 = clock.wallClockMs();
+      expect(typeof t1).toBe('number');
+      expect(t1).toBeGreaterThan(0);
+    });
+
+    it('distinguishes undefined (use default) from null (disable)', () => {
+      // When performance is undefined, use globalThis.performance
+      // When performance is null, explicitly disable it
+
+      let dateTime = 5000;
+      const clock = createSystemClock({
+        environment: {
+          performance: null, // Explicitly disable
+          dateNow: () => dateTime,
+        },
+      });
+
+      // Should use dateNow since performance is disabled
+      expect(clock.now()).toBe(0);
+      dateTime = 5100;
+      expect(clock.now()).toBe(100);
+    });
   });
 
-  it('should return epoch milliseconds from epochMs()', () => {
-    const clock = createSystemClock();
-    const result = clock.epochMs();
+  describe('edge cases', () => {
+    it('handles very large time values', () => {
+      const largeTime = Number.MAX_SAFE_INTEGER - 1000;
+      const clock = createSystemClock({
+        readMs: () => largeTime,
+      });
 
-    expect(result).toBe(fixedDate.getTime());
-  });
+      expect(clock.now()).toBe(0);
+    });
 
-  it('should return new Date instances each call', () => {
-    const clock = createSystemClock();
-    const first = clock.now();
-    const second = clock.now();
+    it('throws on non-finite values in msToNs conversion', () => {
+      const clock = createSystemClock({
+        readMs: () => Number.POSITIVE_INFINITY,
+        environment: { process: null },
+      });
 
-    expect(first).not.toBe(second);
-    expect(first.getTime()).toBe(second.getTime());
+      // First now() is 0 (Infinity - Infinity = NaN, but origin capture happens first)
+      // This is a bit tricky - the origin is captured as Infinity
+      // So subsequent calls return NaN, which when converted to ns throws
+      expect(() => clock.hrtime()).toThrow('non-finite');
+    });
+
+    it('works with zero origin', () => {
+      const time = 100;
+      const clock = createSystemClock({
+        readMs: () => time,
+        originMs: 0,
+      });
+
+      expect(clock.now()).toBe(100);
+    });
+
+    it('each clock instance has independent state', () => {
+      let time = 1000;
+      const readMs = () => time;
+
+      const clock1 = createSystemClock({ readMs });
+      time = 1100;
+      const clock2 = createSystemClock({ readMs });
+
+      // clock1 origin = 1000, clock2 origin = 1100
+      time = 1200;
+      expect(clock1.now()).toBe(200); // 1200 - 1000
+      expect(clock2.now()).toBe(100); // 1200 - 1100
+    });
   });
 });

@@ -19,9 +19,9 @@ function createMockPorts() {
   const logs: Array<{ level: string; message: string }> = [];
 
   const mockClock: Clock = {
-    now: () => new Date('2024-12-14T10:30:00.000Z'),
-    timestamp: () => '2024-12-14T10:30:00.000Z',
-    epochMs: () => 1734173400000,
+    now: () => 0, // monotonic ms since origin
+    hrtime: () => 0n, // nanoseconds
+    wallClockMs: () => 1734173400000, // 2024-12-14T10:30:00.000Z
   };
 
   const mockRandom: Random = {

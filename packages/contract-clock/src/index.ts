@@ -1,30 +1,44 @@
 /**
  * @conveaux/contract-clock
  *
- * Clock contract - interface for time operations.
- * Abstracts Date for testable, deterministic time handling.
+ * High-resolution monotonic clock contract with wall-clock access.
+ * Follows the firedrill pattern for hermetic primitive ports.
  */
 
 /**
- * A clock for time operations.
+ * A high-resolution monotonic clock instance with wall-clock access.
  *
- * Implementations provide the current time. This abstraction allows
- * ports to be testable with controllable/deterministic time.
+ * This abstraction enables:
+ * - Deterministic testing with injectable time sources
+ * - High-resolution timing for benchmarks (nanosecond precision)
+ * - Monotonic guarantees (clock never goes backward)
+ * - Wall-clock access for timestamps
  */
 export interface Clock {
   /**
-   * Get the current date/time.
+   * Monotonic milliseconds since clock origin.
+   * Guaranteed non-decreasing even if the underlying source regresses.
+   * Use for durations, ordering, and benchmarks.
+   *
+   * @returns Milliseconds elapsed since clock creation
    */
-  now(): Date;
+  now(): number;
 
   /**
-   * Get the current time as an ISO 8601 timestamp string.
-   * Example: "2024-12-15T10:30:00.000Z"
+   * High-resolution time in nanoseconds.
+   * Returns bigint from process.hrtime.bigint() when available,
+   * or derived from milliseconds otherwise.
+   *
+   * @returns Nanoseconds for high-precision timing
    */
-  timestamp(): string;
+  hrtime(): bigint;
 
   /**
-   * Get the current time as milliseconds since Unix epoch.
+   * Wall-clock milliseconds since Unix epoch.
+   * Use for timestamps that need absolute time (e.g., logging).
+   * Unlike now(), this is NOT guaranteed monotonic.
+   *
+   * @returns Unix epoch milliseconds (same as Date.now())
    */
-  epochMs(): number;
+  wallClockMs(): number;
 }

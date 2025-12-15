@@ -21,10 +21,11 @@ function createMockChannel(): OutChannel & { lines: string[] } {
 // Inline mock for Clock with fixed time
 function createMockClock(timestamp: string): Clock {
   const date = new Date(timestamp);
+  let monotonicMs = 0;
   return {
-    now: () => date,
-    timestamp: () => timestamp,
-    epochMs: () => date.getTime(),
+    now: () => monotonicMs++,
+    hrtime: () => BigInt(monotonicMs) * 1_000_000n,
+    wallClockMs: () => date.getTime(),
   };
 }
 
