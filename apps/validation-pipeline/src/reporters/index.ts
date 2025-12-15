@@ -2,6 +2,7 @@
  * Reporter exports.
  */
 
-export * as agent from './agent.js';
-export * as headless from './headless.js';
-export * as interactive from './interactive.js';
+export type { Reporter } from '../contracts/reporter.js';
+export { agentReporter } from './agent.js';
+export { headlessReporter } from './headless.js';
+export { interactiveReporter } from './interactive.js';

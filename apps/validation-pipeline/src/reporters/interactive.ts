@@ -3,19 +3,24 @@
  */
 
 import chalk from 'chalk';
-import type { PipelineResult, StageExecutionResult, StageName } from '../contracts/index.js';
+import type {
+  PipelineResult,
+  Reporter,
+  StageExecutionResult,
+  StageName,
+} from '../contracts/index.js';
 
 /**
  * Report the start of a stage.
  */
-export function reportStageStart(stageName: StageName): void {
+function reportStageStart(stageName: StageName): void {
   console.log(chalk.blue(`Running stage: ${stageName}...`));
 }
 
 /**
  * Report a stage result.
  */
-export function reportStageResult(result: StageExecutionResult): void {
+function reportStageResult(result: StageExecutionResult): void {
   const duration = `${result.durationMs}ms`;
 
   if (result.success) {
@@ -33,7 +38,7 @@ export function reportStageResult(result: StageExecutionResult): void {
 /**
  * Report pipeline result summary.
  */
-export function reportPipelineResult(result: PipelineResult): void {
+function reportPipelineResult(result: PipelineResult): void {
   console.log('');
 
   if (result.success) {
@@ -45,3 +50,13 @@ export function reportPipelineResult(result: PipelineResult): void {
     console.log(chalk.dim(`Total time: ${result.totalDurationMs}ms`));
   }
 }
+
+/**
+ * Interactive reporter - human-friendly colored output.
+ * Implements the Reporter interface with colored terminal output.
+ */
+export const interactiveReporter: Reporter = {
+  reportStageStart,
+  reportStageResult,
+  reportPipelineResult,
+};

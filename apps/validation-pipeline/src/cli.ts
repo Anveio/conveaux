@@ -7,8 +7,8 @@
 import { cwd } from 'node:process';
 import { Command } from 'commander';
 import { type NamedStageResult, collectBenchmarks, reportBenchmarks } from './benchmark/index.js';
-import type { StageName, StageResult } from './contracts/index.js';
-import { agent, headless, interactive } from './reporters/index.js';
+import type { Reporter, StageName, StageResult } from './contracts/index.js';
+import { agentReporter, headlessReporter, interactiveReporter } from './reporters/index.js';
 import { DEFAULT_STAGE_ORDER, getStage } from './stages/index.js';
 
 const program = new Command();
@@ -50,11 +50,15 @@ program
 
       // Select reporter based on mode
       // Priority: --agent > --ci/--ui=false > interactive
-      const reporter = options.agent ? agent : ui ? interactive : headless;
+      const reporter: Reporter = options.agent
+        ? agentReporter
+        : ui
+          ? interactiveReporter
+          : headlessReporter;
 
       // Report pipeline start (headless only, agent mode is silent)
       if (!(ui || options.agent)) {
-        headless.reportPipelineStart();
+        headlessReporter.reportPipelineStart?.();
       }
 
       // Run each stage
