@@ -24,6 +24,6 @@
 |-------------|------------|------------------|
 | `@conveaux/port-logger` | `Logger` | `createLogger(deps)` |
 | `@conveaux/port-wall-clock` | `WallClock` | `createWallClock(options?)` |
-| `@conveaux/port-outchannel` | `OutChannel` | `createStderrChannel(options?)`, `createStdoutChannel(options?)` |
+| `@conveaux/port-outchannel` | `OutChannel` | `createOutChannel(target)` |
 
 For full guidance, invoke: `Skill(coding-patterns)`

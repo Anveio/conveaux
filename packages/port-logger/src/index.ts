@@ -263,11 +263,11 @@ export function serializeError(error: Error): SerializedError {
  * @example
  * ```typescript
  * import { createLogger } from '@conveaux/port-logger';
- * import { createStderrChannel } from '@conveaux/port-outchannel';
+ * import { createOutChannel } from '@conveaux/port-outchannel';
  * import { createWallClock } from '@conveaux/port-wall-clock';
  *
  * const logger = createLogger({
- *   channel: createStderrChannel(),
+ *   channel: createOutChannel(process.stderr),
  *   clock: createWallClock(),
  * });
  *

@@ -1,62 +1,77 @@
 /**
  * Tests for port-outchannel.
+ *
+ * Uses inline mock targets instead of patching process globals.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createStderrChannel, createStdoutChannel } from './index.js';
+import { describe, expect, it } from 'vitest';
+import type { WritableTarget } from './index.js';
+import { createOutChannel } from './index.js';
 
-describe('createStderrChannel', () => {
-  const originalWrite = process.stderr.write;
-  let writtenData: string[] = [];
+/**
+ * Creates an inline mock target that captures written data.
+ */
+function createMockTarget(): WritableTarget & { captured: string[] } {
+  const captured: string[] = [];
+  return {
+    captured,
+    write(data: string): void {
+      captured.push(data);
+    },
+  };
+}
 
-  beforeEach(() => {
-    writtenData = [];
-    process.stderr.write = vi.fn((data: string | Uint8Array) => {
-      writtenData.push(data.toString());
-      return true;
-    }) as typeof process.stderr.write;
+describe('createOutChannel', () => {
+  it('delegates write to target', () => {
+    const target = createMockTarget();
+    const channel = createOutChannel(target);
+
+    channel.write('hello');
+
+    expect(target.captured).toEqual(['hello']);
   });
 
-  afterEach(() => {
-    process.stderr.write = originalWrite;
-  });
+  it('handles multiple writes', () => {
+    const target = createMockTarget();
+    const channel = createOutChannel(target);
 
-  it('should write data to stderr', () => {
-    const channel = createStderrChannel();
-    channel.write('test message');
-
-    expect(writtenData).toContain('test message');
-  });
-
-  it('should write multiple times', () => {
-    const channel = createStderrChannel();
     channel.write('first');
     channel.write('second');
+    channel.write('third');
 
-    expect(writtenData).toEqual(['first', 'second']);
-  });
-});
-
-describe('createStdoutChannel', () => {
-  const originalWrite = process.stdout.write;
-  let writtenData: string[] = [];
-
-  beforeEach(() => {
-    writtenData = [];
-    process.stdout.write = vi.fn((data: string | Uint8Array) => {
-      writtenData.push(data.toString());
-      return true;
-    }) as typeof process.stdout.write;
+    expect(target.captured).toEqual(['first', 'second', 'third']);
   });
 
-  afterEach(() => {
-    process.stdout.write = originalWrite;
+  it('passes data through unchanged', () => {
+    const target = createMockTarget();
+    const channel = createOutChannel(target);
+
+    const testData = 'line 1\nline 2\ttabbed';
+    channel.write(testData);
+
+    expect(target.captured).toEqual([testData]);
   });
 
-  it('should write data to stdout', () => {
-    const channel = createStdoutChannel();
-    channel.write('test message');
+  it('handles empty string', () => {
+    const target = createMockTarget();
+    const channel = createOutChannel(target);
 
-    expect(writtenData).toContain('test message');
+    channel.write('');
+
+    expect(target.captured).toEqual(['']);
+  });
+
+  it('can use independent channels with different targets', () => {
+    const target1 = createMockTarget();
+    const target2 = createMockTarget();
+
+    const channel1 = createOutChannel(target1);
+    const channel2 = createOutChannel(target2);
+
+    channel1.write('to target 1');
+    channel2.write('to target 2');
+
+    expect(target1.captured).toEqual(['to target 1']);
+    expect(target2.captured).toEqual(['to target 2']);
   });
 });
