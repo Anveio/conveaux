@@ -17,6 +17,7 @@ export type { PipelineOptions } from './pipeline.js';
 export {
   checkStage,
   DEFAULT_STAGE_ORDER,
+  docsStage,
   getStage,
   installStage,
   lintStage,
