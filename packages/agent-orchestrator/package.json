@@ -1,0 +1,30 @@
+{
+  "name": "@conveaux/agent-orchestrator",
+  "version": "0.1.0",
+  "description": "Agent orchestrator that coordinates coding agents for package improvement",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run --passWithNoTests"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.33.0",
+    "@conveaux/agent-contracts": "*",
+    "@conveaux/agent-core": "*"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}

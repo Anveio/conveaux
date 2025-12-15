@@ -1,0 +1,29 @@
+{
+  "name": "@conveaux/agent-core",
+  "version": "0.1.0",
+  "description": "Core agent abstraction with agentic loop and tool implementations",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run --passWithNoTests"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.33.0",
+    "@conveaux/agent-contracts": "*"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  }
+}
