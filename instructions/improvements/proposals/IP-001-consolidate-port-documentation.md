@@ -43,12 +43,12 @@ These two documents overlap and can cause confusion about which is authoritative
 
 ## Verification Criteria
 
-- [ ] **Grounded**: Cites specific session (feat/contract-port-architecture) and actual files
-- [ ] **Non-contradictory**: Aligns core-ports.md with contract-port.md pattern
-- [ ] **Actionable**: Specific changes outlined
-- [ ] **Minimal**: Only updates necessary references, preserves conceptual content
-- [ ] **Testable**: After change, no interface is defined in both .md files and .ts packages
-- [ ] **Bounded**: Affects only instruction files (depth 1)
+- [x] **Grounded**: Cites specific session (feat/contract-port-architecture) and actual files
+- [x] **Non-contradictory**: Aligns core-ports.md with contract-port.md pattern
+- [x] **Actionable**: Specific changes outlined
+- [x] **Minimal**: Only updates necessary references, preserves conceptual content
+- [x] **Testable**: After change, no interface is defined in both .md files and .ts packages
+- [x] **Bounded**: Affects only instruction files (depth 1)
 
 ## Impact Assessment
 

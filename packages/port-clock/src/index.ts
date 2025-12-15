@@ -6,6 +6,9 @@
 
 import type { Clock } from '@conveaux/contract-clock';
 
+// Re-export the contract type for convenience
+export type { Clock } from '@conveaux/contract-clock';
+
 /**
  * Creates a Clock that uses the system time.
  */

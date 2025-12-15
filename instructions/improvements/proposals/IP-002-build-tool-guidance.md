@@ -52,12 +52,12 @@
 
 ## Verification Criteria
 
-- [ ] **Grounded**: Cites specific session and actual package configurations
-- [ ] **Non-contradictory**: Clarifies rather than contradicts existing guidance
-- [ ] **Actionable**: Adds specific decision criteria
-- [ ] **Minimal**: Single section addition to existing document
-- [ ] **Testable**: Future packages can check criteria to select tool
-- [ ] **Bounded**: Affects only instruction files (depth 1)
+- [x] **Grounded**: Cites specific session and actual package configurations
+- [x] **Non-contradictory**: Clarifies rather than contradicts existing guidance
+- [x] **Actionable**: Adds specific decision criteria
+- [x] **Minimal**: Single section addition to existing document
+- [x] **Testable**: Future packages can check criteria to select tool
+- [x] **Bounded**: Affects only instruction files (depth 1)
 
 ## Impact Assessment
 

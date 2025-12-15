@@ -6,6 +6,9 @@
 
 import type { OutChannel } from '@conveaux/contract-outchannel';
 
+// Re-export the contract type for convenience
+export type { OutChannel } from '@conveaux/contract-outchannel';
+
 /**
  * Creates an OutChannel that writes to stderr.
  *

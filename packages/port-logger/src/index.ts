@@ -9,6 +9,9 @@ import type { Logger, LogContext, LogLevel } from '@conveaux/contract-logger';
 import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { Clock } from '@conveaux/contract-clock';
 
+// Re-export contract types for convenience
+export type { Logger, LogContext, LogLevel, LogFields, TraceContext } from '@conveaux/contract-logger';
+
 /**
  * Dependencies required by the logger.
  */
