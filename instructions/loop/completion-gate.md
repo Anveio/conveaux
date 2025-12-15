@@ -84,6 +84,26 @@ If you cannot complete the goals:
 3. Communicate clearly to TSC
 4. Wait for TSC guidance
 
+## Cross-Repository Artifact Sync
+
+Some artifacts in this repo have counterparts in other repositories that must stay in sync:
+
+| This Repo | External Repo | Sync Requirement |
+|-----------|---------------|------------------|
+| `apps/claude-code-works/` | `claude-code-config/skills/claude-code-works/SKILL.md` | CLI commands, options, output signals |
+
+**When modifying linked artifacts:**
+
+1. **Check if external artifact exists** - Look for skills/docs that reference the code you're changing
+2. **Update both together** - If you change CLI options, update the skill in the same session
+3. **Cross-repo PRs** - Create PRs in both repos, reference each other in PR descriptions
+
+**Trigger phrases** (if you see these in your changes, check for linked artifacts):
+- Adding/removing CLI commands
+- Changing command-line options
+- Modifying output formats or signals
+- Updating completion criteria
+
 ## Instruction Quality Check
 
 At goal completion, verify instructions haven't drifted:
