@@ -179,6 +179,70 @@ export interface QualityMetrics {
 }
 
 // =============================================================================
+// Port Interfaces (L-003 Compliance)
+// =============================================================================
+
+/**
+ * Logger port - replaces direct console.* usage.
+ * Enables testable logging and platform-agnostic output.
+ */
+export interface Logger {
+  debug(message: string, context?: Record<string, unknown>): void;
+  info(message: string, context?: Record<string, unknown>): void;
+  warn(message: string, context?: Record<string, unknown>): void;
+  error(message: string, context?: Record<string, unknown>): void;
+}
+
+/**
+ * Clock port - replaces direct Date usage.
+ * Enables deterministic time in tests.
+ */
+export interface Clock {
+  /** Get current date/time */
+  now(): Date;
+  /** Get ISO 8601 timestamp string */
+  timestamp(): string;
+  /** Get epoch milliseconds */
+  epochMs(): number;
+}
+
+/**
+ * Random port - replaces direct Math.random() and crypto usage.
+ * Enables deterministic randomness in tests.
+ */
+export interface Random {
+  /** Random number between 0 and 1 */
+  number(): number;
+  /** Generate UUID v4 */
+  uuid(): string;
+  /** Random choice from array */
+  choice<T>(items: T[]): T;
+}
+
+/**
+ * Environment port - replaces direct process.env and process.cwd() usage.
+ * Enables injectable configuration in tests.
+ */
+export interface Environment {
+  /** Get environment variable (returns undefined if not set) */
+  get(key: string): string | undefined;
+  /** Get environment variable (throws if not set) */
+  require(key: string): string;
+  /** Get current working directory */
+  cwd(): string;
+}
+
+/**
+ * Bundle of all ports for dependency injection.
+ */
+export interface Ports {
+  logger: Logger;
+  clock: Clock;
+  random: Random;
+  env: Environment;
+}
+
+// =============================================================================
 // Error Types
 // =============================================================================
 

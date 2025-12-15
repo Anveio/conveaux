@@ -4,7 +4,7 @@
 
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { LessonLearned } from '@conveaux/agent-contracts';
+import type { LessonLearned, Clock, Random, Environment, Logger } from '@conveaux/agent-contracts';
 
 /**
  * Path to the lessons file relative to project root.
@@ -12,12 +12,22 @@ import type { LessonLearned } from '@conveaux/agent-contracts';
 const LESSONS_PATH = 'instructions/improvements/lessons.md';
 
 /**
- * Generate a unique lesson ID.
+ * Ports needed for lesson recording.
  */
-function generateLessonId(): string {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const random = Math.random().toString(36).slice(2, 6);
-  return `L-${date}-${random}`;
+interface LessonRecorderPorts {
+  clock: Clock;
+  random: Random;
+  env: Environment;
+  logger: Logger;
+}
+
+/**
+ * Generate a unique lesson ID using injected ports.
+ */
+function generateLessonId(clock: Clock, random: Random): string {
+  const date = clock.timestamp().slice(0, 10).replace(/-/g, '');
+  const randomPart = random.number().toString(36).slice(2, 6);
+  return `L-${date}-${randomPart}`;
 }
 
 /**
@@ -41,19 +51,23 @@ export async function recordLesson(params: {
   context: string;
   lesson: string;
   evidence: string;
+  ports: LessonRecorderPorts;
   projectRoot?: string;
 }): Promise<LessonLearned> {
-  const { context, lesson, evidence, projectRoot = process.cwd() } = params;
+  const { context, lesson, evidence, ports, projectRoot } = params;
+  const { clock, random, env, logger } = ports;
+
+  const resolvedRoot = projectRoot ?? env.cwd();
 
   const lessonData: LessonLearned = {
-    id: generateLessonId(),
-    date: new Date().toISOString().slice(0, 10),
+    id: generateLessonId(clock, random),
+    date: clock.timestamp().slice(0, 10),
     context,
     lesson,
     evidence,
   };
 
-  const lessonsPath = join(projectRoot, LESSONS_PATH);
+  const lessonsPath = join(resolvedRoot, LESSONS_PATH);
 
   try {
     // Read existing content
@@ -79,7 +93,7 @@ export async function recordLesson(params: {
     return lessonData;
   } catch (error) {
     // If file doesn't exist, that's okay - lessons are optional
-    console.warn(`Could not record lesson: ${error}`);
+    logger.warn(`Could not record lesson: ${error}`);
     return lessonData;
   }
 }

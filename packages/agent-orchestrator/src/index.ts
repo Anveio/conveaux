@@ -17,9 +17,23 @@ export {
 // Lesson recording
 export { recordLesson } from './lesson-recorder.js';
 
+// Port implementations
+export {
+  createDefaultPorts,
+  createConsoleLogger,
+  createSystemClock,
+  createCryptoRandom,
+  createNodeEnv,
+} from './ports/index.js';
+
 // Re-export types
 export type {
   OrchestratorConfig,
   OrchestratorResult,
   LessonLearned,
+  Ports,
+  Logger,
+  Clock,
+  Random,
+  Environment,
 } from '@conveaux/agent-contracts';

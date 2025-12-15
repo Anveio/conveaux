@@ -8,6 +8,8 @@
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
+			"development": "./src/index.ts",
+			"source": "./src/index.ts",
 			"import": "./dist/index.js"
 		}
 	},
@@ -17,6 +19,7 @@
 		"test": "echo 'No tests for contracts package'"
 	},
 	"files": [
-		"dist"
+		"dist",
+		"src"
 	]
 }

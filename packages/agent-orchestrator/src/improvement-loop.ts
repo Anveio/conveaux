@@ -3,7 +3,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { OrchestratorConfig, OrchestratorResult, LessonLearned } from '@conveaux/agent-contracts';
+import type { OrchestratorConfig, OrchestratorResult, LessonLearned, Ports } from '@conveaux/agent-contracts';
 import { createAnalyzer, createImplementer, createReviewer } from './agents/index.js';
 import { recordLesson } from './lesson-recorder.js';
 
@@ -19,8 +19,11 @@ import { recordLesson } from './lesson-recorder.js';
  * Repeats until maxIterations or no more improvements found.
  */
 export async function runImprovementLoop(
-  config: OrchestratorConfig
+  config: OrchestratorConfig,
+  ports: Ports
 ): Promise<OrchestratorResult> {
+  const { logger } = ports;
+
   const client = new Anthropic({
     apiKey: config.anthropicApiKey,
   });
@@ -34,16 +37,16 @@ export async function runImprovementLoop(
   let consecutiveFailures = 0;
   const maxConsecutiveFailures = 3;
 
-  console.log(`\nStarting improvement loop for: ${config.targetPackage}`);
-  console.log(`Max iterations: ${config.maxIterations}`);
-  console.log('─'.repeat(50));
+  logger.info(`\nStarting improvement loop for: ${config.targetPackage}`);
+  logger.info(`Max iterations: ${config.maxIterations}`);
+  logger.info('─'.repeat(50));
 
   while (iteration < config.maxIterations) {
     iteration++;
-    console.log(`\n=== Iteration ${iteration}/${config.maxIterations} ===\n`);
+    logger.info(`\n=== Iteration ${iteration}/${config.maxIterations} ===\n`);
 
     // 1. ANALYZE
-    console.log('📊 Analyzing package...');
+    logger.info('Analyzing package...');
     const analysis = await analyzer.run(`
       Analyze the package at: ${config.targetPackage}
 
@@ -55,13 +58,13 @@ export async function runImprovementLoop(
       [{ "file": "...", "issue": "...", "fix": "...", "priority": "..." }]
     `);
 
-    console.log(`   Tokens used: ${analysis.tokenUsage.input + analysis.tokenUsage.output}`);
+    logger.info(`   Tokens used: ${analysis.tokenUsage.input + analysis.tokenUsage.output}`);
 
     if (!analysis.success) {
-      console.log('   ❌ Analysis failed:', analysis.output.slice(0, 200));
+      logger.warn(`   Analysis failed: ${analysis.output.slice(0, 200)}`);
       consecutiveFailures++;
       if (consecutiveFailures >= maxConsecutiveFailures) {
-        console.log(`\n⚠️  ${maxConsecutiveFailures} consecutive failures, stopping loop`);
+        logger.warn(`\n${maxConsecutiveFailures} consecutive failures, stopping loop`);
         break;
       }
       continue;
@@ -69,14 +72,14 @@ export async function runImprovementLoop(
 
     // Check if there are improvements to make
     if (analysis.output.includes('[]') || analysis.output.includes('No improvements')) {
-      console.log('   ✅ No more improvements identified');
+      logger.info('   No more improvements identified');
       break;
     }
 
-    console.log('   Found improvements:', analysis.output.slice(0, 300));
+    logger.info(`   Found improvements: ${analysis.output.slice(0, 300)}`);
 
     // 2. IMPLEMENT
-    console.log('\n🔧 Implementing improvements...');
+    logger.info('\nImplementing improvements...');
     const implementation = await implementer.run(`
       Implement these improvements in ${config.targetPackage}:
 
@@ -88,22 +91,22 @@ export async function runImprovementLoop(
       3. Report what you changed
     `);
 
-    console.log(`   Tokens used: ${implementation.tokenUsage.input + implementation.tokenUsage.output}`);
+    logger.info(`   Tokens used: ${implementation.tokenUsage.input + implementation.tokenUsage.output}`);
 
     if (!implementation.success) {
-      console.log('   ❌ Implementation failed:', implementation.output.slice(0, 200));
+      logger.warn(`   Implementation failed: ${implementation.output.slice(0, 200)}`);
       consecutiveFailures++;
       if (consecutiveFailures >= maxConsecutiveFailures) {
-        console.log(`\n⚠️  ${maxConsecutiveFailures} consecutive failures, stopping loop`);
+        logger.warn(`\n${maxConsecutiveFailures} consecutive failures, stopping loop`);
         break;
       }
       continue;
     }
 
-    console.log('   Changes made:', implementation.output.slice(0, 300));
+    logger.info(`   Changes made: ${implementation.output.slice(0, 300)}`);
 
     // 3. VERIFY
-    console.log('\n🧪 Verifying changes...');
+    logger.info('\nVerifying changes...');
     const verification = await reviewer.run(`
       Verify the changes made to ${config.targetPackage}:
 
@@ -113,10 +116,10 @@ export async function runImprovementLoop(
       If verification fails, explain what went wrong.
     `);
 
-    console.log(`   Tokens used: ${verification.tokenUsage.input + verification.tokenUsage.output}`);
+    logger.info(`   Tokens used: ${verification.tokenUsage.input + verification.tokenUsage.output}`);
 
     if (verification.output.includes('VERIFICATION:PASS')) {
-      console.log('   ✅ Verification passed!');
+      logger.info('   Verification passed!');
       consecutiveFailures = 0;
 
       // 4. RECORD LESSON
@@ -124,12 +127,13 @@ export async function runImprovementLoop(
         context: config.targetPackage,
         lesson: `Iteration ${iteration}: ${analysis.output.slice(0, 500)}`,
         evidence: 'Verification passed after implementing improvements',
+        ports,
       });
       lessons.push(lesson);
-      console.log(`   📝 Lesson recorded: ${lesson.id}`);
+      logger.info(`   Lesson recorded: ${lesson.id}`);
     } else {
-      console.log('   ❌ Verification failed');
-      console.log('   Rolling back changes...');
+      logger.warn('   Verification failed');
+      logger.info('   Rolling back changes...');
 
       // Rollback using git
       const rollback = await reviewer.run(`
@@ -137,21 +141,21 @@ export async function runImprovementLoop(
         This will revert the changes we just made.
       `);
 
-      console.log('   Rolled back:', rollback.output.slice(0, 100));
+      logger.info(`   Rolled back: ${rollback.output.slice(0, 100)}`);
       consecutiveFailures++;
 
       if (consecutiveFailures >= maxConsecutiveFailures) {
-        console.log(`\n⚠️  ${maxConsecutiveFailures} consecutive failures, stopping loop`);
+        logger.warn(`\n${maxConsecutiveFailures} consecutive failures, stopping loop`);
         break;
       }
     }
   }
 
-  console.log('\n' + '─'.repeat(50));
-  console.log(`Improvement loop complete`);
-  console.log(`  Iterations: ${iteration}`);
-  console.log(`  Lessons recorded: ${lessons.length}`);
-  console.log('─'.repeat(50));
+  logger.info('\n' + '─'.repeat(50));
+  logger.info(`Improvement loop complete`);
+  logger.info(`  Iterations: ${iteration}`);
+  logger.info(`  Lessons recorded: ${lessons.length}`);
+  logger.info('─'.repeat(50));
 
   return {
     success: true,
