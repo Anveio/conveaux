@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@conveaux/tsconfig": "*",
-    "@vitest/coverage-v8": "^3.0.4",
+    "@vitest/coverage-v8": "^4.0.15",
     "typescript": "^5.7.2",
-    "vitest": "^3.0.4"
+    "vitest": "^4.0.15"
   }
 }
