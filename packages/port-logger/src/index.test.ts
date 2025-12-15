@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createLogger } from './index.js';
+import { createLogger, LOG_LEVEL_PRIORITY } from './index.js';
 import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { Clock } from '@conveaux/contract-clock';
 
@@ -452,5 +452,20 @@ describe('channel error handling', () => {
     const logger = createLogger({ channel: throwingChannel, clock: mockClock });
 
     expect(() => logger.info('test')).toThrow('Write failed');
+  });
+});
+
+describe('LOG_LEVEL_PRIORITY export', () => {
+  it('should export LOG_LEVEL_PRIORITY for consumer use', () => {
+    expect(LOG_LEVEL_PRIORITY.debug).toBe(0);
+    expect(LOG_LEVEL_PRIORITY.info).toBe(1);
+    expect(LOG_LEVEL_PRIORITY.warn).toBe(2);
+    expect(LOG_LEVEL_PRIORITY.error).toBe(3);
+  });
+
+  it('should have debug as lowest priority', () => {
+    expect(LOG_LEVEL_PRIORITY.debug).toBeLessThan(LOG_LEVEL_PRIORITY.info);
+    expect(LOG_LEVEL_PRIORITY.info).toBeLessThan(LOG_LEVEL_PRIORITY.warn);
+    expect(LOG_LEVEL_PRIORITY.warn).toBeLessThan(LOG_LEVEL_PRIORITY.error);
   });
 });

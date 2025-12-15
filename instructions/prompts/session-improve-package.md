@@ -12,7 +12,12 @@ Improve `@conveaux/port-logger` through the RSID loop while updating instruction
    - `instructions/skills/pr-review-loop.md` - PR workflow
    - `instructions/reference/patterns/contract-port.md` - Package architecture
 
-2. Understand the target package:
+2. Check accumulated wisdom:
+   - `instructions/improvements/lessons.md` - Scan domains: package-setup, core-abstractions
+   - `instructions/skills/pr-review-loop.md` - PR workflow skill
+   - `instructions/skills/code-review.md` - Self-review checklist
+
+3. Understand the target package:
    - `packages/port-logger/src/index.ts` - Implementation
    - `packages/port-logger/src/index.test.ts` - Tests
    - `packages/port-logger/package.json` - Dependencies
@@ -52,14 +57,20 @@ Execute until no issues remain:
 ```
 Create PR → Self-Review → Fix Issues → Re-Review
 ```
+See `instructions/skills/pr-review-loop.md` for detailed checklist.
 
 ### Phase 5: MERGE (Autonomous)
 Verify all criteria pass, then merge:
 ```bash
-npm run build && npm run test
+# For port packages (no external services):
+./verify.sh --ui=false
+
+# For adapter packages (external deps):
+./verify.sh --ui=false --e2e=smoke
+
 git fetch origin main && git log HEAD..origin/main --oneline  # Empty = good
 gh pr merge <number> --squash --delete-branch
-git checkout main && git pull && npm run build && npm run test
+git checkout main && git pull && ./verify.sh --ui=false
 ```
 
 ## Constraints

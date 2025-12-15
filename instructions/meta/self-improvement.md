@@ -30,6 +30,14 @@ Capture observations in session notes (PLAN.md or HANDOFF.md "Notes" section).
 
 ### PROPOSE (At Session Boundaries)
 
+**IP Workflow During Sessions:**
+
+1. **Identify** during work - Note "this should be an IP" in PLAN.md
+2. **Draft** at session boundary - Create IP file with problem statement
+3. **Complete** in dedicated session - Full implementation + verification
+
+**Rule**: Never block product work to complete an IP. Quick fixes (<5 lines to instructions) can be made inline; larger changes need an IP.
+
 When you identify an improvement opportunity:
 
 1. Create an Improvement Proposal (IP) in `instructions/improvements/proposals/`
@@ -126,6 +134,15 @@ RSID does NOT make instruction improvement the primary activity. Product work re
 - Observations are collected passively during product work
 - IPs are created at session boundaries, not mid-task
 - Integration happens only when IPs are accepted
+
+## Session Close Checklist
+
+Before marking work complete:
+- [ ] All observations captured in `lessons.md` (or noted for next session)
+- [ ] Any identified IPs drafted or deferred with reason
+- [ ] No contradictions introduced between instruction files
+- [ ] `./verify.sh --ui=false` passes
+- [ ] Changes committed and pushed
 
 ## IP Verification Checklist
 

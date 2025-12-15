@@ -28,9 +28,9 @@ export type {
 
 /**
  * Numeric priority for log levels (higher = more severe).
- * Used internally for level filtering.
+ * Exported for consumers who need level comparison logic.
  */
-const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
+export const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
   debug: 0,
   info: 1,
   warn: 2,

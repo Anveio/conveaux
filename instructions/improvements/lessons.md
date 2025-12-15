@@ -16,6 +16,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 | core-abstractions | 2 | 2024-12-15 |
 | documentation | 1 | 2024-12-15 |
 | type-safety | 3 | 2024-12-15 |
+| meta-improvement | 1 | 2024-12-15 |
 
 ---
 
@@ -158,6 +159,18 @@ const clock: Clock = {
 **Lesson**: Tool inputs from LLMs are typed `unknown` at runtime regardless of TypeScript declarations. Create helper functions like `getStringProperty(record, key)` that safely extract and validate expected types rather than using `as string` assertions that can fail silently.
 **Evidence**: 9 instances in `tools.ts` used `input.property as string` without validation. If the LLM returned malformed input, these would fail at runtime.
 **Instruction Impact**: Formalized in IP-003; type-guards.ts provides safe extraction utilities
+
+---
+
+### Meta-Improvement
+
+#### L-010: Instruction Leverage Over Code
+
+**Date**: 2024-12-15
+**Context**: RSID loop iteration 2
+**Lesson**: When instructions have friction, fixing them once benefits all future sessions. Occasionally invert the ratio: 70% instruction work, 30% code work. Each loop should have less friction than the last.
+**Evidence**: Session 1 had friction around contract vs port decisions, IP timing, and skill discovery. Fixing these reduces future cognitive load.
+**Instruction Impact**: Added decision tree to contract-port.md, clarified IP timing, enhanced session prompt with skill links
 
 #### L-009: Distinguish Expected vs Unexpected Errors
 
