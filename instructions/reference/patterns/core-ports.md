@@ -14,7 +14,8 @@
 | Contract Package | Replaces | Interface |
 |-----------------|----------|-----------|
 | `@conveaux/contract-logger` | `console.*` | `Logger` |
-| `@conveaux/contract-high-resolution-clock` | `Date`, `Date.now()`, `performance.now()` | `HighResolutionClock` |
+| `@conveaux/contract-wall-clock` | `Date.now()` | `WallClock` |
+| `@conveaux/contract-nanosecond-timestamp` | `performance.now()`, `process.hrtime` | `NanosecondTimestamp` |
 | `@conveaux/contract-outchannel` | `process.stdout`, `process.stderr` | `OutChannel` |
 
 ## Available Port Packages
@@ -22,7 +23,7 @@
 | Port Package | Implements | Factory Function |
 |-------------|------------|------------------|
 | `@conveaux/port-logger` | `Logger` | `createLogger(deps)` |
-| `@conveaux/port-high-resolution-clock` | `HighResolutionClock` | `createHighResolutionClock(options?)` |
+| `@conveaux/port-wall-clock` | `WallClock` | `createWallClock(options?)` |
 | `@conveaux/port-outchannel` | `OutChannel` | `createStderrChannel(options?)`, `createStdoutChannel(options?)` |
 
 For full guidance, invoke: `Skill(coding-patterns)`

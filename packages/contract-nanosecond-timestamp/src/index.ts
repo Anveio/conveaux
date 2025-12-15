@@ -1,24 +1,24 @@
 /**
- * @conveaux/contract-timestamper
+ * @conveaux/contract-nanosecond-timestamp
  *
- * Platform-agnostic high-resolution timestamper contract.
+ * Platform-agnostic high-resolution timestamp contract.
  * Implementations provide nanosecond timestamps from platform-specific sources.
  */
 
 /**
- * A high-resolution timestamper that provides nanosecond timestamps.
+ * A high-resolution timestamp source that provides nanosecond precision.
  *
  * This abstraction enables:
- * - Platform-agnostic clock implementations
+ * - Platform-agnostic duration measurement
  * - Deterministic testing with injectable time sources
- * - Clean separation between time source and clock logic
+ * - High-precision benchmarking
  *
  * Implementations:
  * - Node.js: process.hrtime.bigint()
  * - Browser: performance.now() converted to nanoseconds
  * - Fallback: Date.now() converted to nanoseconds
  */
-export interface Timestamper {
+export interface NanosecondTimestamp {
   /**
    * Returns the current high-resolution time in nanoseconds.
    *
@@ -28,7 +28,7 @@ export interface Timestamper {
    * - Date.now() uses Unix epoch
    *
    * Callers should only rely on monotonicity and precision,
-   * not the absolute value.
+   * not the absolute value. Use for duration measurement, not timestamps.
    *
    * @returns Current time in nanoseconds as bigint
    */

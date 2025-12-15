@@ -1,7 +1,7 @@
 {
-  "name": "@conveaux/contract-high-resolution-clock",
+  "name": "@conveaux/port-wall-clock",
   "version": "0.1.0",
-  "description": "High-resolution clock contract - interface for monotonic time operations",
+  "description": "Wall clock port - injectable Date.now() for timestamps",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,10 +15,17 @@
   },
   "scripts": {
     "build": "tsc",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "files": ["dist", "src"],
+  "dependencies": {
+    "@conveaux/contract-wall-clock": "*"
+  },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "@vitest/coverage-v8": "^2.1.8",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   }
 }

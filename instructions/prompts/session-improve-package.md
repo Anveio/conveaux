@@ -89,10 +89,11 @@ git checkout main && git pull && ./verify.sh --ui=false
 
 | Package | Type | Description |
 |---------|------|-------------|
-| `contract-high-resolution-clock` | Contract | High-resolution time operations interface |
+| `contract-wall-clock` | Contract | Wall-clock time interface |
+| `contract-nanosecond-timestamp` | Contract | High-resolution nanosecond timestamp interface |
 | `contract-logger` | Contract | Structured logging interface |
 | `contract-outchannel` | Contract | Output channel interface |
-| `port-high-resolution-clock` | Port | Monotonic time implementation |
+| `port-wall-clock` | Port | Wall-clock implementation |
 | `port-logger` | Port | JSON logging implementation |
 | `port-outchannel` | Port | stdout/stderr implementation |
 | `agent-contracts` | Contract | Agent system interfaces |
@@ -112,7 +113,8 @@ git checkout main && git pull && ./verify.sh --ui=false
 ## To Target a Different Package
 
 Replace `port-logger` with any of:
-- `contract-high-resolution-clock`, `port-high-resolution-clock` - Time operations
+- `contract-wall-clock`, `port-wall-clock` - Wall-clock time (timestamps)
+- `contract-nanosecond-timestamp` - High-resolution time (duration measurement)
 - `contract-outchannel`, `port-outchannel` - Output channels
 - `contract-logger` - Logger interface (if extending API)
 - `agent-contracts`, `agent-core`, `agent-orchestrator` - Agent system

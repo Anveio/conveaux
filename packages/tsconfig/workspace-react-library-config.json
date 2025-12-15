@@ -1,0 +1,6 @@
+{
+  "extends": "./workspace-package-config.json",
+  "compilerOptions": {
+    "jsx": "react-jsx"
+  }
+}

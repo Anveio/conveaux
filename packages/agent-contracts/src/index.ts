@@ -193,11 +193,11 @@ export interface Logger {
   error(message: string, context?: Record<string, unknown>): void;
 }
 
-// High-resolution clock and timestamper interfaces
-import type { HighResolutionClock } from '@conveaux/contract-high-resolution-clock';
-import type { Timestamper } from '@conveaux/contract-timestamper';
-export type { HighResolutionClock };
-export type { Timestamper };
+import type { NanosecondTimestamp } from '@conveaux/contract-nanosecond-timestamp';
+// Wall clock and nanosecond timestamp interfaces
+import type { WallClock } from '@conveaux/contract-wall-clock';
+export type { WallClock };
+export type { NanosecondTimestamp };
 
 /**
  * Random port - replaces direct Math.random() and crypto usage.
@@ -230,7 +230,7 @@ export interface Environment {
  */
 export interface Ports {
   logger: Logger;
-  clock: HighResolutionClock;
+  clock: WallClock;
   random: Random;
   env: Environment;
 }
