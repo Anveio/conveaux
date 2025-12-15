@@ -31,6 +31,10 @@ Run this bootstrap checklist:
    - Read MILESTONE.md to understand current goal
    - Read HANDOFF.md if resuming
 
+5. **Check meta-loop state** (recursive self-improvement)
+   - Scan `instructions/improvements/lessons.md` for recent lessons in relevant domains
+   - Check `instructions/improvements/proposals/` for draft IPs needing resolution
+
 ## The Loop
 
 ```
@@ -65,6 +69,8 @@ Verbal claims of success do not count. The gate is machine-checkable.
 | `instructions/loop/outer-loop.md` | Understand the full development loop |
 | `instructions/loop/completion-gate.md` | Understand what "done" means |
 | `instructions/loop/session-continuity.md` | Resuming or handing off |
+| `instructions/meta/self-improvement.md` | Improving instructions (meta-loop) |
+| `instructions/improvements/lessons.md` | Accumulated wisdom from past sessions |
 | `instructions/verification/pipeline.md` | Building or fixing verify.sh |
 | `instructions/verification/gates.md` | When to run which checks |
 | `instructions/skills/git.md` | Before committing changes |

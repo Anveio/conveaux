@@ -2,12 +2,27 @@
 
 This document defines the canonical development loop for building software autonomously.
 
+## The Dual Loop System
+
+Two loops operate together:
+
+```
+META-LOOP (Long-timescale):    OBSERVE → PROPOSE → EVALUATE → INTEGRATE
+                                         ↓ Feeds improvements into
+OUTER-LOOP (Per-session):      PLAN → IMPLEMENT → VERIFY → DECIDE
+```
+
+The **outer loop** builds product. The **meta-loop** improves the instructions that guide the outer loop.
+
+See `instructions/meta/self-improvement.md` for the full meta-loop protocol.
+
 ## Terms
 
 - **Target repo**: the repository being changed
 - **Living documents**: files that steer work over time (REQUIREMENTS.md, MILESTONE.md, etc.)
 - **Verification command**: the one command that must pass (`./verify.sh --ui=false`)
 - **Session**: a single Claude Code conversation
+- **Improvement Proposal (IP)**: a structured proposal for instruction changes
 
 ## Required Living Documents
 
@@ -54,7 +69,10 @@ For each step in plan:
   2. Run targeted verification if appropriate
   3. Commit when a logical unit is complete
   4. Update TodoWrite progress
+  5. OBSERVE: Note any instruction gaps or friction (meta-loop)
 ```
+
+**Meta-loop observation**: While implementing, notice if instructions don't address your situation, feel overly heavy, or conflict. Note observations in PLAN.md "Notes" section.
 
 ### 4. Verify (After Implementation)
 
@@ -95,7 +113,15 @@ If context running low OR blocked:
 If milestone complete:
   1. Final commit with summary
   2. Report completion to human
+
+Meta-loop steps (always):
+  3. PROPOSE: Create IPs for accumulated observations (if any generalize)
+  4. EVALUATE: Self-review IPs against verification checklist
+  5. INTEGRATE: Implement accepted IPs, update CHANGELOG
+  6. Record lessons in instructions/improvements/lessons.md
 ```
+
+See `instructions/meta/self-improvement.md` for IP creation and evaluation criteria.
 
 ## State Transitions
 
