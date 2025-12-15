@@ -2,7 +2,7 @@
  * Tests for port-logger.
  */
 
-import type { Clock } from '@conveaux/contract-clock';
+import type { HighResolutionClock } from '@conveaux/contract-high-resolution-clock';
 import type { OutChannel } from '@conveaux/contract-outchannel';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LOG_LEVEL_PRIORITY, createLogger } from './index.js';
@@ -18,8 +18,8 @@ function createMockChannel(): OutChannel & { lines: string[] } {
   };
 }
 
-// Inline mock for Clock with fixed time
-function createMockClock(timestamp: string): Clock {
+// Inline mock for HighResolutionClock with fixed time
+function createMockClock(timestamp: string): HighResolutionClock {
   const date = new Date(timestamp);
   let monotonicMs = 0;
   return {
@@ -31,7 +31,7 @@ function createMockClock(timestamp: string): Clock {
 
 describe('createLogger', () => {
   let mockChannel: ReturnType<typeof createMockChannel>;
-  let mockClock: Clock;
+  let mockClock: HighResolutionClock;
 
   beforeEach(() => {
     mockChannel = createMockChannel();
@@ -155,7 +155,7 @@ describe('createLogger', () => {
 
 describe('minLevel filtering', () => {
   let mockChannel: ReturnType<typeof createMockChannel>;
-  let mockClock: Clock;
+  let mockClock: HighResolutionClock;
 
   beforeEach(() => {
     mockChannel = createMockChannel();
@@ -255,7 +255,7 @@ describe('minLevel filtering', () => {
 
 describe('error serialization', () => {
   let mockChannel: ReturnType<typeof createMockChannel>;
-  let mockClock: Clock;
+  let mockClock: HighResolutionClock;
 
   beforeEach(() => {
     mockChannel = createMockChannel();
@@ -358,7 +358,7 @@ describe('error serialization', () => {
 
 describe('edge cases', () => {
   let mockChannel: ReturnType<typeof createMockChannel>;
-  let mockClock: Clock;
+  let mockClock: HighResolutionClock;
 
   beforeEach(() => {
     mockChannel = createMockChannel();
@@ -438,7 +438,7 @@ describe('edge cases', () => {
 });
 
 describe('channel error handling', () => {
-  let mockClock: Clock;
+  let mockClock: HighResolutionClock;
 
   beforeEach(() => {
     mockClock = createMockClock('2024-12-15T10:30:00.000Z');

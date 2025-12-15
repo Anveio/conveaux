@@ -22,7 +22,7 @@
   "dependencies": {
     "@conveaux/contract-logger": "*",
     "@conveaux/contract-outchannel": "*",
-    "@conveaux/contract-clock": "*"
+    "@conveaux/contract-high-resolution-clock": "*"
   },
   "devDependencies": {
     "typescript": "^5.7.2",

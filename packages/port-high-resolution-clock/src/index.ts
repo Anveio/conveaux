@@ -1,14 +1,14 @@
 /**
- * @conveaux/port-clock
+ * @conveaux/port-high-resolution-clock
  *
  * High-resolution monotonic clock implementation.
  * Follows the firedrill pattern for hermetic primitive ports.
  */
 
-import type { Clock } from '@conveaux/contract-clock';
+import type { HighResolutionClock } from '@conveaux/contract-high-resolution-clock';
 
 // Re-export the contract type for convenience
-export type { Clock } from '@conveaux/contract-clock';
+export type { HighResolutionClock } from '@conveaux/contract-high-resolution-clock';
 
 // =============================================================================
 // Duck-Typed Platform Interfaces
@@ -45,7 +45,7 @@ type ProcessLike = {
 /**
  * Resolved clock environment with concrete values (no undefined).
  */
-type ClockEnvironment = {
+type HighResolutionClockEnvironment = {
   readonly performance: PerformanceLike | null;
   readonly process: ProcessLike | null;
   readonly dateNow: () => number;
@@ -59,7 +59,7 @@ type ClockEnvironment = {
  * - `null`: Explicitly disable this source
  * - `value`: Use this override instead of host
  */
-export type ClockEnvironmentOverrides = {
+export type HighResolutionClockEnvironmentOverrides = {
   readonly performance?: PerformanceLike | null;
   readonly process?: ProcessLike | null;
   readonly dateNow?: () => number;
@@ -69,13 +69,13 @@ export type ClockEnvironmentOverrides = {
 // Options Types
 // =============================================================================
 
-type ClockReadMs = () => number;
-type ClockReadHrtime = () => bigint | undefined;
+type HighResolutionClockReadMs = () => number;
+type HighResolutionClockReadHrtime = () => bigint | undefined;
 
 /**
- * Options for creating a system clock.
+ * Options for creating a high-resolution clock.
  */
-export type ClockOptions = {
+export type HighResolutionClockOptions = {
   /**
    * Seeds the starting point (in milliseconds). Useful for tests
    * where deterministic offsets are needed.
@@ -86,20 +86,20 @@ export type ClockOptions = {
    * Overrides the millisecond reader. Defaults to a high-resolution clock
    * when the host provides `performance.now`, otherwise Date.now.
    */
-  readonly readMs?: ClockReadMs;
+  readonly readMs?: HighResolutionClockReadMs;
 
   /**
    * Optional nanosecond reader. Return `undefined` to signal the absence
    * of a dedicated hrtime source, in which case the clock derives
    * precision from the millisecond reader.
    */
-  readonly readHrtime?: ClockReadHrtime;
+  readonly readHrtime?: HighResolutionClockReadHrtime;
 
   /**
    * Overrides the host environment used to resolve default monotonic sources.
    * Provide `null` to explicitly disable a source.
    */
-  readonly environment?: ClockEnvironmentOverrides;
+  readonly environment?: HighResolutionClockEnvironmentOverrides;
 };
 
 // =============================================================================
@@ -108,16 +108,16 @@ export type ClockOptions = {
 
 const MS_TO_NS = 1_000_000n;
 
-type OverrideKey = keyof ClockEnvironmentOverrides;
+type OverrideKey = keyof HighResolutionClockEnvironmentOverrides;
 
 /**
  * Reads an override value, distinguishing between "not provided" and "provided as undefined/null".
  * Uses Object.hasOwn to detect explicit key presence.
  */
 const readOverride = <Key extends OverrideKey>(
-  overrides: ClockEnvironmentOverrides | undefined,
+  overrides: HighResolutionClockEnvironmentOverrides | undefined,
   key: Key
-): ClockEnvironmentOverrides[Key] | undefined => {
+): HighResolutionClockEnvironmentOverrides[Key] | undefined => {
   if (!overrides) {
     return undefined;
   }
@@ -128,7 +128,9 @@ const readOverride = <Key extends OverrideKey>(
  * Resolves the clock environment by merging overrides with host globals.
  * Precedence: override → globalThis → null (disabled)
  */
-const resolveEnvironment = (overrides?: ClockEnvironmentOverrides): ClockEnvironment => {
+const resolveEnvironment = (
+  overrides?: HighResolutionClockEnvironmentOverrides
+): HighResolutionClockEnvironment => {
   const globals = globalThis as {
     performance?: PerformanceLike;
     process?: ProcessLike;
@@ -159,7 +161,7 @@ const resolveEnvironment = (overrides?: ClockEnvironmentOverrides): ClockEnviron
  * Reads high-resolution milliseconds from the best available source.
  * Prefers performance.now (microsecond precision) over Date.now (millisecond precision).
  */
-const readHighResMs = (environment: ClockEnvironment): number => {
+const readHighResMs = (environment: HighResolutionClockEnvironment): number => {
   const now = environment.performance?.now;
   if (typeof now === 'function') {
     return now.call(environment.performance);
@@ -171,7 +173,9 @@ const readHighResMs = (environment: ClockEnvironment): number => {
  * Detects and returns the best available hrtime source.
  * Returns undefined-returning function when no hrtime is available.
  */
-const detectHrtimeSource = (environment: ClockEnvironment): ClockReadHrtime => {
+const detectHrtimeSource = (
+  environment: HighResolutionClockEnvironment
+): HighResolutionClockReadHrtime => {
   const hrtimeBigint = environment.process?.hrtime?.bigint;
   if (typeof hrtimeBigint === 'function') {
     return () => hrtimeBigint();
@@ -198,30 +202,32 @@ const msToNs = (value: number): bigint => {
  * Creates a high-resolution monotonic clock.
  *
  * @param options - Optional configuration for clock behavior
- * @returns A Clock instance
+ * @returns A HighResolutionClock instance
  *
  * @example
  * ```typescript
  * // Default usage - uses host performance.now and process.hrtime
- * const clock = createSystemClock();
+ * const clock = createHighResolutionClock();
  * console.log(clock.now()); // monotonic ms since creation
  * console.log(clock.hrtime()); // nanoseconds
  * console.log(clock.wallClockMs()); // epoch ms for timestamps
  *
  * // Test usage - inject mock time source
  * let time = 0;
- * const mockClock = createSystemClock({
+ * const mockClock = createHighResolutionClock({
  *   readMs: () => time++,
  *   readHrtime: () => BigInt(time) * 1_000_000n,
  * });
  *
  * // Disable performance.now, force Date.now fallback
- * const simpleClock = createSystemClock({
+ * const simpleClock = createHighResolutionClock({
  *   environment: { performance: null },
  * });
  * ```
  */
-export function createSystemClock(options: ClockOptions = {}): Clock {
+export function createHighResolutionClock(
+  options: HighResolutionClockOptions = {}
+): HighResolutionClock {
   const environment = resolveEnvironment(options.environment);
 
   const readMs = options.readMs ?? (() => readHighResMs(environment));

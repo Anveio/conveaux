@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { createSystemClock } from './index.js';
+import { createHighResolutionClock } from './index.js';
 
-describe('createSystemClock', () => {
+describe('createHighResolutionClock', () => {
   describe('now()', () => {
     it('returns 0 on first call with default origin', () => {
       const time = 1000;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => time,
       });
 
@@ -15,7 +15,7 @@ describe('createSystemClock', () => {
 
     it('returns elapsed time from origin', () => {
       let time = 1000;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => time,
       });
 
@@ -32,7 +32,7 @@ describe('createSystemClock', () => {
 
     it('uses custom originMs when provided', () => {
       const time = 1000;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => time,
         originMs: 500, // Custom origin
       });
@@ -43,7 +43,7 @@ describe('createSystemClock', () => {
 
     it('guarantees monotonic non-decreasing time', () => {
       let time = 100;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => time,
       });
 
@@ -60,7 +60,7 @@ describe('createSystemClock', () => {
 
     it('handles multiple regressions', () => {
       let time = 100;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => time,
       });
 
@@ -89,7 +89,7 @@ describe('createSystemClock', () => {
         bigint: () => 123456789n,
       });
 
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         environment: {
           process: { hrtime: mockHrtime },
         },
@@ -100,7 +100,7 @@ describe('createSystemClock', () => {
 
     it('falls back to derived nanoseconds when no hrtime', () => {
       let time = 1000;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => time,
         environment: {
           process: null, // Disable process.hrtime
@@ -116,7 +116,7 @@ describe('createSystemClock', () => {
     });
 
     it('uses custom readHrtime when provided', () => {
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readHrtime: () => 999_999_999n,
       });
 
@@ -125,7 +125,7 @@ describe('createSystemClock', () => {
 
     it('falls back when custom readHrtime returns undefined', () => {
       let time = 1000;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => time,
         readHrtime: () => undefined,
         environment: { process: null },
@@ -139,7 +139,7 @@ describe('createSystemClock', () => {
   describe('wallClockMs()', () => {
     it('returns current wall-clock time', () => {
       let wallTime = 1702648800000; // Some epoch time
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         environment: {
           dateNow: () => wallTime,
         },
@@ -155,7 +155,7 @@ describe('createSystemClock', () => {
       let monotonicTime = 1000;
       let wallTime = 1702648800000;
 
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => monotonicTime,
         environment: {
           dateNow: () => wallTime,
@@ -179,7 +179,7 @@ describe('createSystemClock', () => {
         now: () => perfTime,
       };
 
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         environment: {
           performance: mockPerformance,
           process: null,
@@ -194,7 +194,7 @@ describe('createSystemClock', () => {
 
     it('falls back to dateNow when performance is null', () => {
       let dateTime = 1000;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         environment: {
           performance: null,
           dateNow: () => dateTime,
@@ -209,7 +209,7 @@ describe('createSystemClock', () => {
 
     it('uses default Date.now when no dateNow override', () => {
       // This test verifies the default behavior works
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         environment: {
           performance: null,
           process: null,
@@ -227,7 +227,7 @@ describe('createSystemClock', () => {
       // When performance is null, explicitly disable it
 
       let dateTime = 5000;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         environment: {
           performance: null, // Explicitly disable
           dateNow: () => dateTime,
@@ -239,12 +239,41 @@ describe('createSystemClock', () => {
       dateTime = 5100;
       expect(clock.now()).toBe(100);
     });
+
+    it('uses globalThis defaults when no environment override provided', () => {
+      // When no environment object is passed at all, should use globalThis defaults
+      // This exercises the fallback path in resolveEnvironment
+      const clock = createHighResolutionClock();
+
+      // Should be able to read time (using whatever globalThis provides)
+      const t1 = clock.now();
+      expect(typeof t1).toBe('number');
+
+      // wallClockMs should return current time
+      const wall = clock.wallClockMs();
+      expect(typeof wall).toBe('number');
+      expect(wall).toBeGreaterThan(0);
+    });
+
+    it('uses globalThis.performance when environment key not present', () => {
+      // Environment object exists but doesn't have performance key
+      // Should fall back to globalThis.performance
+      const clock = createHighResolutionClock({
+        environment: {
+          // performance not specified - should use globalThis.performance
+          // process not specified - should use globalThis.process
+        },
+      });
+
+      const t1 = clock.now();
+      expect(typeof t1).toBe('number');
+    });
   });
 
   describe('edge cases', () => {
     it('handles very large time values', () => {
       const largeTime = Number.MAX_SAFE_INTEGER - 1000;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => largeTime,
       });
 
@@ -252,7 +281,7 @@ describe('createSystemClock', () => {
     });
 
     it('throws on non-finite values in msToNs conversion', () => {
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => Number.POSITIVE_INFINITY,
         environment: { process: null },
       });
@@ -265,7 +294,7 @@ describe('createSystemClock', () => {
 
     it('works with zero origin', () => {
       const time = 100;
-      const clock = createSystemClock({
+      const clock = createHighResolutionClock({
         readMs: () => time,
         originMs: 0,
       });
@@ -277,9 +306,9 @@ describe('createSystemClock', () => {
       let time = 1000;
       const readMs = () => time;
 
-      const clock1 = createSystemClock({ readMs });
+      const clock1 = createHighResolutionClock({ readMs });
       time = 1100;
-      const clock2 = createSystemClock({ readMs });
+      const clock2 = createHighResolutionClock({ readMs });
 
       // clock1 origin = 1000, clock2 origin = 1100
       time = 1200;

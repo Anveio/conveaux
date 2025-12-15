@@ -193,10 +193,10 @@ export interface Logger {
   error(message: string, context?: Record<string, unknown>): void;
 }
 
-// Clock interface imported from @conveaux/contract-clock
+// High-resolution clock interface imported from @conveaux/contract-high-resolution-clock
 // See that package for the high-resolution monotonic clock interface
-import type { Clock } from '@conveaux/contract-clock';
-export type { Clock };
+import type { HighResolutionClock } from '@conveaux/contract-high-resolution-clock';
+export type { HighResolutionClock };
 
 /**
  * Random port - replaces direct Math.random() and crypto usage.
@@ -229,7 +229,7 @@ export interface Environment {
  */
 export interface Ports {
   logger: Logger;
-  clock: Clock;
+  clock: HighResolutionClock;
   random: Random;
   env: Environment;
 }

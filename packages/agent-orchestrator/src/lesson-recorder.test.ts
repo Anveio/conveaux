@@ -2,7 +2,7 @@
  * Tests for the lesson recorder.
  */
 
-import type { Clock, Environment, Logger, Random } from '@conveaux/agent-contracts';
+import type { Environment, HighResolutionClock, Logger, Random } from '@conveaux/agent-contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { recordLesson } from './lesson-recorder.js';
 
@@ -18,7 +18,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 function createMockPorts() {
   const logs: Array<{ level: string; message: string }> = [];
 
-  const mockClock: Clock = {
+  const mockClock: HighResolutionClock = {
     now: () => 0, // monotonic ms since origin
     hrtime: () => 0n, // nanoseconds
     wallClockMs: () => 1734173400000, // 2024-12-14T10:30:00.000Z

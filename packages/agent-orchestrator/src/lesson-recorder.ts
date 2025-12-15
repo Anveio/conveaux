@@ -4,7 +4,13 @@
 
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { Clock, Environment, LessonLearned, Logger, Random } from '@conveaux/agent-contracts';
+import type {
+  Environment,
+  HighResolutionClock,
+  LessonLearned,
+  Logger,
+  Random,
+} from '@conveaux/agent-contracts';
 
 /**
  * Path to the lessons file relative to project root.
@@ -15,7 +21,7 @@ const LESSONS_PATH = 'instructions/improvements/lessons.md';
  * Ports needed for lesson recording.
  */
 interface LessonRecorderPorts {
-  clock: Clock;
+  clock: HighResolutionClock;
   random: Random;
   env: Environment;
   logger: Logger;
@@ -24,7 +30,7 @@ interface LessonRecorderPorts {
 /**
  * Generate a unique lesson ID using injected ports.
  */
-function generateLessonId(clock: Clock, random: Random): string {
+function generateLessonId(clock: HighResolutionClock, random: Random): string {
   const date = new Date(clock.wallClockMs()).toISOString().slice(0, 10).replace(/-/g, '');
   const randomPart = random.number().toString(36).slice(2, 6);
   return `L-${date}-${randomPart}`;
