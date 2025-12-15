@@ -19,24 +19,44 @@ See `instructions/meta/self-improvement.md` for the full meta-loop protocol.
 ## Terms
 
 - **Target repo**: the repository being changed
-- **Living documents**: files that steer work over time (REQUIREMENTS.md, MILESTONE.md, etc.)
+- **Technical Steering Committee (TSC)**: human oversight that provides goals, requirements, and evaluates outcomes
 - **Verification command**: the one command that must pass (`./verify.sh --ui=false`)
 - **Session**: a single Claude Code conversation
 - **Improvement Proposal (IP)**: a structured proposal for instruction changes
 
-## Required Living Documents
+## Coordination Model
 
-These must exist in the target repo (create minimal versions if missing):
+Requirements and goals flow from the Technical Steering Committee:
 
-| Document | Purpose | Required |
-|----------|---------|----------|
-| `REQUIREMENTS.md` | What to build (source of truth) | Yes |
-| `MILESTONE.md` | What "done" means now | Yes |
-| `PLAN.md` | Current session's implementation plan | Per-session |
-| `HANDOFF.md` | Context transfer when stopping | On exit |
-| `ARCHITECTURE.md` | System structure and contracts | Recommended |
+```
+┌─────────────────────────────────────────────────────────────┐
+│              TECHNICAL STEERING COMMITTEE                   │
+│     (Provides goals, evaluates outcomes, guides direction)  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼ Requirements & Goals
+┌─────────────────────────────────────────────────────────────┐
+│                      CODING AGENT                           │
+│        (Executes via PLAN → IMPLEMENT → VERIFY → DECIDE)    │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼ Results & Lessons
+┌─────────────────────────────────────────────────────────────┐
+│                   INSTRUCTION SYSTEM                        │
+│     (lessons.md, patterns, IPs - evolves over time)         │
+└─────────────────────────────────────────────────────────────┘
+```
 
-Templates: `instructions/living-docs/templates/`
+The TSC provides:
+- **Goals**: What to achieve in the current session
+- **Constraints**: Boundaries and non-goals
+- **Evaluation**: Whether outcomes meet the bar
+
+The agent:
+- **Plans**: Breaks down goals into implementation steps
+- **Implements**: Writes code, tests, documentation
+- **Verifies**: Runs the verification pipeline
+- **Reports**: Communicates results back to TSC
 
 ## Session Flow
 
@@ -44,24 +64,20 @@ Templates: `instructions/living-docs/templates/`
 
 ```
 1. Locate repo root (package.json, turbo.json, verify.sh)
-2. Read REQUIREMENTS.md (understand the product)
-3. Read MILESTONE.md (understand current goal)
-4. Read HANDOFF.md if exists (resume context)
-5. Run ./verify.sh --ui=false (establish baseline)
+2. Receive goals from the Technical Steering Committee
+3. Run ./verify.sh --ui=false (establish baseline)
+4. Check lessons.md for relevant accumulated wisdom
 ```
 
 ### 2. Plan (Before Any Code Changes)
 
 ```
-1. Write/update PLAN.md with:
-   - Approach and constraints
-   - Numbered steps with verification checkpoints
-   - Rollback strategy
+1. Break down TSC goals into implementation steps
 2. Consult patterns (if architectural decisions involved):
    - Creating a package? → Read instructions/reference/patterns/package-setup.md
    - Using time/logging/random/env? → Read instructions/reference/patterns/core-ports.md
-3. Break down tasks in PLAN.md
-4. Identify when to run verification
+3. Identify verification checkpoints
+4. Use TodoWrite to track progress
 ```
 
 **Pattern Consultation**: Before making architectural decisions, check `instructions/reference/architecture.md` for required reading. This ensures institutional knowledge is applied.
@@ -73,11 +89,11 @@ For each step in plan:
   1. Make changes (code, tests, docs)
   2. Run targeted verification if appropriate
   3. Commit when a logical unit is complete
-  4. Update PLAN.md progress notes
+  4. Update todo list progress
   5. OBSERVE: Note any instruction gaps or friction (meta-loop)
 ```
 
-**Meta-loop observation**: While implementing, notice if instructions don't address your situation, feel overly heavy, or conflict. Note observations in PLAN.md "Notes" section.
+**Meta-loop observation**: While implementing, notice if instructions don't address your situation, feel overly heavy, or conflict. Note observations for later IP creation.
 
 ### 4. Verify (After Implementation)
 
@@ -88,19 +104,17 @@ For each step in plan:
    - Fix the issue
    - Retry (max 3 times)
 3. If still fails after 3 retries:
-   - Escalate to human OR
-   - Write HANDOFF.md with failure details
+   - Escalate to TSC for guidance
 ```
 
 ### 5. Decide (After Verify Green)
 
 ```
-Is milestone complete? Check against Definition of Done in MILESTONE.md
+Are the TSC goals complete? Check against the stated objectives.
 
 If YES:
-  1. Set Status: done in MILESTONE.md
-  2. Commit with milestone completion message
-  3. Report success to human
+  1. Report success to TSC
+  2. Commit with completion message
 
 If NO:
   1. Continue to next increment
@@ -111,13 +125,12 @@ If NO:
 
 ```
 If context running low OR blocked:
-  1. Write HANDOFF.md
-  2. Commit all changes
-  3. Report status to human
+  1. Commit all changes
+  2. Report status to TSC
 
-If milestone complete:
+If goals complete:
   1. Final commit with summary
-  2. Report completion to human
+  2. Report completion to TSC
 
 Meta-loop steps (always):
   3. PROPOSE: Create IPs for accumulated observations (if any generalize)
@@ -150,25 +163,25 @@ IMPLEMENT
     v
   DECIDE
     |
-    +---> PLAN (milestone not complete)
+    +---> PLAN (goals not complete)
     |
     v
-  EXIT (milestone complete)
+  EXIT (goals complete)
 ```
 
 ## What Claude Code Provides Natively
 
 - **Session persistence**: Conversation history (within context window)
-- **Planning**: Document-driven via PLAN.md
-- **Progress tracking**: PLAN.md checkboxes and notes
+- **Planning**: TodoWrite tool for structured task tracking
+- **Progress tracking**: Todo list with status updates
 - **Artifact persistence**: Git commits
 - **Recovery**: Can analyze errors and retry
 
 ## What These Instructions Add
 
 1. **Explicit checkpoints**: When to verify, when to commit
-2. **Completion contract**: Machine-checkable "done" condition
-3. **Handoff protocol**: What to write when context runs out
+2. **Completion contract**: Machine-checkable "done" condition (verify green)
+3. **TSC coordination**: Clear authority and communication model
 4. **Discipline**: Following the loop even when it feels unnecessary
 
 ## Recovery Flow
@@ -179,20 +192,10 @@ When verification fails:
 Attempt 1: Fix and retry
 Attempt 2: Fix and retry
 Attempt 3: Fix and retry
-Attempt 4+: STOP. Either:
-  - Escalate to human for guidance
-  - Write HANDOFF.md and exit
+Attempt 4+: STOP. Escalate to TSC for guidance
 ```
 
 Do NOT loop indefinitely. Three retries is the maximum before escalation.
-
-## Deviations
-
-If you deviate from the plan:
-
-1. Update PLAN.md with the new approach
-2. Record the reason and any risks
-3. Continue with the updated plan
 
 ## Invariants
 
@@ -200,5 +203,5 @@ These must always hold:
 
 - **Determinism**: Bounded retries, explicit timeouts
 - **Auditability**: Git history shows what happened
-- **No silent success**: Exit only when milestone done AND verify green
+- **No silent success**: Exit only when goals complete AND verify green
 - **Persistence**: Git commits are the real persistence layer

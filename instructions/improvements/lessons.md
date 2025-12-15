@@ -16,7 +16,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 | core-abstractions | 2 | 2024-12-15 |
 | documentation | 1 | 2024-12-15 |
 | type-safety | 3 | 2024-12-15 |
-| meta-improvement | 1 | 2024-12-15 |
+| meta-improvement | 2 | 2024-12-15 |
 
 ---
 
@@ -171,6 +171,14 @@ const clock: Clock = {
 **Lesson**: When instructions have friction, fixing them once benefits all future sessions. Occasionally invert the ratio: 70% instruction work, 30% code work. Each loop should have less friction than the last.
 **Evidence**: Session 1 had friction around contract vs port decisions, IP timing, and skill discovery. Fixing these reduces future cognitive load.
 **Instruction Impact**: Added decision tree to contract-port.md, clarified IP timing, enhanced session prompt with skill links
+
+#### L-011: PR Creation Is Not Task Completion
+
+**Date**: 2024-12-15
+**Context**: RSID loop iteration 2 - task declared "complete" with unmerged PR
+**Lesson**: Creating a PR is an intermediate step, not completion. A task is only complete when the PR is merged to main and main is verified healthy. Never mark todos as complete after PR creation - the merge is the finish line.
+**Evidence**: PR #10 was created and task marked complete, but PR remained unmerged. User had to intervene to enforce completion.
+**Instruction Impact**: Added CRITICAL warnings to session-improve-package.md and self-improvement.md Session Close Checklist emphasizing PR merge requirement
 
 #### L-009: Distinguish Expected vs Unexpected Errors
 

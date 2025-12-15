@@ -97,10 +97,12 @@ git checkout main && git pull && ./verify.sh --ui=false
 
 ## Success Criteria
 
+**CRITICAL**: Task is incomplete until PR is merged. Do not mark complete after PR creation.
+
 - [ ] port-logger improved with all tests passing
 - [ ] At least one IP created or lesson recorded in lessons.md
-- [ ] PR merged to main via review loop
-- [ ] Main branch healthy post-merge (build + tests green)
+- [ ] **PR merged to main** (creating PR is NOT completion)
+- [ ] Main branch verified healthy post-merge (`./verify.sh --ui=false`)
 - [ ] Instructions updated if new patterns discovered
 
 ## To Target a Different Package
