@@ -103,9 +103,8 @@ Some ports wrap platform primitives (Date, performance, console, process). Even 
 // WRONG: Direct global usage - untestable with deterministic time
 export function createSystemClock(): Clock {
   return {
-    now(): Date { return new Date(); },
-    timestamp(): string { return new Date().toISOString(); },
-    epochMs(): number { return Date.now(); },
+    now: () => Date.now(),
+    hrtime: () => process.hrtime.bigint(),
   };
 }
 ```
@@ -115,94 +114,204 @@ This looks correct (it implements the Clock contract), but:
 - The port itself cannot be tested deterministically
 - Platform coupling is hidden inside the "platform abstraction"
 
-#### The Solution: Environment Overrides
+#### The Solution: Layered Environment Overrides
+
+Production-quality primitive ports use a layered approach (see `@firedrill/clock` for reference):
+
+**Step 1: Duck-typed platform interfaces**
 
 ```typescript
-// Define what platform primitives this port needs
-export type ClockEnvironment = {
-  readonly dateNow?: () => number;
-  readonly newDate?: () => Date;
-  readonly performance?: { now(): number } | null;
-};
+// Don't depend on the actual Platform types - use duck typing
+type PerformanceLike = {
+  readonly now?: () => number
+}
 
-export type ClockOptions = {
-  readonly environment?: ClockEnvironment;
-};
+type HrtimeFn = (() => [number, number]) & {
+  readonly bigint?: () => bigint
+}
 
-// CORRECT: Accept optional overrides, default to real globals
-export function createSystemClock(options: ClockOptions = {}): Clock {
-  const env = options.environment ?? {};
-  const dateNow = env.dateNow ?? (() => Date.now());
-  const newDate = env.newDate ?? (() => new Date());
+type ProcessLike = {
+  readonly hrtime?: HrtimeFn
+}
+```
+
+**Step 2: Separate resolved environment from user overrides**
+
+```typescript
+// Internal: Fully resolved environment (no optionals)
+type ClockEnvironment = {
+  readonly performance: PerformanceLike | null
+  readonly process: ProcessLike | null
+  readonly dateNow: () => number
+}
+
+// Public: User-provided overrides
+// - undefined = use host default
+// - null = explicitly disable this source
+// - value = use this override
+export type ClockEnvironmentOverrides = {
+  readonly performance?: PerformanceLike | null
+  readonly process?: ProcessLike | null
+  readonly dateNow?: () => number
+}
+```
+
+**Step 3: Resolution helper with proper null/undefined semantics**
+
+```typescript
+const readOverride = <Key extends keyof ClockEnvironmentOverrides>(
+  overrides: ClockEnvironmentOverrides | undefined,
+  key: Key,
+): ClockEnvironmentOverrides[Key] | undefined => {
+  if (!overrides) return undefined
+  // Use hasOwn to distinguish "key is undefined" from "key is missing"
+  return Object.hasOwn(overrides, key) ? overrides[key] : undefined
+}
+
+const resolveEnvironment = (
+  overrides?: ClockEnvironmentOverrides,
+): ClockEnvironment => {
+  const globals = globalThis as {
+    performance?: PerformanceLike
+    process?: ProcessLike
+  }
+
+  const overridePerformance = readOverride(overrides, 'performance')
+  const overrideProcess = readOverride(overrides, 'process')
+  const overrideDateNow = readOverride(overrides, 'dateNow')
 
   return {
-    now(): Date { return newDate(); },
-    timestamp(): string { return newDate().toISOString(); },
-    epochMs(): number { return dateNow(); },
-  };
+    performance:
+      overridePerformance !== undefined
+        ? (overridePerformance ?? null)
+        : (globals.performance ?? null),
+    process:
+      overrideProcess !== undefined
+        ? (overrideProcess ?? null)
+        : (globals.process ?? null),
+    dateNow:
+      typeof overrideDateNow === 'function' ? overrideDateNow : Date.now,
+  }
+}
+```
+
+**Step 4: Factory with multiple option layers**
+
+```typescript
+export type ClockOptions = {
+  /** Seed starting point (ms) for deterministic offsets */
+  readonly originMs?: number
+  /** Direct override of millisecond reader */
+  readonly readMs?: () => number
+  /** Direct override of hrtime reader */
+  readonly readHrtime?: () => bigint | undefined
+  /** Platform environment overrides */
+  readonly environment?: ClockEnvironmentOverrides
+}
+
+export const createSystemClock = (options: ClockOptions = {}): Clock => {
+  const environment = resolveEnvironment(options.environment)
+
+  const readHighResMs = (): number => {
+    const now = environment.performance?.now
+    if (typeof now === 'function') {
+      return now.call(environment.performance)
+    }
+    return environment.dateNow()
+  }
+
+  const readMs = options.readMs ?? readHighResMs
+  const originMs = options.originMs ?? readMs()
+
+  return {
+    now: () => readMs() - originMs,
+    hrtime: options.readHrtime ?? (() => environment.process?.hrtime?.bigint?.()),
+  }
 }
 ```
 
 #### Testing Primitive Ports
 
+Tests can inject at multiple levels:
+
 ```typescript
-import { describe, it, expect } from 'vitest';
-import { createSystemClock } from './index';
+import { describe, it, expect, vi } from 'vitest';
 
 describe('createSystemClock', () => {
-  it('uses injected time source for deterministic testing', () => {
-    let fakeTime = 1000;
+  it('prefers direct readMs override for full control', () => {
+    const msTimeline = [50, 52, 55]
+    const clock = createSystemClock({
+      readMs: () => msTimeline.shift() ?? 55,
+      readHrtime: () => 123n,
+    })
+
+    expect(clock.now()).toBe(2)   // 52 - 50
+    expect(clock.now()).toBe(5)   // 55 - 50
+    expect(clock.hrtime()).toBe(123n)
+  })
+
+  it('uses environment.performance when provided', () => {
+    const performanceNow = vi.fn<() => number>()
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(10)
+      .mockReturnValueOnce(12)
+
     const clock = createSystemClock({
       environment: {
-        dateNow: () => fakeTime,
-        newDate: () => new Date(fakeTime),
+        performance: { now: performanceNow },
       },
-    });
+    })
 
-    expect(clock.epochMs()).toBe(1000);
+    expect(clock.now()).toBe(0)   // 10 - 10
+    expect(clock.now()).toBe(2)   // 12 - 10
+    expect(performanceNow).toHaveBeenCalledTimes(3)
+  })
 
-    fakeTime = 2000;
-    expect(clock.epochMs()).toBe(2000);
-  });
+  it('falls back to dateNow when performance is explicitly disabled', () => {
+    const dateSequence = [5_000, 5_003]
+    const dateSpy = vi.fn(() => dateSequence.shift() ?? 5_003)
 
-  it('defaults to real globals when no overrides provided', () => {
-    const clock = createSystemClock();
-    const before = Date.now();
-    const result = clock.epochMs();
-    const after = Date.now();
+    const clock = createSystemClock({
+      originMs: 5_000,
+      environment: {
+        performance: null,  // Explicitly disable
+        dateNow: dateSpy,
+      },
+    })
 
-    expect(result).toBeGreaterThanOrEqual(before);
-    expect(result).toBeLessThanOrEqual(after);
-  });
-});
+    expect(clock.now()).toBe(0)
+    expect(clock.now()).toBe(3)
+    expect(dateSpy).toHaveBeenCalledTimes(2)
+  })
+
+  it('uses host defaults when no overrides provided', () => {
+    // No mocking - uses real globalThis.performance or Date.now
+    const clock = createSystemClock()
+    const t1 = clock.now()
+    const t2 = clock.now()
+    expect(t2).toBeGreaterThanOrEqual(t1)
+  })
+})
 ```
 
-#### Composition Root Wiring
+#### Key Design Principles
 
-At the app entry point, you can either use defaults or explicitly wire globals:
-
-```typescript
-// Option 1: Use defaults (globals are used internally)
-const clock = createSystemClock();
-
-// Option 2: Explicit wiring (makes dependencies visible)
-const clock = createSystemClock({
-  environment: {
-    dateNow: () => Date.now(),
-    newDate: () => new Date(),
-    performance: globalThis.performance,
-  },
-});
-```
+| Principle | Implementation |
+|-----------|----------------|
+| **Null vs undefined** | `undefined` = use host default, `null` = explicitly disable source |
+| **Duck typing** | `PerformanceLike` not `Performance` - works in any JS runtime |
+| **Layered options** | Direct overrides (`readMs`) take precedence over environment |
+| **Resolution helper** | Centralized `resolveEnvironment()` handles override logic |
+| **Fallback chain** | `performance.now()` → `Date.now()` with explicit control |
 
 #### Common Primitive Ports
 
-| Port | Wraps | Environment Type |
-|------|-------|------------------|
-| Clock | Date, Date.now(), performance.now() | `ClockEnvironment` |
-| Random | Math.random(), crypto.getRandomValues() | `RandomEnvironment` |
-| OutChannel | console, process.stdout/stderr | `ChannelEnvironment` |
-| Environment | process.env, process.cwd() | `EnvEnvironment` |
+| Port | Wraps | Key Override Types |
+|------|-------|-------------------|
+| Clock | performance.now, Date.now, process.hrtime | `ClockEnvironmentOverrides` |
+| Random | Math.random, crypto.getRandomValues | `RandomEnvironmentOverrides` |
+| OutChannel | console, process.stdout/stderr | `ChannelEnvironmentOverrides` |
+| Environment | process.env, process.cwd | `EnvEnvironmentOverrides` |
 
 ### Contract Extraction Decision Tree
 
