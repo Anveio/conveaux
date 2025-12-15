@@ -16,8 +16,11 @@
   },
   "files": ["src"],
   "dependencies": {
+    "@conveaux/contract-abort": "*",
+    "@conveaux/contract-date": "*",
     "@conveaux/contract-error": "*",
     "@conveaux/contract-http": "*",
+    "@conveaux/contract-timers": "*",
     "cheerio": "^1.0.0"
   },
   "devDependencies": {

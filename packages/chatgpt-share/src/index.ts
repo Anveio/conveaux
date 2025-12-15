@@ -15,6 +15,10 @@ export type {
   ParsedMessage,
 } from './types.js';
 
+// Re-export dependency types
+export type { FetchShareDependencies } from './fetch.js';
+export type { ParseHTMLDependencies } from './parser.js';
+
 // Re-export functions
 export { extractShareId, fetchSharePage, validateURL } from './fetch.js';
 export { parseHTML } from './parser.js';

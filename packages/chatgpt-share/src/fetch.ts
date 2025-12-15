@@ -2,10 +2,22 @@
  * HTTP fetching for ChatGPT share pages.
  */
 
+import type { AbortControllerConstructor } from '@conveaux/contract-abort';
 import { FetchError, InvalidURLError } from '@conveaux/contract-error';
 import type { HttpFetch } from '@conveaux/contract-http';
+import type { ClearTimeoutFn, SetTimeoutFn, TimerId } from '@conveaux/contract-timers';
 
 import type { FetchShareOptions } from './types.js';
+
+/**
+ * Dependencies required for fetchSharePage.
+ * These must be injected at composition time.
+ */
+export interface FetchShareDependencies {
+  readonly AbortController: AbortControllerConstructor;
+  readonly setTimeout: SetTimeoutFn;
+  readonly clearTimeout: ClearTimeoutFn;
+}
 
 const VALID_URL_PATTERNS = [
   /^https:\/\/chatgpt\.com\/share\/[a-zA-Z0-9-]+$/,
@@ -38,24 +50,33 @@ export function extractShareId(url: string): string {
 /**
  * Fetches the HTML content of a ChatGPT share page.
  *
+ * @param deps - Required dependencies (AbortController, setTimeout, clearTimeout)
  * @param url - The ChatGPT share URL
  * @param httpFetch - The fetch function to use (inject globalThis.fetch)
  * @param options - Fetch options
  * @returns The HTML content of the page
  */
 export async function fetchSharePage(
+  deps: FetchShareDependencies,
   url: string,
   httpFetch: HttpFetch,
   options?: FetchShareOptions
 ): Promise<string> {
+  const {
+    AbortController: AbortControllerCtor,
+    setTimeout: setTimeoutFn,
+    clearTimeout: clearTimeoutFn,
+  } = deps;
+
   if (!validateURL(url)) {
     throw new InvalidURLError(url);
   }
 
   const timeout = options?.timeout ?? DEFAULT_TIMEOUT;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const controller = new AbortControllerCtor();
+  let timeoutId: TimerId;
+  timeoutId = setTimeoutFn(() => controller.abort(), timeout);
 
   try {
     const response = await httpFetch(url, {
@@ -69,7 +90,7 @@ export async function fetchSharePage(
       redirect: 'follow',
     });
 
-    clearTimeout(timeoutId);
+    clearTimeoutFn(timeoutId);
 
     if (response.status === 404) {
       throw new FetchError('Conversation not found (may be private or deleted)', 404);
@@ -81,7 +102,7 @@ export async function fetchSharePage(
 
     return await response.text();
   } catch (error) {
-    clearTimeout(timeoutId);
+    clearTimeoutFn(timeoutId);
 
     if (error instanceof FetchError || error instanceof InvalidURLError) {
       throw error;
