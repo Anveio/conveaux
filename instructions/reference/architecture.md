@@ -10,6 +10,7 @@ This document provides architectural patterns for building maintainable software
 | Using time, logging, or randomness | `patterns/core-ports.md` |
 | Accessing environment variables | `patterns/core-ports.md` |
 | Modifying package.json exports | `patterns/package-setup.md` |
+| Wrapping platform primitives (Date, console, process) | `patterns/contract-port.md` § "Hermetic Primitive Ports" |
 
 **Stop and read the relevant pattern document before proceeding.** These patterns encode institutional knowledge that prevents common mistakes.
 

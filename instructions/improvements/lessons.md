@@ -13,7 +13,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 | Domain | Count | Last Updated |
 |--------|-------|--------------|
 | package-setup | 3 | 2024-12-15 |
-| core-abstractions | 2 | 2024-12-15 |
+| core-abstractions | 3 | 2024-12-15 |
 | documentation | 1 | 2024-12-15 |
 | type-safety | 3 | 2024-12-15 |
 | meta-improvement | 3 | 2024-12-15 |
@@ -139,6 +139,31 @@ const clock: Clock = {
 **Lesson**: Contracts must contain only interfaces and types - never constants, functions, or any runtime values. If it emits JavaScript, it doesn't belong in a contract. Constants like `LOG_LEVEL_PRIORITY` belong in the port implementation, not the contract.
 **Evidence**: Attempted to add `export const LOG_LEVEL_PRIORITY = {...}` to `@conveaux/contract-logger`. This violated the "contracts are pure types" principle since constants emit JavaScript.
 **Instruction Impact**: Updated `instructions/reference/patterns/contract-port.md` to explicitly prohibit constants and add the rule "if it emits JS, it doesn't belong here"
+
+#### L-013: Primitive Ports Must Accept Environment Overrides
+
+**Date**: 2024-12-15
+**Context**: Review of @conveaux/port-clock implementation
+**Lesson**: Even ports that wrap platform primitives (Date, performance, console) must accept optional environment overrides. Direct global usage in primitive ports makes them untestable with deterministic behavior. Factory functions should accept an optional `environment` or `options` parameter that defaults to real globals when not provided.
+**Evidence**: `@conveaux/port-clock/src/index.ts` directly uses `new Date()` and `Date.now()`, making it impossible to test with deterministic time. Contrast with firedrill's `@firedrill/clock` which accepts `SystemClockEnvironmentOverrides` with optional `dateNow`, `performance`, and `process` overrides.
+**Reference Pattern**:
+```typescript
+// WRONG: Direct global usage
+export function createSystemClock(): Clock {
+  return { epochMs: () => Date.now() };  // Untestable
+}
+
+// CORRECT: Accept optional environment overrides
+export type ClockEnvironment = {
+  dateNow?: () => number;
+};
+
+export function createSystemClock(options: { environment?: ClockEnvironment } = {}): Clock {
+  const dateNow = options.environment?.dateNow ?? (() => Date.now());
+  return { epochMs: () => dateNow() };  // Testable with injected time
+}
+```
+**Instruction Impact**: Added "Hermetic Primitive Ports" section to `instructions/reference/patterns/contract-port.md`
 
 ---
 
