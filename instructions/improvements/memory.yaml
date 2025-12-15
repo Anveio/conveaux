@@ -1,0 +1,61 @@
+memories:
+  - task: "vitest-configs-coverage"
+    date: "2025-12-15"
+    context: |
+      Added vitest.config.ts files to 5 port packages that had tests but were
+      missing coverage configuration. This enforces 100% test coverage thresholds
+      across all testable packages.
+    learnings:
+      - type: "pattern"
+        summary: "Port packages with tests need vitest.config.ts with 100% coverage"
+        detail: |
+          Every port package that has tests (*.test.ts files) should have its own
+          vitest.config.ts that enforces 100% coverage thresholds:
+          - lines: 100
+          - functions: 100
+          - branches: 100
+          - statements: 100
+
+          Template:
+          ```typescript
+          import { defineConfig } from 'vitest/config';
+
+          export default defineConfig({
+            test: {
+              coverage: {
+                provider: 'v8',
+                reporter: ['text', 'lcov'],
+                include: ['src/**/*.ts'],
+                exclude: ['src/**/*.test.ts'],
+                thresholds: {
+                  lines: 100,
+                  functions: 100,
+                  branches: 100,
+                  statements: 100,
+                },
+              },
+            },
+          });
+          ```
+
+      - type: "insight"
+        summary: "Find test files first, then check for missing vitest configs"
+        detail: |
+          When auditing test coverage configs:
+          1. Find all test files: `find packages -name "*.test.ts"`
+          2. Find all vitest configs: `packages/*/vitest.config.ts`
+          3. Diff to find packages with tests but no config
+
+          This task found 6 packages with tests but only 1 had a vitest config.
+
+      - type: "command-correction"
+        summary: "git reset --hard origin/main to resolve divergent branches"
+        detail: |
+          When local main diverges from origin/main after a PR merge (because
+          local had unpushed commits that got squashed into the PR), use:
+
+          ```bash
+          git reset --hard origin/main
+          ```
+
+          This discards the local unpushed commits and aligns with the merged state.
