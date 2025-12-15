@@ -15,7 +15,6 @@ export { runPipeline } from './pipeline.js';
 export type { PipelineOptions } from './pipeline.js';
 
 export {
-  buildStage,
   checkStage,
   DEFAULT_STAGE_ORDER,
   getStage,

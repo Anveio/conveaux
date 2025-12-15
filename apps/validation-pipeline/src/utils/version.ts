@@ -23,10 +23,11 @@ export function parseVersion(versionString: string): Version | null {
     return null;
   }
 
+  const [, major, minor, patch] = match;
   return {
-    major: Number.parseInt(match[1], 10),
-    minor: Number.parseInt(match[2], 10),
-    patch: Number.parseInt(match[3], 10),
+    major: Number.parseInt(major!, 10),
+    minor: Number.parseInt(minor!, 10),
+    patch: Number.parseInt(patch!, 10),
   };
 }
 

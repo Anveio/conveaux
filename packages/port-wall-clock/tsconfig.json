@@ -1,7 +1,6 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "@conveaux/tsconfig/workspace-package-config.json",
   "compilerOptions": {
-    "outDir": "dist",
     "rootDir": "src"
   },
   "include": ["src/**/*"]

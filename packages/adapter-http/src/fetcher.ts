@@ -21,7 +21,7 @@ export function validateURL(url: string): boolean {
 
 export function extractShareId(url: string): string {
   const match = url.match(/\/share\/([a-zA-Z0-9-]+)$/);
-  if (!match) {
+  if (!match?.[1]) {
     throw new InvalidURLError(url);
   }
   return match[1];

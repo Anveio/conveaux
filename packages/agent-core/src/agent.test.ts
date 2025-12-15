@@ -99,7 +99,7 @@ describe('Agent', () => {
     expect(result.success).toBe(true);
     expect(result.output).toBe('Done!');
     expect(result.toolCalls).toHaveLength(1);
-    expect(result.toolCalls[0].tool).toBe('echo');
+    expect(result.toolCalls[0]?.tool).toBe('echo');
     expect(result.tokenUsage).toEqual({ input: 40, output: 30 });
     expect(mockTool.execute).toHaveBeenCalledWith({ message: 'test' });
   });
@@ -129,7 +129,7 @@ describe('Agent', () => {
     const result = await agent.run('Try the tool');
 
     expect(result.success).toBe(true);
-    expect(result.toolCalls[0].result).toBe('Error: Tool failed');
+    expect(result.toolCalls[0]?.result).toBe('Error: Tool failed');
   });
 
   it('should stop after max iterations and return failure', async () => {
