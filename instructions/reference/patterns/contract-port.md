@@ -93,6 +93,34 @@ When building a port, if you need to abstract something (time, I/O, randomness),
 
 This naturally grows a library of reusable contracts and ports.
 
+### Contract Extraction Decision Tree
+
+Use this flowchart when deciding what belongs in a contract vs implementation:
+
+1. **Is this a platform capability?** (time, I/O, randomness, environment)
+   - Yes → Likely needs a contract for testability
+   - No → Continue to step 2
+
+2. **Do I need to mock this in tests?**
+   - Yes → Extract to contract interface
+   - No → Keep as implementation detail
+
+3. **Could different implementations exist?** (console vs file, real vs fake)
+   - Yes → Extract to contract
+   - No → Keep as implementation detail
+
+4. **Does it emit JavaScript?** (constants, functions with bodies)
+   - Yes → Belongs in PORT, not contract
+   - No → Can be in contract (types only)
+
+**Examples:**
+| Need | Contract? | Why |
+|------|-----------|-----|
+| Current time | Yes → Clock | Platform capability, needs mocking |
+| JSON.stringify | No | Standard library, no mock needed |
+| Log level priority map | No | Implementation detail, constant emits JS |
+| Output destination | Yes → OutChannel | Different impls (stdout, file, network) |
+
 ## Package Structure
 
 ### Contract Package
