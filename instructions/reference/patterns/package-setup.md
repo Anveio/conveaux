@@ -7,167 +7,113 @@ This document defines the canonical patterns for creating packages in this monor
 - Before creating a new package in `packages/`
 - Before modifying package.json exports of an existing package
 - Before setting up TypeScript configuration for a package
-- When debugging build/import issues
+- When debugging import issues
 
-## Package.json Export Pattern
+## Core Principle: Source-First Development
 
-Use conditional exports with source-first development:
+**We do not compile TypeScript.** All packages export TypeScript source directly:
+
+- `tsc` is used **only for typechecking** (`noEmit: true`)
+- Runtime execution uses `tsx` to run TypeScript directly
+- No `dist/` directories, no build step, no transpilation
+- Faster iteration, simpler debugging, cleaner codebase
+
+## Package.json Pattern
 
 ```json
 {
   "name": "@conveaux/package-name",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "development": "./src/index.ts",
-      "source": "./src/index.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    },
-    "./package.json": "./package.json"
+      "default": "./src/index.ts"
+    }
   },
-  "files": ["dist", "src"],
   "scripts": {
-    "build": "tsup",
     "typecheck": "tsc --noEmit"
+  },
+  "files": ["src"],
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
   }
 }
 ```
 
-### Export Conditions Explained
+### Key Points
 
-| Condition | Purpose | When Used |
-|-----------|---------|-----------|
-| `types` | TypeScript type resolution | IDE, tsc |
-| `development` | Zero-transpilation dev mode | NODE_ENV=development |
-| `source` | Direct source access | Tools that support it |
-| `import` | ESM production builds | Runtime import |
-| `require` | CJS production builds | Runtime require |
+| Field | Value | Rationale |
+|-------|-------|-----------|
+| `main` | `src/index.ts` | Direct source, no compilation |
+| `types` | `src/index.ts` | Same file for types and implementation |
+| `exports.default` | `./src/index.ts` | Single export pointing to source |
+| `files` | `["src"]` | Only ship source, no dist |
+| No `build` script | - | We don't compile |
 
-### Why Source-First?
+## TypeScript Configuration
 
-1. **Zero transpilation during development**: Changes reflect immediately
-2. **Better debugging**: Stack traces point to source, not compiled code
-3. **Faster iteration**: No build step needed for dependent packages
-4. **Production optimization**: Compiled output still used in production
-
-## TypeScript Configuration Pattern
-
-Each package should extend the shared workspace config:
+Each package extends the shared workspace config:
 
 ```json
 {
   "extends": "@conveaux/tsconfig/workspace-package-config.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
-}
-```
-
-### Composite Build Requirements
-
-For proper Turbo caching, the shared config must include:
-
-```json
-{
-  "compilerOptions": {
-    "composite": true,
-    "incremental": true,
-    "declaration": true,
-    "declarationMap": true
-  }
-}
-```
-
-### Turbo Pipeline for TypeScript
-
-In `turbo.json`, include tsbuildinfo in outputs:
-
-```json
-{
-  "tasks": {
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", "*.tsbuildinfo"]
-    },
-    "typecheck": {
-      "dependsOn": ["^build"],
-      "outputs": ["*.tsbuildinfo"]
-    }
-  }
-}
-```
-
-## Build Tool Selection
-
-Choose the appropriate build tool based on package complexity:
-
-| Package Type | Recommended Tool | Rationale |
-|--------------|------------------|-----------|
-| Contract | tsc | No runtime code, declarations only |
-| Simple Port | tsc | Single entry point, no bundling needed |
-| Complex Application | tsup | Multiple entry points, bundling, tree-shaking |
-
-### When to Use tsc
-
-Use plain TypeScript compiler when:
-- Contract packages (interfaces and types only)
-- Simple ports with single entry point
-- Packages with no external dependencies to bundle
-- ESM-only output is sufficient
-
-**tsc package.json:**
-```json
-{
-  "scripts": {
-    "build": "tsc"
-  }
-}
-```
-
-**tsc tsconfig.json:**
-```json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist",
     "rootDir": "src"
   },
   "include": ["src/**/*"]
 }
 ```
 
-### When to Use tsup
+The shared config (`@conveaux/tsconfig/workspace-package-config.json`) includes:
+- `noEmit: true` - typecheck only, no output
+- `composite: true` - for incremental builds
+- `strict: true` - full type safety
+- `noUncheckedIndexedAccess: true` - array access returns `T | undefined`
 
-Use tsup when:
-- Applications with multiple entry points
-- Packages needing both ESM and CJS output
-- Packages requiring tree-shaking or minification
-- Packages with complex dependency handling
+### Apps with CLI Entry Points
 
-## tsup Configuration Pattern
+Apps use `@conveaux/tsconfig/workspace-app-config.json` and run via `tsx`:
 
-Create `tsup.config.ts` in each package:
+```json
+{
+  "name": "@conveaux/my-app",
+  "type": "module",
+  "bin": {
+    "my-app": "./src/cli.ts"
+  },
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
+```
 
-```typescript
-import { defineConfig } from "tsup";
+## Turbo Pipeline
 
-export default defineConfig({
-  entry: ["src/index.ts"],
-  format: ["esm", "cjs"],
-  dts: true,
-  sourcemap: true,
-  clean: true,
-  splitting: false,
-});
+Since we don't build, the pipeline is simpler:
+
+```json
+{
+  "tasks": {
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    }
+  }
+}
 ```
 
 ## Directory Structure
@@ -175,66 +121,83 @@ export default defineConfig({
 ```
 packages/package-name/
 ├── src/
-│   └── index.ts          # Main entry point
+│   ├── index.ts          # Main entry point
+│   └── index.test.ts     # Tests (if applicable)
 ├── package.json
-├── tsconfig.json
-├── tsup.config.ts
-└── README.md             # Package-specific docs
+└── tsconfig.json
 ```
+
+No `dist/`, no `tsup.config.ts`, no build artifacts.
 
 ## Checklist Before Creating a Package
 
 - [ ] Package name follows `@conveaux/` namespace
-- [ ] package.json has all export conditions (types, development, source, import, require)
-- [ ] tsconfig.json extends shared workspace config
-- [ ] Composite builds enabled (composite: true, incremental: true)
-- [ ] tsup.config.ts creates both ESM and CJS outputs
-- [ ] `files` field includes both `dist` and `src`
-- [ ] Package registered in root package.json workspaces
-- [ ] Package added to turbo.json pipeline if needed
+- [ ] `main` and `types` point to `src/index.ts`
+- [ ] `exports` has single `default` pointing to source
+- [ ] tsconfig.json extends `@conveaux/tsconfig/workspace-package-config.json`
+- [ ] `@conveaux/tsconfig` added as devDependency
+- [ ] `files` only includes `src` (no dist)
+- [ ] No `build` script (only `typecheck`)
+
+## Package Types
+
+| Type | Config | Dependencies |
+|------|--------|--------------|
+| Contract | `workspace-package-config.json` | None (pure types) |
+| Port | `workspace-package-config.json` | Contracts + vitest |
+| App | `workspace-app-config.json` | Packages + tsx |
 
 ## Common Mistakes
 
-### Mistake 1: Compiled-Only Exports
+### Mistake 1: Adding a build script
 
 ```json
-// WRONG - requires transpilation even in development
+// WRONG - we don't build
+"scripts": {
+  "build": "tsc"
+}
+```
+
+### Mistake 2: Pointing to dist
+
+```json
+// WRONG - no dist directory exists
+"main": "dist/index.js",
 "exports": {
   ".": "./dist/index.js"
 }
 ```
 
-### Mistake 2: Missing Source Condition
+### Mistake 3: Running node on TypeScript
 
-```json
-// WRONG - no source access for tools
-"exports": {
-  ".": {
-    "import": "./dist/index.mjs",
-    "require": "./dist/index.cjs"
-  }
+```bash
+# WRONG - node can't run .ts files
+node src/cli.ts
+
+# RIGHT - use tsx
+tsx src/cli.ts
+```
+
+### Mistake 4: Forgetting noUncheckedIndexedAccess
+
+The tsconfig has `noUncheckedIndexedAccess: true`, so array access returns `T | undefined`:
+
+```typescript
+// This won't compile:
+const first = items[0]; // Type: T | undefined
+first.method(); // Error: Object is possibly 'undefined'
+
+// Fix with explicit check:
+const first = items[0];
+if (first !== undefined) {
+  first.method(); // OK
 }
+
+// Or with assertion when you know it's safe:
+const first = items[0] as T; // Use sparingly, with comment explaining why
 ```
-
-### Mistake 3: Not Including src in files
-
-```json
-// WRONG - source not published, development condition fails
-"files": ["dist"]
-```
-
-### Mistake 4: Missing tsbuildinfo in Turbo Outputs
-
-```json
-// WRONG - loses incremental build benefits
-"outputs": ["dist/**"]
-```
-
-## Reference Implementation
-
-See the firedrill workspace at `~/Documents/workspaces/firedrill` for a working example of these patterns.
 
 ## Related Lessons
 
-- L-001: Source + Compiled Export Patterns
-- L-002: TypeScript Composite Builds for Turbo Caching
+- L-001: Source + Compiled Export Patterns (now superseded by pure source-first)
+- L-004: Build Tool Selection - tsc vs tsup (now: neither, just typecheck)

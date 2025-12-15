@@ -65,8 +65,9 @@ export const grepExecutor: ToolExecutor = async (input: unknown): Promise<string
       for (let i = 0; i < lines.length; i++) {
         if (results.length >= maxResults) break;
 
-        if (regex.test(lines[i])) {
-          results.push(`${file}:${i + 1}:${lines[i]}`);
+        const line = lines[i];
+        if (line !== undefined && regex.test(line)) {
+          results.push(`${file}:${i + 1}:${line}`);
         }
         // Reset regex lastIndex for global regex
         regex.lastIndex = 0;

@@ -151,8 +151,6 @@ function getStageHint(stage: StageName | undefined): string | null {
       return 'run=npm run lint';
     case 'typecheck':
       return 'run=npm run typecheck';
-    case 'build':
-      return 'run=npm run build';
     case 'test':
       return 'run=npm run test';
     default:

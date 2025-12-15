@@ -65,10 +65,10 @@ describe('parseHTML', () => {
     expect(result.id).toBe('test-123');
     expect(result.title).toBe('Test Conversation');
     expect(result.messages).toHaveLength(2);
-    expect(result.messages[0].role).toBe('user');
-    expect(result.messages[0].content).toBe('Hello!');
-    expect(result.messages[1].role).toBe('assistant');
-    expect(result.messages[1].content).toBe('Hi there!');
+    expect(result.messages[0]?.role).toBe('user');
+    expect(result.messages[0]?.content).toBe('Hello!');
+    expect(result.messages[1]?.role).toBe('assistant');
+    expect(result.messages[1]?.content).toBe('Hi there!');
   });
 
   it('skips system messages', () => {
@@ -109,7 +109,7 @@ describe('parseHTML', () => {
     const result = parseHTML(html);
 
     expect(result.messages).toHaveLength(1);
-    expect(result.messages[0].role).toBe('user');
+    expect(result.messages[0]?.role).toBe('user');
   });
 
   it('throws ParseError when __NEXT_DATA__ is missing', () => {
@@ -156,6 +156,6 @@ describe('parseHTML', () => {
 
     const result = parseHTML(html);
 
-    expect(result.messages[0].content).toBe('Line 1\nLine 2');
+    expect(result.messages[0]?.content).toBe('Line 1\nLine 2');
   });
 });

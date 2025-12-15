@@ -25,7 +25,7 @@ function createMockPorts() {
   const mockRandom: Random = {
     number: vi.fn().mockReturnValue(0.123456789),
     uuid: () => 'mock-uuid-1234',
-    choice: <T>(items: T[]) => items[0],
+    choice: <T>(items: T[]) => items[0] as T,
   };
 
   const mockEnv: Environment = {
@@ -107,7 +107,7 @@ Some existing content
     });
 
     expect(writeFile).toHaveBeenCalledTimes(1);
-    const writtenContent = vi.mocked(writeFile).mock.calls[0][1] as string;
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
 
     // Should contain both the new lesson and old content
     expect(writtenContent).toContain('## Lessons by Domain');
@@ -175,7 +175,7 @@ Without the expected section
       ports,
     });
 
-    const writtenContent = vi.mocked(writeFile).mock.calls[0][1] as string;
+    const writtenContent = vi.mocked(writeFile).mock.calls[0]?.[1] as string;
 
     // Original content should still be there
     expect(writtenContent).toContain('# Some other content');

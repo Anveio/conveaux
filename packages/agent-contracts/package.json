@@ -3,25 +3,25 @@
   "version": "0.1.0",
   "description": "TypeScript interfaces for the agent orchestrator system",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "development": "./src/index.ts",
-      "source": "./src/index.ts",
-      "import": "./dist/index.js"
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
     }
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
     "test": "echo 'No tests for contracts package'",
     "typecheck": "tsc --noEmit"
   },
-  "files": ["dist", "src"],
+  "files": ["src"],
   "dependencies": {
     "@conveaux/contract-wall-clock": "*",
     "@conveaux/contract-nanosecond-timestamp": "*"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
   }
 }

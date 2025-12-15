@@ -24,7 +24,8 @@ export function createCryptoRandom(): Random {
         throw new Error('Cannot choose from empty array');
       }
       const index = Math.floor(Math.random() * items.length);
-      return items[index];
+      // We know the index is valid because we checked items.length > 0 above
+      return items[index] as T;
     },
   };
 }

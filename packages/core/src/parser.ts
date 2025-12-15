@@ -85,8 +85,9 @@ function walkConversationTree(
     }
 
     // Move to first child (following the main conversation path)
-    if (currentNode.children && currentNode.children.length > 0) {
-      currentNode = mapping[currentNode.children[0]];
+    const firstChild: string | undefined = currentNode.children?.[0];
+    if (firstChild !== undefined) {
+      currentNode = mapping[firstChild];
     } else {
       currentNode = undefined;
     }

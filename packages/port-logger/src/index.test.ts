@@ -7,6 +7,15 @@ import type { WallClock } from '@conveaux/contract-wall-clock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LOG_LEVEL_PRIORITY, createLogger } from './index.js';
 
+// Helper to get first line and parse as JSON (fails test if missing)
+function getFirstLine(lines: string[]): string {
+  const line = lines[0];
+  if (line === undefined) {
+    throw new Error('Expected at least one line in output');
+  }
+  return line;
+}
+
 // Inline mock for OutChannel that captures writes
 function createMockChannel(): OutChannel & { lines: string[] } {
   const lines: string[] = [];
@@ -40,7 +49,7 @@ describe('createLogger', () => {
     logger.debug('test message');
 
     expect(mockChannel.lines).toHaveLength(1);
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.level).toBe('debug');
     expect(entry.message).toBe('test message');
     expect(entry.timestamp).toBe('2024-12-15T10:30:00.000Z');
@@ -50,7 +59,7 @@ describe('createLogger', () => {
     const logger = createLogger({ channel: mockChannel, clock: mockClock });
     logger.info('info message');
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.level).toBe('info');
     expect(entry.message).toBe('info message');
   });
@@ -59,7 +68,7 @@ describe('createLogger', () => {
     const logger = createLogger({ channel: mockChannel, clock: mockClock });
     logger.warn('warning');
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.level).toBe('warn');
   });
 
@@ -67,7 +76,7 @@ describe('createLogger', () => {
     const logger = createLogger({ channel: mockChannel, clock: mockClock });
     logger.error('error occurred');
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.level).toBe('error');
   });
 
@@ -75,7 +84,7 @@ describe('createLogger', () => {
     const logger = createLogger({ channel: mockChannel, clock: mockClock });
     logger.info('request handled', { userId: '123', duration: 45 });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.userId).toBe('123');
     expect(entry.duration).toBe(45);
   });
@@ -89,7 +98,7 @@ describe('createLogger', () => {
       },
     });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.trace).toEqual({
       traceId: 'trace-123',
       spanId: 'span-456',
@@ -100,7 +109,7 @@ describe('createLogger', () => {
     const logger = createLogger({ channel: mockChannel, clock: mockClock });
     logger.info('message');
 
-    expect(mockChannel.lines[0].endsWith('\n')).toBe(true);
+    expect(getFirstLine(mockChannel.lines).endsWith('\n')).toBe(true);
   });
 
   describe('child logger', () => {
@@ -110,7 +119,7 @@ describe('createLogger', () => {
 
       child.info('child message');
 
-      const entry = JSON.parse(mockChannel.lines[0]);
+      const entry = JSON.parse(getFirstLine(mockChannel.lines));
       expect(entry.requestId).toBe('req-1');
       expect(entry.message).toBe('child message');
     });
@@ -121,7 +130,7 @@ describe('createLogger', () => {
 
       child.info('message', { extra: 'data' });
 
-      const entry = JSON.parse(mockChannel.lines[0]);
+      const entry = JSON.parse(getFirstLine(mockChannel.lines));
       expect(entry.requestId).toBe('req-1');
       expect(entry.extra).toBe('data');
     });
@@ -133,7 +142,7 @@ describe('createLogger', () => {
 
       child2.info('nested message');
 
-      const entry = JSON.parse(mockChannel.lines[0]);
+      const entry = JSON.parse(getFirstLine(mockChannel.lines));
       expect(entry.level1).toBe('a');
       expect(entry.level2).toBe('b');
     });
@@ -144,7 +153,7 @@ describe('createLogger', () => {
 
       child.info('message', { key: 'override' });
 
-      const entry = JSON.parse(mockChannel.lines[0]);
+      const entry = JSON.parse(getFirstLine(mockChannel.lines));
       expect(entry.key).toBe('override');
     });
   });
@@ -185,7 +194,7 @@ describe('minLevel filtering', () => {
     logger.info('should appear');
 
     expect(mockChannel.lines).toHaveLength(1);
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.level).toBe('info');
   });
 
@@ -217,7 +226,7 @@ describe('minLevel filtering', () => {
     logger.error('should appear');
 
     expect(mockChannel.lines).toHaveLength(1);
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.level).toBe('error');
   });
 
@@ -245,7 +254,7 @@ describe('minLevel filtering', () => {
     child.warn('should appear');
 
     expect(mockChannel.lines).toHaveLength(1);
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.component).toBe('test');
   });
 });
@@ -265,7 +274,7 @@ describe('error serialization', () => {
 
     logger.error('operation failed', { error });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.error).toBeDefined();
     expect(entry.error.name).toBe('Error');
     expect(entry.error.message).toBe('Something went wrong');
@@ -278,7 +287,7 @@ describe('error serialization', () => {
 
     logger.error('type error', { error });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.error.name).toBe('TypeError');
     expect(entry.error.message).toBe('Invalid type');
   });
@@ -296,7 +305,7 @@ describe('error serialization', () => {
 
     logger.error('custom error', { error });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.error.name).toBe('CustomError');
     expect(entry.error.message).toBe('Custom problem');
   });
@@ -308,7 +317,7 @@ describe('error serialization', () => {
 
     logger.error('error with cause', { error });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.error.name).toBe('Error');
     expect(entry.error.message).toBe('Wrapper error');
     expect(entry.error.cause).toBeDefined();
@@ -324,7 +333,7 @@ describe('error serialization', () => {
 
     logger.error('deep chain', { error: level1 });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.error.message).toBe('Level 1');
     expect(entry.error.cause.message).toBe('Level 2');
     expect(entry.error.cause.cause.message).toBe('Level 3');
@@ -336,7 +345,7 @@ describe('error serialization', () => {
 
     logger.error('string cause', { error });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.error.cause).toBeUndefined();
   });
 
@@ -346,7 +355,7 @@ describe('error serialization', () => {
 
     logger.error('failed operation', { error, userId: '123', operation: 'delete' });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.error).toBeDefined();
     expect(entry.userId).toBe('123');
     expect(entry.operation).toBe('delete');
@@ -368,7 +377,7 @@ describe('edge cases', () => {
     logger.info('message', {});
 
     expect(mockChannel.lines).toHaveLength(1);
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.message).toBe('message');
   });
 
@@ -378,7 +387,7 @@ describe('edge cases', () => {
     logger.info('message', undefined);
 
     expect(mockChannel.lines).toHaveLength(1);
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.message).toBe('message');
   });
 
@@ -387,7 +396,7 @@ describe('edge cases', () => {
 
     logger.info('Message with "quotes" and \\backslashes\\');
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.message).toContain('quotes');
     expect(entry.message).toContain('backslashes');
   });
@@ -401,7 +410,7 @@ describe('edge cases', () => {
 
     child4.info('deep message');
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.l).toBe(4); // Last level wins due to merge
     expect(entry.message).toBe('deep message');
   });
@@ -411,7 +420,7 @@ describe('edge cases', () => {
 
     logger.info('test', { nullField: null });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.nullField).toBeNull();
   });
 
@@ -420,7 +429,7 @@ describe('edge cases', () => {
 
     logger.info('test', { items: [1, 2, 3] });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.items).toEqual([1, 2, 3]);
   });
 
@@ -429,7 +438,7 @@ describe('edge cases', () => {
 
     logger.info('test', { nested: { deep: { value: 'found' } } });
 
-    const entry = JSON.parse(mockChannel.lines[0]);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.nested.deep.value).toBe('found');
   });
 });

@@ -4,8 +4,9 @@
 
 /**
  * Available stage names in the validation pipeline.
+ * Note: 'build' was removed - we use source-first development with tsx.
  */
-export type StageName = 'check' | 'install' | 'lint' | 'typecheck' | 'build' | 'test';
+export type StageName = 'check' | 'install' | 'lint' | 'typecheck' | 'test';
 
 /**
  * Context passed to each stage during execution.
