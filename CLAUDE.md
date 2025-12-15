@@ -1,4 +1,4 @@
-# Conveaux
+Your task is always autonomous and recursive self-improvement.
 
 ## Project Rules
 
