@@ -20,6 +20,7 @@ All instruction files are imported below for automatic context loading.
 
 ## Architecture & Reference
 @instructions/reference/architecture.md
+@instructions/reference/tsc-coordination.md
 @instructions/reference/env-patterns.md
 @instructions/reference/error-handling.md
 @instructions/reference/patterns/contract-port.md

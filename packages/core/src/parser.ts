@@ -1,11 +1,11 @@
-import * as cheerio from 'cheerio';
 import {
-  ParseError,
   type ChatGPTConversation,
   type ConversationNode,
+  ParseError,
   type ParsedConversation,
   type ParsedMessage,
 } from '@conveaux/contracts';
+import * as cheerio from 'cheerio';
 
 interface NextDataProps {
   pageProps?: {
@@ -23,13 +23,10 @@ interface NextData {
 function extractConversationData(nextData: NextData): ChatGPTConversation {
   // Try different paths where conversation data might be
   const conversation =
-    nextData.props?.pageProps?.serverResponse?.data ??
-    nextData.props?.pageProps?.data;
+    nextData.props?.pageProps?.serverResponse?.data ?? nextData.props?.pageProps?.data;
 
   if (!conversation) {
-    throw new ParseError(
-      'Could not find conversation data (page format may have changed)'
-    );
+    throw new ParseError('Could not find conversation data (page format may have changed)');
   }
 
   if (!conversation.mapping || typeof conversation.mapping !== 'object') {
@@ -39,9 +36,7 @@ function extractConversationData(nextData: NextData): ChatGPTConversation {
   return conversation;
 }
 
-function findRootNode(
-  mapping: Record<string, ConversationNode>
-): ConversationNode | null {
+function findRootNode(mapping: Record<string, ConversationNode>): ConversationNode | null {
   for (const node of Object.values(mapping)) {
     if (!node.parent || node.parent === null) {
       return node;
@@ -105,9 +100,7 @@ export function parseHTML(html: string): ParsedConversation {
   const scriptTag = $('script#__NEXT_DATA__');
 
   if (!scriptTag.length) {
-    throw new ParseError(
-      'Could not find conversation data (page format may have changed)'
-    );
+    throw new ParseError('Could not find conversation data (page format may have changed)');
   }
 
   const jsonContent = scriptTag.html();

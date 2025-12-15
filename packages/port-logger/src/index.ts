@@ -5,15 +5,15 @@
  * All dependencies (channel, clock) are injected as contracts.
  */
 
+import type { Clock } from '@conveaux/contract-clock';
 import type {
-  Logger,
   LogContext,
   LogLevel,
+  Logger,
   LoggerOptions,
   SerializedError,
 } from '@conveaux/contract-logger';
 import type { OutChannel } from '@conveaux/contract-outchannel';
-import type { Clock } from '@conveaux/contract-clock';
 
 // Re-export contract types for convenience
 export type {
@@ -130,7 +130,7 @@ export function createLogger(deps: LoggerDependencies): Logger {
       }
     }
 
-    channel.write(JSON.stringify(entry) + '\n');
+    channel.write(`${JSON.stringify(entry)}\n`);
   };
 
   const createChildLogger = (boundContext: LogContext): Logger => {
@@ -143,8 +143,7 @@ export function createLogger(deps: LoggerDependencies): Logger {
         log('warn', message, mergeContext(boundContext, context)),
       error: (message: string, context?: LogContext) =>
         log('error', message, mergeContext(boundContext, context)),
-      child: (newContext: LogContext) =>
-        createChildLogger(mergeContext(boundContext, newContext)),
+      child: (newContext: LogContext) => createChildLogger(mergeContext(boundContext, newContext)),
     };
   };
 

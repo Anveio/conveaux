@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import chalk from 'chalk';
 import { writeFile } from 'node:fs/promises';
-import { fetchSharePage, extractShareId } from '@conveaux/adapter-http';
-import { parseHTML, convertToMarkdown } from '@conveaux/core';
+import { extractShareId, fetchSharePage } from '@conveaux/adapter-http';
 import { ConveauxError } from '@conveaux/contracts';
+import { convertToMarkdown, parseHTML } from '@conveaux/core';
+import chalk from 'chalk';
+import { Command } from 'commander';
 
 const program = new Command();
 
@@ -38,9 +38,7 @@ program
 
       await writeFile(outputPath, markdown, 'utf-8');
 
-      console.log(
-        chalk.green(`\nSuccess! Conversation saved to ${chalk.bold(outputPath)}`)
-      );
+      console.log(chalk.green(`\nSuccess! Conversation saved to ${chalk.bold(outputPath)}`));
       console.log(chalk.dim(`  Title: ${conversation.title}`));
       console.log(chalk.dim(`  Messages: ${conversation.messages.length}`));
     } catch (error) {

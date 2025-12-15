@@ -263,10 +263,7 @@ export class AgentError extends Error {
  * Error when a tool execution fails.
  */
 export class ToolExecutionError extends AgentError {
-  constructor(
-    toolName: string,
-    message: string
-  ) {
+  constructor(toolName: string, message: string) {
     super(`Tool '${toolName}' failed: ${message}`, 'TOOL_EXECUTION_ERROR');
     this.name = 'ToolExecutionError';
   }

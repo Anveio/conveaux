@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { validateURL, extractShareId } from './fetcher.js';
 import { InvalidURLError } from '@conveaux/contracts';
+import { describe, expect, it } from 'vitest';
+import { extractShareId, validateURL } from './fetcher.js';
 
 describe('validateURL', () => {
   it('accepts valid chatgpt.com URLs', () => {
@@ -24,14 +24,10 @@ describe('validateURL', () => {
 describe('extractShareId', () => {
   it('extracts share ID from valid URLs', () => {
     expect(extractShareId('https://chatgpt.com/share/abc123')).toBe('abc123');
-    expect(extractShareId('https://chat.openai.com/share/abc-123-def')).toBe(
-      'abc-123-def'
-    );
+    expect(extractShareId('https://chat.openai.com/share/abc-123-def')).toBe('abc-123-def');
   });
 
   it('throws InvalidURLError for invalid URLs', () => {
-    expect(() => extractShareId('https://example.com/path')).toThrow(
-      InvalidURLError
-    );
+    expect(() => extractShareId('https://example.com/path')).toThrow(InvalidURLError);
   });
 });

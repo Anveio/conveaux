@@ -2,10 +2,10 @@
  * Tests for port-logger.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createLogger, LOG_LEVEL_PRIORITY } from './index.js';
-import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { Clock } from '@conveaux/contract-clock';
+import type { OutChannel } from '@conveaux/contract-outchannel';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { LOG_LEVEL_PRIORITY, createLogger } from './index.js';
 
 // Inline mock for OutChannel that captures writes
 function createMockChannel(): OutChannel & { lines: string[] } {

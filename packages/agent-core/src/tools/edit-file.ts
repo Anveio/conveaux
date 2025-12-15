@@ -7,7 +7,8 @@ import type { Tool, ToolDefinition, ToolExecutor } from '@conveaux/agent-contrac
 
 export const editFileDefinition: ToolDefinition = {
   name: 'edit_file',
-  description: 'Replace a specific string in a file with a new string. The old_string must exist exactly once in the file.',
+  description:
+    'Replace a specific string in a file with a new string. The old_string must exist exactly once in the file.',
   input_schema: {
     type: 'object',
     properties: {
@@ -49,8 +50,7 @@ export const editFileExecutor: ToolExecutor = async (input: unknown): Promise<st
 
   if (occurrences > 1) {
     throw new Error(
-      `String appears ${occurrences} times in file. It must be unique. ` +
-      `Provide more context to make the match unique.`
+      `String appears ${occurrences} times in file. It must be unique. Provide more context to make the match unique.`
     );
   }
 

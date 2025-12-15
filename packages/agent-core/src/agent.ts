@@ -2,12 +2,11 @@
  * Agent class that wraps the Anthropic SDK and runs the agentic loop.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import type Anthropic from '@anthropic-ai/sdk';
 import type {
   AgentConfig,
   AgentResult,
   ToolCall,
-  MaxIterationsError,
   ToolExecutionError,
 } from '@conveaux/agent-contracts';
 
@@ -32,9 +31,7 @@ export class Agent {
    * Returns the final result after all tool calls are processed.
    */
   async run(prompt: string): Promise<AgentResult> {
-    const messages: Anthropic.MessageParam[] = [
-      { role: 'user', content: prompt },
-    ];
+    const messages: Anthropic.MessageParam[] = [{ role: 'user', content: prompt }];
 
     const toolCalls: ToolCall[] = [];
     let totalInputTokens = 0;
@@ -109,8 +106,7 @@ export class Agent {
             });
           } catch (error) {
             // Return error to the model so it can try again
-            const errorMessage =
-              error instanceof Error ? error.message : String(error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
             toolCalls.push({
               tool: block.name,
               input: block.input,
