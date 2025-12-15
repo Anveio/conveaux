@@ -57,7 +57,7 @@ Templates: `instructions/living-docs/templates/`
    - Approach and constraints
    - Numbered steps with verification checkpoints
    - Rollback strategy
-2. Set up TodoWrite with task breakdown
+2. Break down tasks in PLAN.md
 3. Identify when to run verification
 ```
 
@@ -68,7 +68,7 @@ For each step in plan:
   1. Make changes (code, tests, docs)
   2. Run targeted verification if appropriate
   3. Commit when a logical unit is complete
-  4. Update TodoWrite progress
+  4. Update PLAN.md progress notes
   5. OBSERVE: Note any instruction gaps or friction (meta-loop)
 ```
 
@@ -154,8 +154,8 @@ IMPLEMENT
 ## What Claude Code Provides Natively
 
 - **Session persistence**: Conversation history (within context window)
-- **Planning**: TodoWrite tool for task tracking
-- **Parallel work**: Task tool for delegating sub-tasks
+- **Planning**: Document-driven via PLAN.md
+- **Progress tracking**: PLAN.md checkboxes and notes
 - **Artifact persistence**: Git commits
 - **Recovery**: Can analyze errors and retry
 
