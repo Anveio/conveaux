@@ -5,7 +5,14 @@
 import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { WallClock } from '@conveaux/contract-wall-clock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { LOG_LEVEL_PRIORITY, createLogger, isLevelEnabled, serializeError } from './index.js';
+import {
+  LOG_LEVEL_PRIORITY,
+  createJsonFormatter,
+  createLogger,
+  createPrettyFormatter,
+  isLevelEnabled,
+  serializeError,
+} from './index.js';
 
 // Helper to get first line and parse as JSON (fails test if missing)
 function getFirstLine(lines: string[]): string {
@@ -650,5 +657,190 @@ describe('serializeError utility', () => {
 
     expect(serialized.name).toBe('ValidationError');
     expect(serialized.message).toBe('Invalid input');
+  });
+});
+
+describe('createJsonFormatter', () => {
+  it('should format entry as JSON with newline', () => {
+    const formatter = createJsonFormatter();
+    const entry = {
+      timestamp: '2024-12-15T10:30:00.000Z',
+      level: 'info' as const,
+      message: 'Test message',
+    };
+
+    const output = formatter.format(entry);
+
+    expect(output).toBe(
+      '{"timestamp":"2024-12-15T10:30:00.000Z","level":"info","message":"Test message"}\n'
+    );
+  });
+
+  it('should include all fields in JSON output', () => {
+    const formatter = createJsonFormatter();
+    const entry = {
+      timestamp: '2024-12-15T10:30:00.000Z',
+      level: 'info' as const,
+      message: 'Test',
+      userId: '123',
+      duration: 45,
+    };
+
+    const output = formatter.format(entry);
+    const parsed = JSON.parse(output.trim());
+
+    expect(parsed.userId).toBe('123');
+    expect(parsed.duration).toBe(45);
+  });
+});
+
+describe('createPrettyFormatter', () => {
+  it('should format entry in human-readable format', () => {
+    const formatter = createPrettyFormatter({ colors: false });
+    const entry = {
+      timestamp: '2024-12-15T10:30:00.000Z',
+      level: 'info' as const,
+      message: 'Server started',
+    };
+
+    const output = formatter.format(entry);
+
+    expect(output).toContain('10:30:00.000');
+    expect(output).toContain('INFO');
+    expect(output).toContain('Server started');
+    expect(output.endsWith('\n')).toBe(true);
+  });
+
+  it('should include fields in output', () => {
+    const formatter = createPrettyFormatter({ colors: false });
+    const entry = {
+      timestamp: '2024-12-15T10:30:00.000Z',
+      level: 'info' as const,
+      message: 'Request',
+      userId: '123',
+    };
+
+    const output = formatter.format(entry);
+
+    expect(output).toContain('userId');
+    expect(output).toContain('123');
+  });
+
+  it('should format all 6 log levels', () => {
+    const formatter = createPrettyFormatter({ colors: false });
+    const levels = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const;
+
+    for (const level of levels) {
+      const entry = {
+        timestamp: '2024-12-15T10:30:00.000Z',
+        level,
+        message: 'test',
+      };
+      const output = formatter.format(entry);
+      expect(output).toContain(level.toUpperCase());
+    }
+  });
+
+  it('should format errors with stack trace', () => {
+    const formatter = createPrettyFormatter({ colors: false });
+    const entry = {
+      timestamp: '2024-12-15T10:30:00.000Z',
+      level: 'error' as const,
+      message: 'Request failed',
+      error: {
+        name: 'TypeError',
+        message: 'Cannot read property',
+        stack:
+          'TypeError: Cannot read property\n    at Object.<anonymous> (/test.ts:10:5)\n    at Module._compile (node:internal/modules/cjs/loader:1234:14)',
+      },
+    };
+
+    const output = formatter.format(entry);
+
+    expect(output).toContain('TypeError: Cannot read property');
+    expect(output).toContain('at Object.<anonymous>');
+  });
+
+  it('should include ANSI colors when enabled', () => {
+    const formatter = createPrettyFormatter({ colors: true });
+    const entry = {
+      timestamp: '2024-12-15T10:30:00.000Z',
+      level: 'info' as const,
+      message: 'Test',
+    };
+
+    const output = formatter.format(entry);
+
+    // Check for ANSI escape codes
+    expect(output).toContain('\x1b[');
+  });
+
+  it('should omit ANSI colors when disabled', () => {
+    const formatter = createPrettyFormatter({ colors: false });
+    const entry = {
+      timestamp: '2024-12-15T10:30:00.000Z',
+      level: 'info' as const,
+      message: 'Test',
+    };
+
+    const output = formatter.format(entry);
+
+    // Should not contain ANSI escape codes
+    expect(output).not.toContain('\x1b[');
+  });
+
+  it('should default to colors enabled', () => {
+    const formatter = createPrettyFormatter();
+    const entry = {
+      timestamp: '2024-12-15T10:30:00.000Z',
+      level: 'info' as const,
+      message: 'Test',
+    };
+
+    const output = formatter.format(entry);
+
+    expect(output).toContain('\x1b[');
+  });
+});
+
+describe('logger with custom formatter', () => {
+  let mockChannel: OutChannel & { lines: string[] };
+  let mockClock: WallClock;
+
+  beforeEach(() => {
+    mockChannel = createMockChannel();
+    mockClock = createMockClock('2024-12-15T10:30:00.000Z');
+  });
+
+  it('should use custom formatter when provided', () => {
+    const customFormatter = {
+      format: (entry: { level: string; message: string }) => `[${entry.level}] ${entry.message}\n`,
+    };
+
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+      options: { formatter: customFormatter },
+    });
+
+    logger.info('Hello');
+
+    expect(mockChannel.lines[0]).toBe('[info] Hello\n');
+  });
+
+  it('should use pretty formatter for human-readable output', () => {
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+      options: { formatter: createPrettyFormatter({ colors: false }) },
+    });
+
+    logger.info('Server started', { port: 3000 });
+
+    const output = mockChannel.lines[0];
+    expect(output).toContain('INFO');
+    expect(output).toContain('Server started');
+    expect(output).toContain('port');
+    expect(output).toContain('3000');
   });
 });
