@@ -1,6 +1,6 @@
 # Contract-Port Architecture
 
-**This pattern is now a Claude Code skill.** Invoke the `contract-port` skill for guidance on:
+**This pattern is now a Claude Code skill.** Invoke the `coding-patterns` skill for guidance on:
 
 - Package naming conventions (`@scope/contract-{name}`, `@scope/port-{name}`)
 - Contracts are pure types (no runtime code)
@@ -18,4 +18,4 @@
 
 **Rule**: If it emits JavaScript, it doesn't belong in a contract.
 
-For full guidance, invoke: `Skill(contract-port)`
+For full guidance, invoke: `Skill(coding-patterns)`
