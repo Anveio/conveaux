@@ -17,7 +17,8 @@
   },
   "files": ["src"],
   "dependencies": {
-    "@conveaux/contract-crypto": "*"
+    "@conveaux/contract-crypto": "*",
+    "@conveaux/contract-encoding": "*"
   },
   "devDependencies": {
     "@conveaux/tsconfig": "*",

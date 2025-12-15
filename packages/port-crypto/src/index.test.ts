@@ -77,28 +77,31 @@ function createMockCryptoLike(digestResult: string) {
 // Tests
 // =============================================================================
 
+// Test file - globals allowed for composition
+const deps = { TextEncoder };
+
 describe('createCrypto', () => {
   describe('hash() with SHA-256', () => {
     it('should hash "hello world" correctly', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const result = crypto.hash('sha256', 'hello world');
       expect(result).toBe(TEST_VECTORS.sha256['hello world']);
     });
 
     it('should hash empty string correctly', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const result = crypto.hash('sha256', '');
       expect(result).toBe(TEST_VECTORS.sha256['']);
     });
 
     it('should hash "test" correctly', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const result = crypto.hash('sha256', 'test');
       expect(result).toBe(TEST_VECTORS.sha256.test);
     });
 
     it('should accept Uint8Array input', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const data = new TextEncoder().encode('hello world');
       const result = crypto.hash('sha256', data);
       expect(result).toBe(TEST_VECTORS.sha256['hello world']);
@@ -107,13 +110,13 @@ describe('createCrypto', () => {
 
   describe('hash() with SHA-512', () => {
     it('should hash "hello world" correctly', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const result = crypto.hash('sha512', 'hello world');
       expect(result).toBe(TEST_VECTORS.sha512['hello world']);
     });
 
     it('should hash empty string correctly', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const result = crypto.hash('sha512', '');
       expect(result).toBe(TEST_VECTORS.sha512['']);
     });
@@ -121,7 +124,7 @@ describe('createCrypto', () => {
 
   describe('encoding options', () => {
     it('should default to hex encoding', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const result = crypto.hash('sha256', 'test');
       // Hex encoding uses only 0-9 and a-f
       expect(result).toMatch(/^[0-9a-f]+$/);
@@ -130,13 +133,13 @@ describe('createCrypto', () => {
     });
 
     it('should support explicit hex encoding', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const result = crypto.hash('sha256', 'test', { encoding: 'hex' });
       expect(result).toBe(TEST_VECTORS.sha256.test);
     });
 
     it('should support base64 encoding', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const result = crypto.hash('sha256', 'test', { encoding: 'base64' });
       // Base64 uses A-Z, a-z, 0-9, +, /, =
       expect(result).toMatch(/^[A-Za-z0-9+/=]+$/);
@@ -147,7 +150,7 @@ describe('createCrypto', () => {
 
   describe('hashFn override', () => {
     it('should use provided hashFn instead of platform crypto', () => {
-      const crypto = createCrypto({
+      const crypto = createCrypto(deps, {
         hashFn: createMockHashFn('mock-hash-result'),
       });
 
@@ -157,7 +160,7 @@ describe('createCrypto', () => {
 
     it('should pass algorithm to hashFn', () => {
       const { fn, calls } = createCapturingHashFn();
-      const crypto = createCrypto({ hashFn: fn });
+      const crypto = createCrypto(deps, { hashFn: fn });
 
       crypto.hash('sha512', 'test');
       expect(calls[0]?.algorithm).toBe('sha512');
@@ -165,7 +168,7 @@ describe('createCrypto', () => {
 
     it('should pass encoding to hashFn', () => {
       const { fn, calls } = createCapturingHashFn();
-      const crypto = createCrypto({ hashFn: fn });
+      const crypto = createCrypto(deps, { hashFn: fn });
 
       crypto.hash('sha256', 'test', { encoding: 'base64' });
       expect(calls[0]?.encoding).toBe('base64');
@@ -173,7 +176,7 @@ describe('createCrypto', () => {
 
     it('should pass data as Uint8Array to hashFn', () => {
       const { fn, calls } = createCapturingHashFn();
-      const crypto = createCrypto({ hashFn: fn });
+      const crypto = createCrypto(deps, { hashFn: fn });
 
       crypto.hash('sha256', 'hello');
       expect(calls[0]?.data).toBeInstanceOf(Uint8Array);
@@ -182,7 +185,7 @@ describe('createCrypto', () => {
 
     it('should default encoding to hex when not specified', () => {
       const { fn, calls } = createCapturingHashFn();
-      const crypto = createCrypto({ hashFn: fn });
+      const crypto = createCrypto(deps, { hashFn: fn });
 
       crypto.hash('sha256', 'test');
       expect(calls[0]?.encoding).toBe('hex');
@@ -191,7 +194,7 @@ describe('createCrypto', () => {
 
   describe('environment override', () => {
     it('should throw when crypto is explicitly null and no hashFn provided', () => {
-      const crypto = createCrypto({
+      const crypto = createCrypto(deps, {
         environment: { crypto: null },
       });
 
@@ -201,7 +204,7 @@ describe('createCrypto', () => {
     it('should use override crypto when provided', () => {
       const mockCrypto = createMockCryptoLike('custom-crypto-result');
 
-      const crypto = createCrypto({
+      const crypto = createCrypto(deps, {
         environment: { crypto: mockCrypto },
       });
 
@@ -211,7 +214,7 @@ describe('createCrypto', () => {
 
     it('should prefer hashFn over environment crypto', () => {
       const mockCrypto = createMockCryptoLike('from-environment');
-      const crypto = createCrypto({
+      const crypto = createCrypto(deps, {
         hashFn: createMockHashFn('from-hashFn'),
         environment: { crypto: mockCrypto },
       });
@@ -223,7 +226,7 @@ describe('createCrypto', () => {
 
   describe('error handling', () => {
     it('should throw for unsupported algorithm', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
 
       // Cast to bypass TypeScript's type checking for runtime validation test
       const invalidAlgorithm = 'md5' as unknown as HashAlgorithm;
@@ -233,7 +236,7 @@ describe('createCrypto', () => {
     });
 
     it('should include supported algorithms in error message', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
 
       // Cast to bypass TypeScript's type checking for runtime validation test
       const invalidAlgorithm = 'invalid' as unknown as HashAlgorithm;
@@ -243,7 +246,7 @@ describe('createCrypto', () => {
 
   describe('input handling', () => {
     it('should handle UTF-8 strings correctly', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       // Unicode emoji test
       const result = crypto.hash('sha256', 'hello 👋 world');
       expect(result).toBeDefined();
@@ -251,7 +254,7 @@ describe('createCrypto', () => {
     });
 
     it('should produce same hash for string and equivalent Uint8Array', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const text = 'hello';
       const bytes = new TextEncoder().encode(text);
 
@@ -262,7 +265,7 @@ describe('createCrypto', () => {
     });
 
     it('should handle binary data correctly', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       // Binary data that isn't valid UTF-8
       const binaryData = new Uint8Array([0x00, 0xff, 0x80, 0x7f]);
       const result = crypto.hash('sha256', binaryData);
@@ -272,21 +275,21 @@ describe('createCrypto', () => {
 
   describe('deterministic behavior', () => {
     it('should produce same hash for same input', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const hash1 = crypto.hash('sha256', 'deterministic test');
       const hash2 = crypto.hash('sha256', 'deterministic test');
       expect(hash1).toBe(hash2);
     });
 
     it('should produce different hashes for different inputs', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const hash1 = crypto.hash('sha256', 'input 1');
       const hash2 = crypto.hash('sha256', 'input 2');
       expect(hash1).not.toBe(hash2);
     });
 
     it('should produce different hashes for same input with different algorithms', () => {
-      const crypto = createCrypto();
+      const crypto = createCrypto(deps);
       const sha256 = crypto.hash('sha256', 'same input');
       const sha512 = crypto.hash('sha512', 'same input');
       expect(sha256).not.toBe(sha512);
