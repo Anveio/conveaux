@@ -8,6 +8,7 @@
 import type { Stage, StageName } from '../contracts/index.js';
 import { checkStage } from './check.js';
 import { docsStage } from './docs.js';
+import { hermeticStage } from './hermetic.js';
 import { installStage } from './install.js';
 import { lintStage } from './lint.js';
 import { testStage } from './test.js';
@@ -15,6 +16,7 @@ import { typecheckStage } from './typecheck.js';
 
 export { checkStage } from './check.js';
 export { docsStage } from './docs.js';
+export { hermeticStage } from './hermetic.js';
 export { installStage } from './install.js';
 export { lintStage } from './lint.js';
 export { testStage } from './test.js';
@@ -29,6 +31,7 @@ export const stageRegistry: Record<StageName, Stage> = {
   install: installStage,
   lint: lintStage,
   typecheck: typecheckStage,
+  hermetic: hermeticStage,
   test: testStage,
 };
 
@@ -41,6 +44,7 @@ export const DEFAULT_STAGE_ORDER: StageName[] = [
   'install',
   'lint',
   'typecheck',
+  'hermetic',
   'test',
 ];
 
