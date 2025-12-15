@@ -5,7 +5,7 @@
 import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { WallClock } from '@conveaux/contract-wall-clock';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { LOG_LEVEL_PRIORITY, createLogger } from './index.js';
+import { LOG_LEVEL_PRIORITY, createLogger, isLevelEnabled, serializeError } from './index.js';
 
 // Helper to get first line and parse as JSON (fails test if missing)
 function getFirstLine(lines: string[]): string {
@@ -44,6 +44,17 @@ describe('createLogger', () => {
     mockClock = createMockClock('2024-12-15T10:30:00.000Z');
   });
 
+  it('should log trace messages', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    logger.trace('trace message');
+
+    expect(mockChannel.lines).toHaveLength(1);
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
+    expect(entry.level).toBe('trace');
+    expect(entry.message).toBe('trace message');
+    expect(entry.timestamp).toBe('2024-12-15T10:30:00.000Z');
+  });
+
   it('should log debug messages', () => {
     const logger = createLogger({ channel: mockChannel, clock: mockClock });
     logger.debug('test message');
@@ -78,6 +89,15 @@ describe('createLogger', () => {
 
     const entry = JSON.parse(getFirstLine(mockChannel.lines));
     expect(entry.level).toBe('error');
+  });
+
+  it('should log fatal messages', () => {
+    const logger = createLogger({ channel: mockChannel, clock: mockClock });
+    logger.fatal('fatal error');
+
+    const entry = JSON.parse(getFirstLine(mockChannel.lines));
+    expect(entry.level).toBe('fatal');
+    expect(entry.message).toBe('fatal error');
   });
 
   it('should include context fields in log entry', () => {
@@ -115,7 +135,7 @@ describe('createLogger', () => {
   describe('child logger', () => {
     it('should create child logger with bound context', () => {
       const logger = createLogger({ channel: mockChannel, clock: mockClock });
-      const child = logger.child!({ requestId: 'req-1' });
+      const child = logger.child({ requestId: 'req-1' });
 
       child.info('child message');
 
@@ -126,7 +146,7 @@ describe('createLogger', () => {
 
     it('should merge child context with log context', () => {
       const logger = createLogger({ channel: mockChannel, clock: mockClock });
-      const child = logger.child!({ requestId: 'req-1' });
+      const child = logger.child({ requestId: 'req-1' });
 
       child.info('message', { extra: 'data' });
 
@@ -137,8 +157,8 @@ describe('createLogger', () => {
 
     it('should allow nested child loggers', () => {
       const logger = createLogger({ channel: mockChannel, clock: mockClock });
-      const child1 = logger.child!({ level1: 'a' });
-      const child2 = child1.child!({ level2: 'b' });
+      const child1 = logger.child({ level1: 'a' });
+      const child2 = child1.child({ level2: 'b' });
 
       child2.info('nested message');
 
@@ -149,12 +169,42 @@ describe('createLogger', () => {
 
     it('should override bound context with log context', () => {
       const logger = createLogger({ channel: mockChannel, clock: mockClock });
-      const child = logger.child!({ key: 'bound' });
+      const child = logger.child({ key: 'bound' });
 
       child.info('message', { key: 'override' });
 
       const entry = JSON.parse(getFirstLine(mockChannel.lines));
       expect(entry.key).toBe('override');
+    });
+
+    it('child logger should support all 6 log levels', () => {
+      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+      const child = logger.child({ component: 'test' });
+
+      child.trace('t');
+      child.debug('d');
+      child.info('i');
+      child.warn('w');
+      child.error('e');
+      child.fatal('f');
+
+      expect(mockChannel.lines).toHaveLength(6);
+    });
+  });
+
+  describe('flush', () => {
+    it('should return a promise that resolves', async () => {
+      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+
+      // flush() is a no-op for sync logger but should return a resolved promise
+      await expect(logger.flush()).resolves.toBeUndefined();
+    });
+
+    it('child logger flush should return a promise that resolves', async () => {
+      const logger = createLogger({ channel: mockChannel, clock: mockClock });
+      const child = logger.child({ component: 'test' });
+
+      await expect(child.flush()).resolves.toBeUndefined();
     });
   });
 });
@@ -168,28 +218,48 @@ describe('minLevel filtering', () => {
     mockClock = createMockClock('2024-12-15T10:30:00.000Z');
   });
 
-  it('should log all levels when minLevel is debug', () => {
+  it('should log all 6 levels when minLevel is trace', () => {
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+      options: { minLevel: 'trace' },
+    });
+
+    logger.trace('trace msg');
+    logger.debug('debug msg');
+    logger.info('info msg');
+    logger.warn('warn msg');
+    logger.error('error msg');
+    logger.fatal('fatal msg');
+
+    expect(mockChannel.lines).toHaveLength(6);
+  });
+
+  it('should suppress trace when minLevel is debug', () => {
     const logger = createLogger({
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'debug' },
     });
 
-    logger.debug('debug msg');
-    logger.info('info msg');
-    logger.warn('warn msg');
-    logger.error('error msg');
+    logger.trace('should be suppressed');
+    logger.debug('should appear');
+    logger.info('should appear');
+    logger.warn('should appear');
+    logger.error('should appear');
+    logger.fatal('should appear');
 
-    expect(mockChannel.lines).toHaveLength(4);
+    expect(mockChannel.lines).toHaveLength(5);
   });
 
-  it('should suppress debug when minLevel is info', () => {
+  it('should suppress trace and debug when minLevel is info', () => {
     const logger = createLogger({
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'info' },
     });
 
+    logger.trace('should be suppressed');
     logger.debug('should be suppressed');
     logger.info('should appear');
 
@@ -198,47 +268,69 @@ describe('minLevel filtering', () => {
     expect(entry.level).toBe('info');
   });
 
-  it('should suppress debug and info when minLevel is warn', () => {
+  it('should suppress trace, debug, and info when minLevel is warn', () => {
     const logger = createLogger({
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'warn' },
     });
 
+    logger.trace('suppressed');
     logger.debug('suppressed');
     logger.info('suppressed');
     logger.warn('should appear');
     logger.error('should appear');
+    logger.fatal('should appear');
 
-    expect(mockChannel.lines).toHaveLength(2);
+    expect(mockChannel.lines).toHaveLength(3);
   });
 
-  it('should only log error when minLevel is error', () => {
+  it('should only log error and fatal when minLevel is error', () => {
     const logger = createLogger({
       channel: mockChannel,
       clock: mockClock,
       options: { minLevel: 'error' },
     });
 
+    logger.trace('suppressed');
     logger.debug('suppressed');
     logger.info('suppressed');
     logger.warn('suppressed');
     logger.error('should appear');
+    logger.fatal('should appear');
+
+    expect(mockChannel.lines).toHaveLength(2);
+  });
+
+  it('should only log fatal when minLevel is fatal', () => {
+    const logger = createLogger({
+      channel: mockChannel,
+      clock: mockClock,
+      options: { minLevel: 'fatal' },
+    });
+
+    logger.trace('suppressed');
+    logger.debug('suppressed');
+    logger.info('suppressed');
+    logger.warn('suppressed');
+    logger.error('suppressed');
+    logger.fatal('should appear');
 
     expect(mockChannel.lines).toHaveLength(1);
     const entry = JSON.parse(getFirstLine(mockChannel.lines));
-    expect(entry.level).toBe('error');
+    expect(entry.level).toBe('fatal');
   });
 
-  it('should default to debug level when no options provided', () => {
+  it('should default to trace level when no options provided', () => {
     const logger = createLogger({
       channel: mockChannel,
       clock: mockClock,
     });
 
+    logger.trace('should appear');
     logger.debug('should appear');
 
-    expect(mockChannel.lines).toHaveLength(1);
+    expect(mockChannel.lines).toHaveLength(2);
   });
 
   it('should apply minLevel to child loggers', () => {
@@ -247,8 +339,9 @@ describe('minLevel filtering', () => {
       clock: mockClock,
       options: { minLevel: 'warn' },
     });
-    const child = logger.child!({ component: 'test' });
+    const child = logger.child({ component: 'test' });
 
+    child.trace('suppressed');
     child.debug('suppressed');
     child.info('suppressed');
     child.warn('should appear');
@@ -403,10 +496,10 @@ describe('edge cases', () => {
 
   it('should handle deeply nested child loggers (4+ levels)', () => {
     const logger = createLogger({ channel: mockChannel, clock: mockClock });
-    const child1 = logger.child!({ l: 1 });
-    const child2 = child1.child!({ l: 2 });
-    const child3 = child2.child!({ l: 3 });
-    const child4 = child3.child!({ l: 4 });
+    const child1 = logger.child({ l: 1 });
+    const child2 = child1.child({ l: 2 });
+    const child3 = child2.child({ l: 3 });
+    const child4 = child3.child({ l: 4 });
 
     child4.info('deep message');
 
@@ -463,16 +556,99 @@ describe('channel error handling', () => {
 });
 
 describe('LOG_LEVEL_PRIORITY export', () => {
-  it('should export LOG_LEVEL_PRIORITY for consumer use', () => {
-    expect(LOG_LEVEL_PRIORITY.debug).toBe(0);
-    expect(LOG_LEVEL_PRIORITY.info).toBe(1);
-    expect(LOG_LEVEL_PRIORITY.warn).toBe(2);
-    expect(LOG_LEVEL_PRIORITY.error).toBe(3);
+  it('should export LOG_LEVEL_PRIORITY for all 6 levels', () => {
+    expect(LOG_LEVEL_PRIORITY.trace).toBe(0);
+    expect(LOG_LEVEL_PRIORITY.debug).toBe(1);
+    expect(LOG_LEVEL_PRIORITY.info).toBe(2);
+    expect(LOG_LEVEL_PRIORITY.warn).toBe(3);
+    expect(LOG_LEVEL_PRIORITY.error).toBe(4);
+    expect(LOG_LEVEL_PRIORITY.fatal).toBe(5);
   });
 
-  it('should have debug as lowest priority', () => {
+  it('should have trace as lowest priority and fatal as highest', () => {
+    expect(LOG_LEVEL_PRIORITY.trace).toBeLessThan(LOG_LEVEL_PRIORITY.debug);
     expect(LOG_LEVEL_PRIORITY.debug).toBeLessThan(LOG_LEVEL_PRIORITY.info);
     expect(LOG_LEVEL_PRIORITY.info).toBeLessThan(LOG_LEVEL_PRIORITY.warn);
     expect(LOG_LEVEL_PRIORITY.warn).toBeLessThan(LOG_LEVEL_PRIORITY.error);
+    expect(LOG_LEVEL_PRIORITY.error).toBeLessThan(LOG_LEVEL_PRIORITY.fatal);
+  });
+});
+
+describe('isLevelEnabled utility', () => {
+  it('should return true when current level equals min level', () => {
+    expect(isLevelEnabled('info', 'info')).toBe(true);
+    expect(isLevelEnabled('trace', 'trace')).toBe(true);
+    expect(isLevelEnabled('fatal', 'fatal')).toBe(true);
+  });
+
+  it('should return true when current level is above min level', () => {
+    expect(isLevelEnabled('info', 'debug')).toBe(true);
+    expect(isLevelEnabled('error', 'info')).toBe(true);
+    expect(isLevelEnabled('fatal', 'trace')).toBe(true);
+  });
+
+  it('should return false when current level is below min level', () => {
+    expect(isLevelEnabled('debug', 'info')).toBe(false);
+    expect(isLevelEnabled('info', 'warn')).toBe(false);
+    expect(isLevelEnabled('trace', 'debug')).toBe(false);
+    expect(isLevelEnabled('error', 'fatal')).toBe(false);
+  });
+});
+
+describe('serializeError utility', () => {
+  it('should serialize basic Error', () => {
+    const error = new Error('Test error');
+    const serialized = serializeError(error);
+
+    expect(serialized.name).toBe('Error');
+    expect(serialized.message).toBe('Test error');
+    expect(serialized.stack).toBeDefined();
+  });
+
+  it('should serialize Error with cause chain', () => {
+    const root = new Error('Root cause');
+    const wrapper = new Error('Wrapper', { cause: root });
+    const serialized = serializeError(wrapper);
+
+    expect(serialized.message).toBe('Wrapper');
+    expect(serialized.cause).toBeDefined();
+    expect(serialized.cause?.message).toBe('Root cause');
+  });
+
+  it('should serialize Error with code property', () => {
+    const error = new Error('File not found') as Error & { code: string };
+    error.code = 'ENOENT';
+    const serialized = serializeError(error);
+
+    expect(serialized.code).toBe('ENOENT');
+    expect(serialized.message).toBe('File not found');
+  });
+
+  it('should serialize Error with both code and cause', () => {
+    const root = new Error('Permission denied') as Error & { code: string };
+    root.code = 'EACCES';
+    const wrapper = new Error('Operation failed', { cause: root }) as Error & { code: string };
+    wrapper.code = 'EFAILED';
+
+    const serialized = serializeError(wrapper);
+
+    expect(serialized.code).toBe('EFAILED');
+    expect(serialized.cause).toBeDefined();
+    expect(serialized.cause?.code).toBe('EACCES');
+  });
+
+  it('should handle custom Error subclass', () => {
+    class ValidationError extends Error {
+      constructor(message: string) {
+        super(message);
+        this.name = 'ValidationError';
+      }
+    }
+
+    const error = new ValidationError('Invalid input');
+    const serialized = serializeError(error);
+
+    expect(serialized.name).toBe('ValidationError');
+    expect(serialized.message).toBe('Invalid input');
   });
 });

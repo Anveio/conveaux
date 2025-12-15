@@ -15,8 +15,9 @@ import type {
 import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { WallClock } from '@conveaux/contract-wall-clock';
 
-// Re-export contract types for convenience
+// Re-export all contract types for convenience
 export type {
+  // Core types
   Logger,
   LogContext,
   LogLevel,
@@ -24,17 +25,27 @@ export type {
   TraceContext,
   LoggerOptions,
   SerializedError,
+  LogEntry,
+  // Extension points (for future phases)
+  Formatter,
+  Transport,
+  Redactor,
+  Sampler,
 } from '@conveaux/contract-logger';
 
 /**
  * Numeric priority for log levels (higher = more severe).
  * Exported for consumers who need level comparison logic.
+ *
+ * Priority order: trace (0) < debug (1) < info (2) < warn (3) < error (4) < fatal (5)
  */
 export const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3,
+  trace: 0,
+  debug: 1,
+  info: 2,
+  warn: 3,
+  error: 4,
+  fatal: 5,
 };
 
 /**
@@ -61,15 +72,51 @@ interface LogEntry {
 }
 
 /**
+ * Check if a log level is enabled given a minimum level.
+ * Useful for conditional logging or pre-computation checks.
+ *
+ * @param current - The level to check
+ * @param min - The minimum enabled level
+ * @returns true if current level would be logged at min level
+ *
+ * @example
+ * ```typescript
+ * if (isLevelEnabled('debug', 'info')) {
+ *   // This is false - debug is below info
+ * }
+ * if (isLevelEnabled('warn', 'info')) {
+ *   // This is true - warn is at or above info
+ * }
+ * ```
+ */
+export function isLevelEnabled(current: LogLevel, min: LogLevel): boolean {
+  return LOG_LEVEL_PRIORITY[current] >= LOG_LEVEL_PRIORITY[min];
+}
+
+/**
  * Recursively serialize an Error object for structured logging.
  * Extracts name, message, stack, and recursively handles cause chain.
+ * Also extracts the `code` property if present (common in Node.js errors).
+ *
+ * @param error - The Error to serialize
+ * @returns Serialized error object suitable for JSON output
  */
-function serializeError(error: Error): SerializedError {
+export function serializeError(error: Error): SerializedError {
   const serialized: SerializedError = {
     name: error.name,
     message: error.message,
     stack: error.stack,
   };
+
+  // Extract error code if present (common in Node.js errors like ENOENT)
+  const errorWithCode = error as Error & { code?: string };
+  if (typeof errorWithCode.code === 'string') {
+    return {
+      ...serialized,
+      code: errorWithCode.code,
+      ...(error.cause instanceof Error ? { cause: serializeError(error.cause) } : {}),
+    };
+  }
 
   if (error.cause instanceof Error) {
     return { ...serialized, cause: serializeError(error.cause) };
@@ -100,7 +147,7 @@ function serializeError(error: Error): SerializedError {
  */
 export function createLogger(deps: LoggerDependencies): Logger {
   const { channel, clock, options } = deps;
-  const minLevel = options?.minLevel ?? 'debug';
+  const minLevel = options?.minLevel ?? 'trace';
   const minPriority = LOG_LEVEL_PRIORITY[minLevel];
 
   const shouldLog = (level: LogLevel): boolean => {
@@ -135,6 +182,8 @@ export function createLogger(deps: LoggerDependencies): Logger {
 
   const createChildLogger = (boundContext: LogContext): Logger => {
     return {
+      trace: (message: string, context?: LogContext) =>
+        log('trace', message, mergeContext(boundContext, context)),
       debug: (message: string, context?: LogContext) =>
         log('debug', message, mergeContext(boundContext, context)),
       info: (message: string, context?: LogContext) =>
@@ -143,16 +192,27 @@ export function createLogger(deps: LoggerDependencies): Logger {
         log('warn', message, mergeContext(boundContext, context)),
       error: (message: string, context?: LogContext) =>
         log('error', message, mergeContext(boundContext, context)),
+      fatal: (message: string, context?: LogContext) =>
+        log('fatal', message, mergeContext(boundContext, context)),
       child: (newContext: LogContext) => createChildLogger(mergeContext(boundContext, newContext)),
+      flush: async () => {
+        // Child loggers delegate to the same channel, no separate buffering
+      },
     };
   };
 
   return {
+    trace: (message: string, context?: LogContext) => log('trace', message, context),
     debug: (message: string, context?: LogContext) => log('debug', message, context),
     info: (message: string, context?: LogContext) => log('info', message, context),
     warn: (message: string, context?: LogContext) => log('warn', message, context),
     error: (message: string, context?: LogContext) => log('error', message, context),
+    fatal: (message: string, context?: LogContext) => log('fatal', message, context),
     child: createChildLogger,
+    flush: async () => {
+      // Synchronous logger - no buffering, nothing to flush
+      // Future async implementation would flush batched entries here
+    },
   };
 }
 

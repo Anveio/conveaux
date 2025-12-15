@@ -185,6 +185,34 @@ export interface QualityMetrics {
 /**
  * Logger port - replaces direct console.* usage.
  * Enables testable logging and platform-agnostic output.
+ *
+ * @deprecated Use `Logger` from `@conveaux/contract-logger` instead.
+ * This interface will be removed in a future major version.
+ *
+ * Migration guide:
+ * ```typescript
+ * // Before
+ * import { Logger } from '@conveaux/agent-contracts';
+ * const logger: Logger = createConsoleLogger();
+ *
+ * // After
+ * import { createLogger, Logger } from '@conveaux/port-logger';
+ * import { createStderrChannel } from '@conveaux/port-outchannel';
+ * import { createWallClock } from '@conveaux/port-wall-clock';
+ *
+ * const logger: Logger = createLogger({
+ *   channel: createStderrChannel(),
+ *   clock: createWallClock(),
+ * });
+ * ```
+ *
+ * The new Logger interface provides:
+ * - 6 log levels (trace, debug, info, warn, error, fatal)
+ * - Structured JSON output
+ * - Child logger support with context binding
+ * - Error serialization with cause chains
+ * - Trace context for distributed tracing
+ * - flush() for async completion
  */
 export interface Logger {
   debug(message: string, context?: Record<string, unknown>): void;
