@@ -104,3 +104,10 @@ cdk.out
 cdk.context.json
 
 .osgrep
+
+# Run artifacts - track structure, ignore large files
+runs/**/*.log
+runs/**/*.patch
+runs/**/verify.log
+!runs/.gitkeep
+!runs/README.md
