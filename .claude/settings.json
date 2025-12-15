@@ -1,8 +1,5 @@
 {
   "permissions": {
-    "allow": [
-      "Skill(claude-code-works)",
-      "Read(./.claude/skills/**)"
-    ]
+    "allow": ["Skill(claude-code-works)", "Read(./.claude/skills/**)"]
   }
 }

@@ -2,9 +2,9 @@
  * Tests for the lesson recorder.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { Clock, Environment, Logger, Random } from '@conveaux/agent-contracts';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { recordLesson } from './lesson-recorder.js';
-import type { Clock, Random, Environment, Logger } from '@conveaux/agent-contracts';
 
 // Mock fs module
 vi.mock('node:fs/promises', () => ({
@@ -155,7 +155,9 @@ Some existing content
     expect(result.lesson).toBe('Test');
 
     // Should have logged a warning
-    expect(logs.some((l) => l.level === 'warn' && l.message.includes('Could not record lesson'))).toBe(true);
+    expect(
+      logs.some((l) => l.level === 'warn' && l.message.includes('Could not record lesson'))
+    ).toBe(true);
   });
 
   it('should append to end of file if section marker not found', async () => {

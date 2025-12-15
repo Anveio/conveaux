@@ -4,9 +4,9 @@
 
 import type { Ports } from '@conveaux/agent-contracts';
 import { createConsoleLogger } from './console-logger.js';
-import { createSystemClock } from './system-clock.js';
 import { createCryptoRandom } from './crypto-random.js';
 import { createNodeEnv } from './node-env.js';
+import { createSystemClock } from './system-clock.js';
 
 // Re-export individual creators
 export { createConsoleLogger } from './console-logger.js';

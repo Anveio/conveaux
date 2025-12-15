@@ -3,7 +3,12 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { OrchestratorConfig, OrchestratorResult, LessonLearned, Ports } from '@conveaux/agent-contracts';
+import type {
+  LessonLearned,
+  OrchestratorConfig,
+  OrchestratorResult,
+  Ports,
+} from '@conveaux/agent-contracts';
 import { createAnalyzer, createImplementer, createReviewer } from './agents/index.js';
 import { recordLesson } from './lesson-recorder.js';
 
@@ -91,7 +96,9 @@ export async function runImprovementLoop(
       3. Report what you changed
     `);
 
-    logger.info(`   Tokens used: ${implementation.tokenUsage.input + implementation.tokenUsage.output}`);
+    logger.info(
+      `   Tokens used: ${implementation.tokenUsage.input + implementation.tokenUsage.output}`
+    );
 
     if (!implementation.success) {
       logger.warn(`   Implementation failed: ${implementation.output.slice(0, 200)}`);
@@ -116,7 +123,9 @@ export async function runImprovementLoop(
       If verification fails, explain what went wrong.
     `);
 
-    logger.info(`   Tokens used: ${verification.tokenUsage.input + verification.tokenUsage.output}`);
+    logger.info(
+      `   Tokens used: ${verification.tokenUsage.input + verification.tokenUsage.output}`
+    );
 
     if (verification.output.includes('VERIFICATION:PASS')) {
       logger.info('   Verification passed!');
@@ -151,8 +160,8 @@ export async function runImprovementLoop(
     }
   }
 
-  logger.info('\n' + '─'.repeat(50));
-  logger.info(`Improvement loop complete`);
+  logger.info(`\n${'─'.repeat(50)}`);
+  logger.info('Improvement loop complete');
   logger.info(`  Iterations: ${iteration}`);
   logger.info(`  Lessons recorded: ${lessons.length}`);
   logger.info('─'.repeat(50));

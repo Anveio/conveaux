@@ -42,12 +42,7 @@ interface GrepInput {
 }
 
 export const grepExecutor: ToolExecutor = async (input: unknown): Promise<string> => {
-  const {
-    pattern,
-    filePattern = '**/*',
-    cwd = '.',
-    maxResults = 100,
-  } = input as GrepInput;
+  const { pattern, filePattern = '**/*', cwd = '.', maxResults = 100 } = input as GrepInput;
 
   const regex = new RegExp(pattern, 'g');
   const results: string[] = [];

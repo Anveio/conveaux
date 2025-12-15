@@ -9,13 +9,10 @@ Improve `@conveaux/port-logger` through the RSID loop while updating instruction
 1. Read these files first:
    - `instructions/START.md` - Entry point
    - `instructions/meta/self-improvement.md` - RSID loop
-   - `instructions/skills/pr-review-loop.md` - PR workflow
    - `instructions/reference/patterns/contract-port.md` - Package architecture
 
 2. Check accumulated wisdom:
    - `instructions/improvements/lessons.md` - Scan domains: package-setup, core-abstractions
-   - `instructions/skills/pr-review-loop.md` - PR workflow skill
-   - `instructions/skills/code-review.md` - Self-review checklist
 
 3. Understand the target package:
    - `packages/port-logger/src/index.ts` - Implementation
@@ -57,7 +54,7 @@ Execute until no issues remain:
 ```
 Create PR → Self-Review → Fix Issues → Re-Review
 ```
-See `instructions/skills/pr-review-loop.md` for detailed checklist.
+Use the github-cli skill for PR workflow guidance.
 
 ### Phase 5: MERGE (Autonomous)
 

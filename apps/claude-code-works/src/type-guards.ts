@@ -70,9 +70,7 @@ export function isGrepNoMatchError(error: unknown): boolean {
   if (!isRecord(error)) return false;
   // grep returns exit code 1 for no matches, with empty stderr
   return (
-    typeof error.code === 'number' &&
-    error.code === 1 &&
-    (!error.stderr || error.stderr === '')
+    typeof error.code === 'number' && error.code === 1 && (!error.stderr || error.stderr === '')
   );
 }
 

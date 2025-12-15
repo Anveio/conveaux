@@ -15,29 +15,44 @@ This is the canonical verification command. Run it:
 - When unsure if something broke
 - At the start of each session (establish baseline)
 
-## What It Covers
+## Architecture
+
+The verification pipeline is implemented as a TypeScript application:
+
+```
+apps/validation-pipeline/
+├── src/
+│   ├── cli.ts                 # CLI entry point
+│   ├── pipeline.ts            # Pipeline orchestrator
+│   ├── contracts/             # Stage/result interfaces
+│   ├── stages/                # Individual stage implementations
+│   └── reporters/             # Output formatters
+```
+
+`verify.sh` is a lightweight wrapper that builds the pipeline if needed and delegates to it.
+
+## Stages
 
 | Stage | What It Checks |
 |-------|----------------|
-| doctor | Environment setup (Node, npm, git, dependencies) |
-| format | Code formatting (Biome/Prettier) |
-| lint | Static analysis, code quality |
+| check | Prerequisites (Node.js ≥22, npm ≥10, git) |
+| install | Dependencies installed |
+| lint | Code formatting and static analysis (Biome.js) |
 | typecheck | TypeScript type errors |
-| test | Unit and integration tests |
 | build | Compilation succeeds |
+| test | Unit and integration tests |
 
 ## Output Modes
 
-### Headless Mode (for agents)
+### Headless Mode (for agents/CI)
 
 ```bash
 ./verify.sh --ui=false
 ```
 
-- One line per stage
-- Compact failure output
-- Machine-parseable
-- Use this mode always
+- Machine-parseable output
+- One line per stage: `STAGE:name:START`, `STAGE:name:PASS/FAIL`
+- Use this mode for automation
 
 ### Interactive Mode (for humans)
 
@@ -45,33 +60,68 @@ This is the canonical verification command. Run it:
 ./verify.sh
 ```
 
-- Spinners and status icons
+- Colored output with timing
 - Detailed progress
 - Only use when human is watching
 
-## E2E Tests (Opt-in)
-
-E2E tests require credentials and real infrastructure. They're skipped by default.
+## CLI Options
 
 ```bash
-# Run with standard E2E tier
-./verify.sh --ui=false --e2e=standard
-
-# Run all E2E tests
-./verify.sh --ui=false --e2e=full
+./verify.sh                    # Interactive mode, all stages
+./verify.sh --ui=false         # Headless mode
+./verify.sh --stage=lint       # Run single stage
+./verify.sh --no-autofix       # Skip lint autofix
+./verify.sh --ci               # CI mode (headless + no autofix)
 ```
 
-When to run E2E:
-- Before merging to main
-- When touching integration/adapter code
-- When milestone involves external services
+## Command Conventions
+
+**Never use `npx` directly.** Always use `npm run` scripts defined in package.json.
+
+```bash
+# WRONG - don't use npx
+npx @biomejs/biome check .
+npx turbo build
+
+# RIGHT - use npm scripts
+npm run lint:check
+npm run build
+```
+
+Why:
+- Scripts are documented in package.json
+- Consistent interface across the codebase
+- Easier to update tool versions
+- Better caching behavior
 
 ## Exit Codes
 
 | Code | Meaning |
 |------|---------|
 | 0 | All stages passed |
-| Non-zero | At least one stage failed |
+| 1 | At least one stage failed |
+| 2 | Invalid usage |
+
+## Running Individual Stages
+
+For faster iteration during development:
+
+```bash
+./verify.sh --stage=lint
+./verify.sh --stage=typecheck
+./verify.sh --stage=test
+```
+
+Or use npm scripts directly:
+
+```bash
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
+
+But always run the full pipeline before declaring done.
 
 ## Iterating on Failures
 
@@ -88,60 +138,26 @@ Do NOT:
 - Assume "it's probably fine"
 - Skip stages manually
 
-## Building the Pipeline
-
-If `./verify.sh` doesn't exist or is broken, building it is your FIRST priority.
-
-Requirements:
-
-1. Root entrypoint `verify.sh` that runs a TypeScript runner
-2. Stages: format, lint, typecheck, test, build
-3. Doctor stage for environment validation
-4. Headless mode for CI/agent use
-5. Exit code indicates pass/fail
-
-## Running Individual Stages
-
-For faster iteration during development:
-
-```bash
-npm run format
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-```
-
-But always run the full pipeline before declaring done.
-
-## Pipeline as Product
-
-Treat the verification pipeline as a product:
-
-- Keep it fast (cache appropriately)
-- Keep it reliable (no flaky tests)
-- Keep it deterministic (same input = same output)
-- Improve it over time
-
 ## Common Issues
 
-### "Doctor" Fails
+### Check Fails
 
-Missing prerequisites. Install what's needed:
-- Node >= 22
-- npm >= 10
-- Git
-
-### Format Fails
-
-Code not formatted. Run:
-```bash
-npm run format -- --write
-```
+Missing prerequisites. Install:
+- Node.js ≥ 22
+- npm ≥ 10
+- git
 
 ### Lint Fails
 
-Static analysis issues. Fix the code or update lint rules if appropriate.
+Code formatting or static analysis issues. Run with autofix:
+```bash
+npm run lint
+```
+
+Or check without fixing:
+```bash
+npm run lint:check
+```
 
 ### Typecheck Fails
 
@@ -154,3 +170,12 @@ Tests broken. Fix the tests or the code they test.
 ### Build Fails
 
 Compilation error. Fix the code.
+
+## Pipeline as Product
+
+Treat the verification pipeline as a product:
+
+- Keep it fast (cache appropriately)
+- Keep it reliable (no flaky tests)
+- Keep it deterministic (same input = same output)
+- Improve it over time

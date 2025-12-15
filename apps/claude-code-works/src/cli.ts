@@ -10,8 +10,8 @@
  *   claude-code-works create <package-name> --type=<type>
  */
 
-import { runOuterLoop } from './loop';
 import { loadInstructions } from './instructions';
+import { runOuterLoop } from './loop';
 import { output } from './output';
 
 async function main(): Promise<void> {
@@ -27,7 +27,7 @@ async function main(): Promise<void> {
   const projectRoot = process.cwd();
   const instructions = await loadInstructions(projectRoot);
 
-  output.info(`claude-code-works v0.1.0`);
+  output.info('claude-code-works v0.1.0');
   output.dim(`Project root: ${projectRoot}`);
   output.dim(`Instructions loaded: ${instructions.files.length} files`);
 
@@ -49,7 +49,7 @@ async function main(): Promise<void> {
     });
 
     if (result.success) {
-      output.success(`\nImprovement complete!`);
+      output.success('\nImprovement complete!');
       output.dim(`  Iterations: ${result.iterations}`);
       output.dim(`  Lessons recorded: ${result.lessonsRecorded}`);
     } else {
@@ -80,7 +80,7 @@ async function main(): Promise<void> {
     });
 
     if (result.success) {
-      output.success(`\nPackage created!`);
+      output.success('\nPackage created!');
       output.dim(`  Path: ${result.packagePath}`);
       output.dim(`  Iterations: ${result.iterations}`);
     } else {
@@ -122,14 +122,14 @@ EXAMPLES:
 
 function parseStringFlag(args: string[], flag: string, defaultValue: string): string {
   const prefix = `${flag}=`;
-  const found = args.find(a => a.startsWith(prefix));
+  const found = args.find((a) => a.startsWith(prefix));
   return found ? found.slice(prefix.length) : defaultValue;
 }
 
 function parseIntFlag(args: string[], flag: string, defaultValue: number): number {
   const value = parseStringFlag(args, flag, '');
   if (value === '') return defaultValue;
-  const parsed = parseInt(value, 10);
+  const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) ? defaultValue : parsed;
 }
 

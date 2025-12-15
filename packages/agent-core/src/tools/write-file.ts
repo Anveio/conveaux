@@ -2,13 +2,14 @@
  * Write file tool - creates or overwrites a file.
  */
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { Tool, ToolDefinition, ToolExecutor } from '@conveaux/agent-contracts';
 
 export const writeFileDefinition: ToolDefinition = {
   name: 'write_file',
-  description: 'Write content to a file, creating it if it does not exist or overwriting if it does',
+  description:
+    'Write content to a file, creating it if it does not exist or overwriting if it does',
   input_schema: {
     type: 'object',
     properties: {

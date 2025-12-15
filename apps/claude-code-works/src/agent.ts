@@ -5,12 +5,11 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { getToolDefinitions, executeTool } from './tools';
 import { output } from './output';
-import { isRecord, getErrorMessage } from './type-guards';
+import { executeTool, getToolDefinitions } from './tools';
+import { getErrorMessage, isRecord } from './type-guards';
 
 type MessageParam = Anthropic.MessageParam;
-type ContentBlock = Anthropic.ContentBlock;
 type ToolUseBlock = Anthropic.ToolUseBlock;
 type TextBlock = Anthropic.TextBlock;
 
@@ -30,10 +29,7 @@ export interface AgentResult {
 /**
  * Run the agent with a given task.
  */
-export async function runAgent(
-  task: string,
-  config: AgentConfig
-): Promise<AgentResult> {
+export async function runAgent(task: string, config: AgentConfig): Promise<AgentResult> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return {
@@ -76,7 +72,7 @@ export async function runAgent(
 
       // If no tool use, we're done
       if (toolUseBlocks.length === 0) {
-        const finalOutput = textBlocks.map(b => b.text).join('\n');
+        const finalOutput = textBlocks.map((b) => b.text).join('\n');
         return {
           success: true,
           output: finalOutput,
@@ -121,7 +117,7 @@ export async function runAgent(
 
       // Check stop reason
       if (response.stop_reason === 'end_turn') {
-        const finalOutput = textBlocks.map(b => b.text).join('\n');
+        const finalOutput = textBlocks.map((b) => b.text).join('\n');
         return {
           success: true,
           output: finalOutput,
@@ -159,7 +155,7 @@ function summarizeInput(input: unknown): string {
   for (const [key, value] of Object.entries(input)) {
     if (typeof value === 'string') {
       // Truncate long strings
-      const display = value.length > 50 ? value.slice(0, 47) + '...' : value;
+      const display = value.length > 50 ? `${value.slice(0, 47)}...` : value;
       parts.push(`${key}="${display}"`);
     }
   }

@@ -8,7 +8,7 @@
  */
 
 import { runAgent } from './agent';
-import { getContextForTask, type Instructions } from './instructions';
+import { type Instructions, getContextForTask } from './instructions';
 import { output } from './output';
 import { extractExecErrorOutput } from './type-guards';
 
@@ -61,7 +61,9 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
 
     // Run the agent with the task
     const result = await runAgent(
-      iterations === 1 ? task : `Continue with the next step. Current iteration: ${iterations}/${config.maxIterations}`,
+      iterations === 1
+        ? task
+        : `Continue with the next step. Current iteration: ${iterations}/${config.maxIterations}`,
       {
         systemPrompt,
         maxIterations: 30, // Tool call iterations within a single outer loop iteration
@@ -99,9 +101,10 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
         success: true,
         iterations,
         lessonsRecorded,
-        packagePath: config.mode === 'create'
-          ? `${config.projectRoot}/packages/${config.packageName}`
-          : config.targetPackage,
+        packagePath:
+          config.mode === 'create'
+            ? `${config.projectRoot}/packages/${config.packageName}`
+            : config.targetPackage,
       };
     }
 
@@ -126,9 +129,10 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
       success: true,
       iterations,
       lessonsRecorded,
-      packagePath: config.mode === 'create'
-        ? `${config.projectRoot}/packages/${config.packageName}`
-        : config.targetPackage,
+      packagePath:
+        config.mode === 'create'
+          ? `${config.projectRoot}/packages/${config.packageName}`
+          : config.targetPackage,
     };
   }
 
@@ -241,7 +245,7 @@ function extractBracketContent(text: string, tag: string): string | null {
   const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(`\\[${escapedTag}:([^\\]]+)\\]`);
   const match = text.match(regex);
-  return match ? match[1]?.trim() ?? null : null;
+  return match ? (match[1]?.trim() ?? null) : null;
 }
 
 /**

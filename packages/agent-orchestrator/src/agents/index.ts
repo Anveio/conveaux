@@ -2,15 +2,15 @@
  * Pre-configured agent creators for the improvement loop.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
+import type Anthropic from '@anthropic-ai/sdk';
 import {
   Agent,
-  readFileTool,
   editFileTool,
-  writeFileTool,
-  runCommandTool,
   globTool,
   grepTool,
+  readFileTool,
+  runCommandTool,
+  writeFileTool,
 } from '@conveaux/agent-core';
 
 /**

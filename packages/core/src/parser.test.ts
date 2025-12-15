@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { parseHTML } from './parser.js';
 import { ParseError } from '@conveaux/contracts';
+import { describe, expect, it } from 'vitest';
+import { parseHTML } from './parser.js';
 
 const createMockHTML = (conversationData: object) => `
 <!DOCTYPE html>

@@ -1,4 +1,4 @@
-import type { ParsedConversation, ConvertOptions } from '@conveaux/contracts';
+import type { ConvertOptions, ParsedConversation } from '@conveaux/contracts';
 
 function formatRole(role: 'user' | 'assistant'): string {
   return role === 'user' ? 'User' : 'Assistant';
@@ -18,9 +18,7 @@ export function convertToMarkdown(
 
   // Metadata
   if (includeMetadata) {
-    lines.push(
-      '> Exported from ChatGPT via [Conveaux](https://github.com/user/conveaux)'
-    );
+    lines.push('> Exported from ChatGPT via [Conveaux](https://github.com/user/conveaux)');
     lines.push(`> Created: ${conversation.createdAt.toISOString()}`);
     lines.push(`> ID: ${conversation.id}`);
     lines.push('');

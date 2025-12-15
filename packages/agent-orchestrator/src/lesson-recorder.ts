@@ -4,7 +4,7 @@
 
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { LessonLearned, Clock, Random, Environment, Logger } from '@conveaux/agent-contracts';
+import type { Clock, Environment, LessonLearned, Logger, Random } from '@conveaux/agent-contracts';
 
 /**
  * Path to the lessons file relative to project root.
@@ -82,10 +82,10 @@ export async function recordLesson(params: {
       const afterSection = content.slice(sectionIndex + sectionMarker.length);
       const beforeSection = content.slice(0, sectionIndex + sectionMarker.length);
 
-      content = beforeSection + '\n' + formatLesson(lessonData) + afterSection;
+      content = `${beforeSection}\n${formatLesson(lessonData)}${afterSection}`;
     } else {
       // Append to end if section not found
-      content += '\n' + formatLesson(lessonData);
+      content += `\n${formatLesson(lessonData)}`;
     }
 
     await writeFile(lessonsPath, content, 'utf-8');

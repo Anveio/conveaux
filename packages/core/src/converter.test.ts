@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { convertToMarkdown } from './converter.js';
 import type { ParsedConversation } from '@conveaux/contracts';
+import { describe, expect, it } from 'vitest';
+import { convertToMarkdown } from './converter.js';
 
 describe('convertToMarkdown', () => {
   const baseConversation: ParsedConversation = {

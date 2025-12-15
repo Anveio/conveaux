@@ -2,7 +2,7 @@
  * Tests for port-outchannel.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createStderrChannel, createStdoutChannel } from './index.js';
 
 describe('createStderrChannel', () => {

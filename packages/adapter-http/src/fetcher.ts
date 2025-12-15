@@ -1,8 +1,8 @@
 import {
-  InvalidURLError,
   FetchError,
   type FetchOptions,
   type HttpFetcher,
+  InvalidURLError,
 } from '@conveaux/contracts';
 
 const VALID_URL_PATTERNS = [
@@ -27,10 +27,7 @@ export function extractShareId(url: string): string {
   return match[1];
 }
 
-export async function fetchSharePage(
-  url: string,
-  options?: FetchOptions
-): Promise<string> {
+export async function fetchSharePage(url: string, options?: FetchOptions): Promise<string> {
   if (!validateURL(url)) {
     throw new InvalidURLError(url);
   }
@@ -55,9 +52,7 @@ export async function fetchSharePage(
     clearTimeout(timeoutId);
 
     if (response.status === 404) {
-      throw new FetchError(
-        'Conversation not found (may be private or deleted)'
-      );
+      throw new FetchError('Conversation not found (may be private or deleted)');
     }
 
     if (!response.ok) {
@@ -74,9 +69,7 @@ export async function fetchSharePage(
 
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        throw new FetchError(
-          `Request timed out after ${timeout / 1000} seconds`
-        );
+        throw new FetchError(`Request timed out after ${timeout / 1000} seconds`);
       }
       throw new FetchError(`Network error: ${error.message}`);
     }

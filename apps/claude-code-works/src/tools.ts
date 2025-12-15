@@ -6,15 +6,15 @@
  * - An executor (the actual implementation)
  */
 
-import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
-import { join, dirname } from 'node:path';
 import { exec } from 'node:child_process';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { promisify } from 'node:util';
 import {
+  extractExecErrorOutput,
   getErrorMessage,
   getStringProperty,
   isGrepNoMatchError,
-  extractExecErrorOutput,
 } from './type-guards';
 
 const execAsync = promisify(exec);
@@ -124,7 +124,7 @@ export const listFilesTool: Tool = {
     if (!path) return 'Error: path is required and must be a string';
     try {
       const entries = await readdir(path, { withFileTypes: true });
-      const lines = entries.map(e => {
+      const lines = entries.map((e) => {
         const type = e.isDirectory() ? '[dir]' : '[file]';
         return `${type} ${e.name}`;
       });
@@ -164,7 +164,7 @@ export const runCommandTool: Tool = {
 
     // Safety check - don't allow dangerous commands
     const dangerous = ['rm -rf /', 'sudo', '> /dev/', 'mkfs'];
-    if (dangerous.some(d => command.includes(d))) {
+    if (dangerous.some((d) => command.includes(d))) {
       return 'Error: Command rejected for safety reasons';
     }
 
@@ -254,17 +254,14 @@ export const allTools: Tool[] = [
  * Get tool definitions for the Claude API.
  */
 export function getToolDefinitions(): ToolDefinition[] {
-  return allTools.map(t => t.definition);
+  return allTools.map((t) => t.definition);
 }
 
 /**
  * Execute a tool by name.
  */
-export async function executeTool(
-  name: string,
-  input: Record<string, unknown>
-): Promise<string> {
-  const tool = allTools.find(t => t.definition.name === name);
+export async function executeTool(name: string, input: Record<string, unknown>): Promise<string> {
+  const tool = allTools.find((t) => t.definition.name === name);
   if (!tool) {
     return `Error: Unknown tool "${name}"`;
   }

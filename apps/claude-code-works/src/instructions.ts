@@ -5,7 +5,7 @@
  * These instructions tell the agent how to behave.
  */
 
-import { readdir, readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 
 export interface InstructionFile {
@@ -16,15 +16,15 @@ export interface InstructionFile {
 }
 
 export type InstructionCategory =
-  | 'bootstrap'      // START.md
-  | 'loop'           // outer-loop.md, completion-gate.md
-  | 'meta'           // self-improvement.md
-  | 'patterns'       // reference/patterns/*
-  | 'reference'      // reference/*
-  | 'improvements'   // improvements/lessons.md, proposals/
-  | 'verification'   // verification/*
-  | 'skills'         // skills/*
-  | 'templates'      // living-docs/templates/*
+  | 'bootstrap' // START.md
+  | 'loop' // outer-loop.md, completion-gate.md
+  | 'meta' // self-improvement.md
+  | 'patterns' // reference/patterns/*
+  | 'reference' // reference/*
+  | 'improvements' // improvements/lessons.md, proposals/
+  | 'verification' // verification/*
+  | 'skills' // skills/*
+  | 'templates' // living-docs/templates/*
   | 'other';
 
 export interface Instructions {
@@ -73,7 +73,7 @@ export async function loadInstructions(projectRoot: string): Promise<Instruction
 
   // Quick access to key files
   const findFile = (name: string): string | null => {
-    const file = files.find(f => f.relativePath.endsWith(name));
+    const file = files.find((f) => f.relativePath.endsWith(name));
     return file?.content ?? null;
   };
 
@@ -93,40 +93,37 @@ export async function loadInstructions(projectRoot: string): Promise<Instruction
 /**
  * Get context for a specific task type.
  */
-export function getContextForTask(
-  instructions: Instructions,
-  task: 'create' | 'improve'
-): string {
+export function getContextForTask(instructions: Instructions, task: 'create' | 'improve'): string {
   const parts: string[] = [];
 
   // Always include bootstrap
   if (instructions.startMd) {
-    parts.push('# Bootstrap Instructions\n\n' + instructions.startMd);
+    parts.push(`# Bootstrap Instructions\n\n${instructions.startMd}`);
   }
 
   // Always include outer loop
   if (instructions.outerLoopMd) {
-    parts.push('# Development Loop\n\n' + instructions.outerLoopMd);
+    parts.push(`# Development Loop\n\n${instructions.outerLoopMd}`);
   }
 
   // Always include completion gate
   if (instructions.completionGateMd) {
-    parts.push('# Completion Gate\n\n' + instructions.completionGateMd);
+    parts.push(`# Completion Gate\n\n${instructions.completionGateMd}`);
   }
 
   // For create tasks, include package setup pattern
   if (task === 'create' && instructions.packageSetupMd) {
-    parts.push('# Package Setup Pattern\n\n' + instructions.packageSetupMd);
+    parts.push(`# Package Setup Pattern\n\n${instructions.packageSetupMd}`);
   }
 
   // Include lessons learned
   if (instructions.lessonsMd) {
-    parts.push('# Lessons Learned\n\n' + instructions.lessonsMd);
+    parts.push(`# Lessons Learned\n\n${instructions.lessonsMd}`);
   }
 
   // Include self-improvement meta loop
   if (instructions.selfImprovementMd) {
-    parts.push('# Self-Improvement (Meta Loop)\n\n' + instructions.selfImprovementMd);
+    parts.push(`# Self-Improvement (Meta Loop)\n\n${instructions.selfImprovementMd}`);
   }
 
   return parts.join('\n\n---\n\n');

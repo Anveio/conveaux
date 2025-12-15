@@ -2,9 +2,9 @@
  * Tests for the Agent class.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { AgentConfig, Tool } from '@conveaux/agent-contracts';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Agent } from './agent.js';
-import type { Tool, AgentConfig } from '@conveaux/agent-contracts';
 
 // Mock tool for testing
 const mockTool: Tool = {
@@ -23,11 +23,16 @@ const mockTool: Tool = {
 };
 
 // Mock Anthropic client
-function createMockClient(responses: Array<{
-  content: Array<{ type: 'text'; text: string } | { type: 'tool_use'; id: string; name: string; input: unknown }>;
-  stop_reason: 'end_turn' | 'tool_use';
-  usage: { input_tokens: number; output_tokens: number };
-}>) {
+function createMockClient(
+  responses: Array<{
+    content: Array<
+      | { type: 'text'; text: string }
+      | { type: 'tool_use'; id: string; name: string; input: unknown }
+    >;
+    stop_reason: 'end_turn' | 'tool_use';
+    usage: { input_tokens: number; output_tokens: number };
+  }>
+) {
   let callIndex = 0;
   return {
     messages: {
@@ -76,9 +81,7 @@ describe('Agent', () => {
   it('should process tool calls and continue conversation', async () => {
     const mockClient = createMockClient([
       {
-        content: [
-          { type: 'tool_use', id: 'tool-1', name: 'echo', input: { message: 'test' } },
-        ],
+        content: [{ type: 'tool_use', id: 'tool-1', name: 'echo', input: { message: 'test' } }],
         stop_reason: 'tool_use',
         usage: { input_tokens: 10, output_tokens: 20 },
       },
@@ -109,9 +112,7 @@ describe('Agent', () => {
 
     const mockClient = createMockClient([
       {
-        content: [
-          { type: 'tool_use', id: 'tool-1', name: 'echo', input: { message: 'test' } },
-        ],
+        content: [{ type: 'tool_use', id: 'tool-1', name: 'echo', input: { message: 'test' } }],
         stop_reason: 'tool_use',
         usage: { input_tokens: 10, output_tokens: 20 },
       },
@@ -136,9 +137,7 @@ describe('Agent', () => {
     const infiniteToolClient = {
       messages: {
         create: vi.fn().mockResolvedValue({
-          content: [
-            { type: 'tool_use', id: 'tool-1', name: 'echo', input: { message: 'loop' } },
-          ],
+          content: [{ type: 'tool_use', id: 'tool-1', name: 'echo', input: { message: 'loop' } }],
           stop_reason: 'tool_use',
           usage: { input_tokens: 10, output_tokens: 10 },
         }),
@@ -165,7 +164,7 @@ describe('Agent', () => {
     ]);
 
     const config = { ...baseConfig };
-    delete config.maxIterations;
+    config.maxIterations = undefined;
 
     // @ts-expect-error - Using mock client
     const agent = new Agent(mockClient, config);
