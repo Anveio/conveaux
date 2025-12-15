@@ -12,8 +12,9 @@ This document accumulates wisdom from development sessions. Each lesson is index
 
 | Domain | Count | Last Updated |
 |--------|-------|--------------|
-| package-setup | 2 | 2024-12-14 |
+| package-setup | 3 | 2024-12-15 |
 | core-abstractions | 1 | 2024-12-14 |
+| documentation | 1 | 2024-12-15 |
 
 ---
 
@@ -100,3 +101,27 @@ const clock: Clock = {
 };
 ```
 **Instruction Impact**: Formalized in `instructions/reference/patterns/core-ports.md`
+
+---
+
+### Package Setup
+
+#### L-004: Build Tool Selection - tsc vs tsup
+
+**Date**: 2024-12-15
+**Context**: feat/contract-port-architecture implementation
+**Lesson**: Use tsc for simple packages (contracts, simple ports). Use tsup only for complex applications needing multiple entry points, bundling, or tree-shaking. package-setup.md previously mandated tsup universally, but simpler packages work fine with tsc.
+**Evidence**: All 6 new contract/port packages (`@conveaux/contract-*`, `@conveaux/port-*`) use plain `tsc` and work correctly. tsup would add unnecessary complexity.
+**Instruction Impact**: Formalized in `instructions/reference/patterns/package-setup.md` (IP-002)
+
+---
+
+### Documentation
+
+#### L-005: Instruction Consolidation After Implementation
+
+**Date**: 2024-12-15
+**Context**: feat/contract-port-architecture implementation
+**Lesson**: When implementing actual code packages based on documented patterns, update documentation to reference real code rather than showing inline interface definitions. Single source of truth: interfaces in TypeScript files, documentation explains usage patterns.
+**Evidence**: `core-ports.md` showed inline `interface Logger { ... }` but we now have `@conveaux/contract-logger` package. Documentation updated to reference package imports.
+**Instruction Impact**: Refactored `instructions/reference/patterns/core-ports.md` (IP-001)
