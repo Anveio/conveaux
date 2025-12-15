@@ -21,6 +21,6 @@
   },
   "files": ["dist", "src"],
   "dependencies": {
-    "@conveaux/contract-clock": "*"
+    "@conveaux/contract-high-resolution-clock": "*"
   }
 }

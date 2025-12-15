@@ -1,7 +1,11 @@
 /**
- * System Clock implementation.
- * Re-exports the high-resolution clock from @conveaux/port-clock.
+ * High-Resolution Clock implementation.
+ * Re-exports the high-resolution clock from @conveaux/port-high-resolution-clock.
  */
 
-export { createSystemClock } from '@conveaux/port-clock';
-export type { Clock, ClockOptions, ClockEnvironmentOverrides } from '@conveaux/port-clock';
+export { createHighResolutionClock } from '@conveaux/port-high-resolution-clock';
+export type {
+  HighResolutionClock,
+  HighResolutionClockOptions,
+  HighResolutionClockEnvironmentOverrides,
+} from '@conveaux/port-high-resolution-clock';

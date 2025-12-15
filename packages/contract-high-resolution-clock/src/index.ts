@@ -1,5 +1,5 @@
 /**
- * @conveaux/contract-clock
+ * @conveaux/contract-high-resolution-clock
  *
  * High-resolution monotonic clock contract with wall-clock access.
  * Follows the firedrill pattern for hermetic primitive ports.
@@ -14,7 +14,7 @@
  * - Monotonic guarantees (clock never goes backward)
  * - Wall-clock access for timestamps
  */
-export interface Clock {
+export interface HighResolutionClock {
   /**
    * Monotonic milliseconds since clock origin.
    * Guaranteed non-decreasing even if the underlying source regresses.

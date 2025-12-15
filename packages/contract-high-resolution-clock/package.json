@@ -1,7 +1,7 @@
 {
-  "name": "@conveaux/port-clock",
+  "name": "@conveaux/contract-high-resolution-clock",
   "version": "0.1.0",
-  "description": "Clock port - system time implementation",
+  "description": "High-resolution clock contract - interface for monotonic time operations",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,15 +15,10 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
   "files": ["dist", "src"],
-  "dependencies": {
-    "@conveaux/contract-clock": "*"
-  },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "typescript": "^5.7.2"
   }
 }

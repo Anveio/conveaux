@@ -21,7 +21,7 @@ export { recordLesson } from './lesson-recorder.js';
 export {
   createDefaultPorts,
   createConsoleLogger,
-  createSystemClock,
+  createHighResolutionClock,
   createCryptoRandom,
   createNodeEnv,
 } from './ports/index.js';
@@ -33,7 +33,7 @@ export type {
   LessonLearned,
   Ports,
   Logger,
-  Clock,
+  HighResolutionClock,
   Random,
   Environment,
 } from '@conveaux/agent-contracts';

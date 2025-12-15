@@ -89,10 +89,10 @@ git checkout main && git pull && ./verify.sh --ui=false
 
 | Package | Type | Description |
 |---------|------|-------------|
-| `contract-clock` | Contract | Time operations interface |
+| `contract-high-resolution-clock` | Contract | High-resolution time operations interface |
 | `contract-logger` | Contract | Structured logging interface |
 | `contract-outchannel` | Contract | Output channel interface |
-| `port-clock` | Port | System time implementation |
+| `port-high-resolution-clock` | Port | Monotonic time implementation |
 | `port-logger` | Port | JSON logging implementation |
 | `port-outchannel` | Port | stdout/stderr implementation |
 | `agent-contracts` | Contract | Agent system interfaces |
@@ -112,7 +112,7 @@ git checkout main && git pull && ./verify.sh --ui=false
 ## To Target a Different Package
 
 Replace `port-logger` with any of:
-- `contract-clock`, `port-clock` - Time operations
+- `contract-high-resolution-clock`, `port-high-resolution-clock` - Time operations
 - `contract-outchannel`, `port-outchannel` - Output channels
 - `contract-logger` - Logger interface (if extending API)
 - `agent-contracts`, `agent-core`, `agent-orchestrator` - Agent system
