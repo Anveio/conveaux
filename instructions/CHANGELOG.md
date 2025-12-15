@@ -47,6 +47,7 @@ Initial instruction system.
 ### Added
 
 - Core development loop (PLAN → IMPLEMENT → VERIFY → DECIDE)
+- Living documents system (REQUIREMENTS, MILESTONE, PLAN, HANDOFF)
 - Verification pipeline and gates
 - Skills documentation (git, code-review, security)
 - Reference documentation (architecture, env-patterns, error-handling)

@@ -18,3 +18,13 @@ export { allTools, executeTool, getToolDefinitions } from './tools';
 export type { Tool, ToolDefinition } from './tools';
 
 export { output } from './output';
+
+export {
+  isRecord,
+  isError,
+  hasErrorMessage,
+  getErrorMessage,
+  isString,
+  getStringProperty,
+  isGrepNoMatchError,
+} from './type-guards';
