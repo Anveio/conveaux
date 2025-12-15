@@ -98,3 +98,65 @@ memories:
           code. The 242 tests across 8 packages all passed without modification.
           This suggests vitest maintains good backwards compatibility for standard
           test patterns (describe, it, expect, vi.fn, vi.spyOn).
+
+  - task: "feat/doctor-stage"
+    date: "2025-12-15"
+    context: |
+      Added a new "doctor" stage to the verification pipeline that applies
+      auto-corrections. First doctor step uses knip to detect unused dependencies.
+      Learned important lessons about knip configuration and package-lock.json stability.
+    learnings:
+      - type: "command-correction"
+        summary: "Use knip --dependencies to avoid removing exports"
+        detail: |
+          WRONG: `knip --fix` - removes all unused exports, breaking the codebase
+          RIGHT: `knip --fix --dependencies` - only handles dependency issues
+
+          By default, knip --fix removes unused exports across the codebase, which
+          can break intentionally exported APIs. Use --dependencies flag to limit
+          scope to dependency issues only.
+
+      - type: "pattern"
+        summary: "Keep knip as a devDependency of validation-pipeline, not root"
+        detail: |
+          knip is a validation concern, not a project-wide tooling concern.
+          Placing it in apps/validation-pipeline/package.json keeps responsibilities
+          clear. The knip.json config file stays at root to scan the whole monorepo.
+
+      - type: "command-correction"
+        summary: "Use main's package-lock.json when npm install breaks types"
+        detail: |
+          When vitest types break (e.g., ".not does not exist on Assertion<T>"),
+          the issue is often a package-lock.json mismatch. Fix by:
+
+          ```bash
+          rm -rf node_modules package-lock.json
+          git checkout main -- package-lock.json
+          npm install
+          ```
+
+          This restores the known-good dependency resolution from main.
+
+      - type: "pattern"
+        summary: "Add shell-script-only dependencies to knip ignoreDependencies"
+        detail: |
+          Dependencies used only in shell scripts (like tsx in verify.sh) won't be
+          detected by knip's TypeScript analysis. Add them to knip.json:
+
+          ```json
+          "ignoreDependencies": ["tsx"]
+          ```
+
+      - type: "insight"
+        summary: "Headless reporter should output errors for failed stages"
+        detail: |
+          The headless reporter was only outputting PASS/FAIL without error details.
+          Added error output to reportStageResult to show what actually failed:
+
+          ```typescript
+          if (result.errors && result.errors.length > 0) {
+            for (const error of result.errors) {
+              console.log(`  ${error}`);
+            }
+          }
+          ```
