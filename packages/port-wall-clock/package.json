@@ -18,6 +18,7 @@
   },
   "files": ["src"],
   "dependencies": {
+    "@conveaux/contract-date": "*",
     "@conveaux/contract-wall-clock": "*"
   },
   "devDependencies": {

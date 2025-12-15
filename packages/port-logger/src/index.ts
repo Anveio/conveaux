@@ -5,6 +5,7 @@
  * All dependencies (channel, clock) are injected as contracts.
  */
 
+import type { DateConstructor } from '@conveaux/contract-date';
 import type {
   Formatter,
   LogContext,
@@ -18,6 +19,7 @@ import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { WallClock } from '@conveaux/contract-wall-clock';
 
 // Re-export all contract types for convenience
+export type { DateConstructor } from '@conveaux/contract-date';
 export type {
   // Core types
   Logger,
@@ -192,6 +194,8 @@ export function createPrettyFormatter(options?: { colors?: boolean }): Formatter
  * Dependencies required by the logger.
  */
 export interface LoggerDependencies {
+  /** Date constructor for timestamp formatting */
+  Date: DateConstructor;
   /** Where to write log output */
   channel: OutChannel;
   /** Clock for timestamps */
@@ -275,7 +279,7 @@ export function serializeError(error: Error): SerializedError {
  * ```
  */
 export function createLogger(deps: LoggerDependencies): Logger {
-  const { channel, clock, options } = deps;
+  const { Date: DateCtor, channel, clock, options } = deps;
   const minLevel = options?.minLevel ?? 'trace';
   const minPriority = LOG_LEVEL_PRIORITY[minLevel];
   const formatter = options?.formatter ?? createJsonFormatter();
@@ -291,7 +295,7 @@ export function createLogger(deps: LoggerDependencies): Logger {
 
     // Build the log entry
     const entry: LogEntry = {
-      timestamp: new Date(clock.nowMs()).toISOString(),
+      timestamp: new DateCtor(clock.nowMs()).toISOString(),
       level,
       message,
     };
