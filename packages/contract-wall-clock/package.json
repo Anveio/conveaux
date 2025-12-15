@@ -1,7 +1,7 @@
 {
-  "name": "@conveaux/contract-timestamper",
+  "name": "@conveaux/contract-wall-clock",
   "version": "0.1.0",
-  "description": "Timestamper contract - interface for high-resolution nanosecond time sources",
+  "description": "Wall clock contract - interface for absolute timestamps",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

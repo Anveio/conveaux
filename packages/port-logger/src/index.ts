@@ -5,7 +5,6 @@
  * All dependencies (channel, clock) are injected as contracts.
  */
 
-import type { HighResolutionClock } from '@conveaux/contract-high-resolution-clock';
 import type {
   LogContext,
   LogLevel,
@@ -14,6 +13,7 @@ import type {
   SerializedError,
 } from '@conveaux/contract-logger';
 import type { OutChannel } from '@conveaux/contract-outchannel';
+import type { WallClock } from '@conveaux/contract-wall-clock';
 
 // Re-export contract types for convenience
 export type {
@@ -44,7 +44,7 @@ export interface LoggerDependencies {
   /** Where to write log output */
   channel: OutChannel;
   /** Clock for timestamps */
-  clock: HighResolutionClock;
+  clock: WallClock;
   /** Optional logger configuration */
   options?: LoggerOptions;
 }
@@ -88,11 +88,11 @@ function serializeError(error: Error): SerializedError {
  * ```typescript
  * import { createLogger } from '@conveaux/port-logger';
  * import { createStderrChannel } from '@conveaux/port-outchannel';
- * import { createHighResolutionClock } from '@conveaux/port-high-resolution-clock';
+ * import { createWallClock } from '@conveaux/port-wall-clock';
  *
  * const logger = createLogger({
  *   channel: createStderrChannel(),
- *   clock: createHighResolutionClock(),
+ *   clock: createWallClock(),
  * });
  *
  * logger.info('Server started', { port: 3000 });
@@ -113,7 +113,7 @@ export function createLogger(deps: LoggerDependencies): Logger {
     }
 
     const entry: LogEntry = {
-      timestamp: new Date(clock.wallClockMs()).toISOString(),
+      timestamp: new Date(clock.nowMs()).toISOString(),
       level,
       message,
     };

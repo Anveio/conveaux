@@ -1,0 +1,17 @@
+{
+  "name": "@conveaux/tsconfig",
+  "private": true,
+  "version": "0.0.0",
+  "files": [
+    "base.json",
+    "workspace-app-config.json",
+    "workspace-package-config.json",
+    "workspace-react-library-config.json"
+  ],
+  "scripts": {
+    "clean": "git clean -xfd ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.6"
+  }
+}

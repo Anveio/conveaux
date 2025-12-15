@@ -1,16 +1,7 @@
 /**
- * High-Resolution Clock implementation.
- * Re-exports the high-resolution clock from @conveaux/port-high-resolution-clock.
+ * Wall Clock implementation.
+ * Re-exports the wall clock from @conveaux/port-wall-clock.
  */
 
-export {
-  createHighResolutionClock,
-  createNodeTimestamper,
-  createBrowserTimestamper,
-  createDateTimestamper,
-} from '@conveaux/port-high-resolution-clock';
-export type {
-  HighResolutionClock,
-  HighResolutionClockOptions,
-  Timestamper,
-} from '@conveaux/port-high-resolution-clock';
+export { createWallClock } from '@conveaux/port-wall-clock';
+export type { WallClock, WallClockOptions } from '@conveaux/port-wall-clock';

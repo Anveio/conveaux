@@ -2,8 +2,8 @@
  * Tests for port-logger.
  */
 
-import type { HighResolutionClock } from '@conveaux/contract-high-resolution-clock';
 import type { OutChannel } from '@conveaux/contract-outchannel';
+import type { WallClock } from '@conveaux/contract-wall-clock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LOG_LEVEL_PRIORITY, createLogger } from './index.js';
 
@@ -18,21 +18,17 @@ function createMockChannel(): OutChannel & { lines: string[] } {
   };
 }
 
-// Inline mock for HighResolutionClock with fixed time
-function createMockClock(timestamp: string): HighResolutionClock {
+// Inline mock for WallClock with fixed time
+function createMockClock(timestamp: string): WallClock {
   const date = new Date(timestamp);
-  let monotonicMs = 0;
   return {
-    now: () => monotonicMs++,
-    hrtime: () => BigInt(monotonicMs) * 1_000_000n,
-    nowNs: () => BigInt(monotonicMs) * 1_000_000n,
-    wallClockMs: () => date.getTime(),
+    nowMs: () => date.getTime(),
   };
 }
 
 describe('createLogger', () => {
   let mockChannel: ReturnType<typeof createMockChannel>;
-  let mockClock: HighResolutionClock;
+  let mockClock: WallClock;
 
   beforeEach(() => {
     mockChannel = createMockChannel();
@@ -156,7 +152,7 @@ describe('createLogger', () => {
 
 describe('minLevel filtering', () => {
   let mockChannel: ReturnType<typeof createMockChannel>;
-  let mockClock: HighResolutionClock;
+  let mockClock: WallClock;
 
   beforeEach(() => {
     mockChannel = createMockChannel();
@@ -256,7 +252,7 @@ describe('minLevel filtering', () => {
 
 describe('error serialization', () => {
   let mockChannel: ReturnType<typeof createMockChannel>;
-  let mockClock: HighResolutionClock;
+  let mockClock: WallClock;
 
   beforeEach(() => {
     mockChannel = createMockChannel();
@@ -359,7 +355,7 @@ describe('error serialization', () => {
 
 describe('edge cases', () => {
   let mockChannel: ReturnType<typeof createMockChannel>;
-  let mockClock: HighResolutionClock;
+  let mockClock: WallClock;
 
   beforeEach(() => {
     mockChannel = createMockChannel();
@@ -439,7 +435,7 @@ describe('edge cases', () => {
 });
 
 describe('channel error handling', () => {
-  let mockClock: HighResolutionClock;
+  let mockClock: WallClock;
 
   beforeEach(() => {
     mockClock = createMockClock('2024-12-15T10:30:00.000Z');
