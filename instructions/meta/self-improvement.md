@@ -26,13 +26,13 @@ While working on product code, notice:
 4. **Contradictions**: Instructions conflict with each other
 5. **Staleness**: Instructions reference deprecated patterns
 
-Capture observations in session notes (PLAN.md or HANDOFF.md "Notes" section).
+Capture observations in your todo list notes or communicate them to the TSC at session end.
 
 ### PROPOSE (At Session Boundaries)
 
 **IP Workflow During Sessions:**
 
-1. **Identify** during work - Note "this should be an IP" in PLAN.md
+1. **Identify** during work - Note "this should be an IP" in todo list
 2. **Draft** at session boundary - Create IP file with problem statement
 3. **Complete** in dedicated session - Full implementation + verification
 
@@ -137,12 +137,16 @@ RSID does NOT make instruction improvement the primary activity. Product work re
 
 ## Session Close Checklist
 
+**CRITICAL**: A task is NOT complete until the PR is merged to main. Creating a PR is not completion.
+
 Before marking work complete:
 - [ ] All observations captured in `lessons.md` (or noted for next session)
 - [ ] Any identified IPs drafted or deferred with reason
 - [ ] No contradictions introduced between instruction files
 - [ ] `./verify.sh --ui=false` passes
 - [ ] Changes committed and pushed
+- [ ] **PR merged to main** (not just created)
+- [ ] Main branch verified healthy post-merge
 
 ## IP Verification Checklist
 
@@ -201,7 +205,7 @@ Process:
 ```
 Observe gap/friction during work
         ↓
-Note in PLAN.md or HANDOFF.md
+Note in todo list or report to TSC
         ↓
 At session end: Create IP if pattern generalizes
         ↓
