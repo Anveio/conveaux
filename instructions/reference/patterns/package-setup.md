@@ -106,6 +106,53 @@ In `turbo.json`, include tsbuildinfo in outputs:
 }
 ```
 
+## Build Tool Selection
+
+Choose the appropriate build tool based on package complexity:
+
+| Package Type | Recommended Tool | Rationale |
+|--------------|------------------|-----------|
+| Contract | tsc | No runtime code, declarations only |
+| Simple Port | tsc | Single entry point, no bundling needed |
+| Complex Application | tsup | Multiple entry points, bundling, tree-shaking |
+
+### When to Use tsc
+
+Use plain TypeScript compiler when:
+- Contract packages (interfaces and types only)
+- Simple ports with single entry point
+- Packages with no external dependencies to bundle
+- ESM-only output is sufficient
+
+**tsc package.json:**
+```json
+{
+  "scripts": {
+    "build": "tsc"
+  }
+}
+```
+
+**tsc tsconfig.json:**
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"]
+}
+```
+
+### When to Use tsup
+
+Use tsup when:
+- Applications with multiple entry points
+- Packages needing both ESM and CJS output
+- Packages requiring tree-shaking or minification
+- Packages with complex dependency handling
+
 ## tsup Configuration Pattern
 
 Create `tsup.config.ts` in each package:

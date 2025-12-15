@@ -1,0 +1,33 @@
+{
+  "name": "@conveaux/port-logger",
+  "version": "0.1.0",
+  "description": "Logger port - structured JSON logging implementation",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "source": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "dependencies": {
+    "@conveaux/contract-logger": "*",
+    "@conveaux/contract-outchannel": "*",
+    "@conveaux/contract-clock": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
