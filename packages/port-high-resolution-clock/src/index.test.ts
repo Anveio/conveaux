@@ -1,57 +1,65 @@
 import { describe, expect, it } from 'vitest';
-import { createHighResolutionClock } from './index.js';
+import {
+  createBrowserTimestamper,
+  createDateTimestamper,
+  createHighResolutionClock,
+  createNodeTimestamper,
+} from './index.js';
+import type { Timestamper } from './index.js';
+
+// Helper to create a mock timestamper with controllable time
+function createMockTimestamper(initialNs = 0n): Timestamper & { time: bigint } {
+  const mock = {
+    time: initialNs,
+    nowNs: () => mock.time,
+  };
+  return mock;
+}
 
 describe('createHighResolutionClock', () => {
   describe('now()', () => {
     it('returns 0 on first call with default origin', () => {
-      const time = 1000;
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-      });
+      const timestamper = createMockTimestamper(1_000_000_000n);
+      const clock = createHighResolutionClock({ timestamper });
 
-      // First call should be 0 (time - origin = 1000 - 1000 = 0)
       expect(clock.now()).toBe(0);
     });
 
-    it('returns elapsed time from origin', () => {
-      let time = 1000;
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-      });
+    it('returns elapsed time in milliseconds', () => {
+      const timestamper = createMockTimestamper(0n);
+      const clock = createHighResolutionClock({ timestamper });
 
-      // First call: 0
       expect(clock.now()).toBe(0);
 
-      // Advance time
-      time = 1050;
+      // Advance 50ms (50_000_000 nanoseconds)
+      timestamper.time = 50_000_000n;
       expect(clock.now()).toBe(50);
 
-      time = 1100;
+      // Advance 100ms total
+      timestamper.time = 100_000_000n;
       expect(clock.now()).toBe(100);
     });
 
-    it('uses custom originMs when provided', () => {
-      const time = 1000;
+    it('uses custom originNs when provided', () => {
+      const timestamper = createMockTimestamper(1_000_000_000n); // 1 second
       const clock = createHighResolutionClock({
-        readMs: () => time,
-        originMs: 500, // Custom origin
+        timestamper,
+        originNs: 500_000_000n, // 500ms origin
       });
 
-      // 1000 - 500 = 500
+      // 1000ms - 500ms = 500ms
       expect(clock.now()).toBe(500);
     });
 
     it('guarantees monotonic non-decreasing time', () => {
-      let time = 100;
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-      });
+      const timestamper = createMockTimestamper(100_000_000n);
+      const clock = createHighResolutionClock({ timestamper });
 
       const t1 = clock.now(); // 0
-      time = 150;
+      timestamper.time = 150_000_000n;
       const t2 = clock.now(); // 50
-      time = 120; // Regress!
-      const t3 = clock.now(); // Should be >= t2, not 20
+      timestamper.time = 120_000_000n; // Regress!
+      const t3 = clock.now(); // Should be >= t2
 
       expect(t1).toBe(0);
       expect(t2).toBe(50);
@@ -59,20 +67,16 @@ describe('createHighResolutionClock', () => {
     });
 
     it('handles multiple regressions', () => {
-      let time = 100;
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-      });
-
-      const readings: number[] = [];
+      const timestamper = createMockTimestamper(100_000_000n);
+      const clock = createHighResolutionClock({ timestamper });
 
       clock.now(); // Initialize
-      time = 200;
-      readings.push(clock.now()); // 100
+      timestamper.time = 200_000_000n;
+      const readings: number[] = [clock.now()]; // 100ms
 
       // Multiple regressions
       for (let i = 0; i < 5; i++) {
-        time = 50; // Regress
+        timestamper.time = 50_000_000n; // Regress
         readings.push(clock.now());
       }
 
@@ -83,350 +87,260 @@ describe('createHighResolutionClock', () => {
     });
   });
 
-  describe('hrtime()', () => {
-    it('returns bigint from native hrtime when available', () => {
-      const mockHrtime = Object.assign(() => [0, 0] as [number, number], {
-        bigint: () => 123456789n,
-      });
-
-      const clock = createHighResolutionClock({
-        environment: {
-          process: { hrtime: mockHrtime },
-        },
-      });
-
-      expect(clock.hrtime()).toBe(123456789n);
-    });
-
-    it('falls back to derived nanoseconds when no hrtime', () => {
-      let time = 1000;
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-        environment: {
-          process: null, // Disable process.hrtime
-        },
-      });
-
-      // First call: now() = 0, hrtime = 0 ns
-      expect(clock.hrtime()).toBe(0n);
-
-      // After 10ms: now() = 10, hrtime = 10_000_000 ns
-      time = 1010;
-      expect(clock.hrtime()).toBe(10_000_000n);
-    });
-
-    it('uses custom readHrtime when provided', () => {
-      const clock = createHighResolutionClock({
-        readHrtime: () => 999_999_999n,
-      });
-
-      expect(clock.hrtime()).toBe(999_999_999n);
-    });
-
-    it('falls back when custom readHrtime returns undefined', () => {
-      let time = 1000;
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-        readHrtime: () => undefined,
-        environment: { process: null },
-      });
-
-      time = 1005; // 5ms elapsed
-      expect(clock.hrtime()).toBe(5_000_000n);
-    });
-  });
-
   describe('nowNs()', () => {
-    it('returns nanoseconds derived from now()', () => {
-      let time = 1000;
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-        environment: { process: null },
-      });
+    it('returns 0n on first call with default origin', () => {
+      const timestamper = createMockTimestamper(1_000_000_000n);
+      const clock = createHighResolutionClock({ timestamper });
 
-      // First call: now() = 0, nowNs() = 0
+      expect(clock.nowNs()).toBe(0n);
+    });
+
+    it('returns elapsed time in nanoseconds', () => {
+      const timestamper = createMockTimestamper(0n);
+      const clock = createHighResolutionClock({ timestamper });
+
       expect(clock.nowNs()).toBe(0n);
 
-      // After 10ms: now() = 10, nowNs() = 10_000_000
-      time = 1010;
+      timestamper.time = 10_000_000n; // 10ms
       expect(clock.nowNs()).toBe(10_000_000n);
 
-      // After 100ms: now() = 100, nowNs() = 100_000_000
-      time = 1100;
+      timestamper.time = 100_000_000n; // 100ms
       expect(clock.nowNs()).toBe(100_000_000n);
     });
 
-    it('is always consistent with now() regardless of hrtime availability', () => {
-      let time = 1000;
-      const mockHrtime = Object.assign(() => [0, 0] as [number, number], {
-        bigint: () => 999_999_999n, // Native hrtime returns different value
-      });
+    it('maintains monotonicity', () => {
+      const timestamper = createMockTimestamper(100_000_000n);
+      const clock = createHighResolutionClock({ timestamper });
 
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-        environment: {
-          process: { hrtime: mockHrtime },
-        },
-      });
+      clock.nowNs(); // Initialize
+      timestamper.time = 200_000_000n;
+      const ns1 = clock.nowNs();
 
-      // nowNs() should be derived from now(), NOT from native hrtime
-      expect(clock.nowNs()).toBe(0n); // now() = 0
-
-      time = 1050;
-      expect(clock.nowNs()).toBe(50_000_000n); // now() = 50ms = 50_000_000ns
-
-      // hrtime() uses native source (different value)
-      expect(clock.hrtime()).toBe(999_999_999n);
-    });
-
-    it('maintains monotonicity when now() is monotonic', () => {
-      let time = 100;
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-        environment: { process: null },
-      });
-
-      clock.now(); // Initialize
-      time = 200;
-      const ns1 = clock.nowNs(); // 100ms = 100_000_000ns
-
-      // Regress time
-      time = 50;
+      timestamper.time = 50_000_000n; // Regress
       const ns2 = clock.nowNs();
 
-      // nowNs should still be monotonic (because now() is monotonic)
       expect(ns2).toBeGreaterThanOrEqual(ns1);
     });
 
-    it('throws on non-finite values', () => {
+    it('is consistent with now()', () => {
+      const timestamper = createMockTimestamper(0n);
+      const clock = createHighResolutionClock({ timestamper });
+
+      timestamper.time = 50_000_000n;
+      const ms = clock.now();
+      const ns = clock.nowNs();
+
+      // They should be consistent (ns = ms * 1_000_000)
+      // Note: after first call, nowNs reads from lastNs which was set by now()
+      expect(Number(ns) / 1_000_000).toBeCloseTo(ms, 0);
+    });
+  });
+
+  describe('hrtime()', () => {
+    it('returns raw timestamper value', () => {
+      const timestamper = createMockTimestamper(123_456_789n);
+      const clock = createHighResolutionClock({ timestamper });
+
+      expect(clock.hrtime()).toBe(123_456_789n);
+    });
+
+    it('reflects timestamper changes directly', () => {
+      const timestamper = createMockTimestamper(0n);
+      const clock = createHighResolutionClock({ timestamper });
+
+      expect(clock.hrtime()).toBe(0n);
+
+      timestamper.time = 999_999_999n;
+      expect(clock.hrtime()).toBe(999_999_999n);
+    });
+
+    it('is independent of clock origin', () => {
+      const timestamper = createMockTimestamper(1_000_000_000n);
       const clock = createHighResolutionClock({
-        readMs: () => Number.POSITIVE_INFINITY,
-        environment: { process: null },
+        timestamper,
+        originNs: 500_000_000n,
       });
 
-      expect(() => clock.nowNs()).toThrow('non-finite');
+      // hrtime returns raw timestamper value, not relative to origin
+      expect(clock.hrtime()).toBe(1_000_000_000n);
     });
   });
 
   describe('wallClockMs()', () => {
-    it('returns current wall-clock time', () => {
-      let wallTime = 1702648800000; // Some epoch time
+    it('returns current wall-clock time from default Date.now', () => {
+      const timestamper = createMockTimestamper(0n);
+      const clock = createHighResolutionClock({ timestamper });
+
+      const wall = clock.wallClockMs();
+      const dateNow = Date.now();
+
+      // Should be within 100ms of Date.now()
+      expect(Math.abs(wall - dateNow)).toBeLessThan(100);
+    });
+
+    it('uses custom wallClock when provided', () => {
+      const timestamper = createMockTimestamper(0n);
+      let wallTime = 1702648800000; // Fixed epoch time
       const clock = createHighResolutionClock({
-        environment: {
-          dateNow: () => wallTime,
-        },
+        timestamper,
+        wallClock: () => wallTime,
       });
 
-      expect(clock.wallClockMs()).toBe(wallTime);
+      expect(clock.wallClockMs()).toBe(1702648800000);
 
       wallTime += 1000;
       expect(clock.wallClockMs()).toBe(1702648801000);
     });
 
-    it('is independent of monotonic now()', () => {
-      let monotonicTime = 1000;
+    it('is independent of monotonic time', () => {
+      const timestamper = createMockTimestamper(0n);
       let wallTime = 1702648800000;
-
       const clock = createHighResolutionClock({
-        readMs: () => monotonicTime,
-        environment: {
-          dateNow: () => wallTime,
-        },
+        timestamper,
+        wallClock: () => wallTime,
       });
 
-      // wallClockMs uses dateNow, not the monotonic readMs
-      expect(clock.wallClockMs()).toBe(wallTime);
+      // Monotonic time regresses
+      timestamper.time = 100_000_000n;
+      timestamper.time = 50_000_000n; // Regress
 
-      // Even if monotonic time regresses, wall time continues
-      monotonicTime = 500; // Regress monotonic
-      wallTime += 1000; // Wall time advances
+      // Wall time continues forward regardless
+      wallTime += 1000;
       expect(clock.wallClockMs()).toBe(1702648801000);
     });
   });
 
-  describe('environment resolution', () => {
-    it('uses performance.now when available', () => {
-      let perfTime = 1000;
-      const mockPerformance = {
-        now: () => perfTime,
-      };
+  describe('independent clock instances', () => {
+    it('each clock has independent state', () => {
+      const timestamper = createMockTimestamper(1_000_000_000n);
 
-      const clock = createHighResolutionClock({
-        environment: {
-          performance: mockPerformance,
-          process: null,
-        },
-      });
+      const clock1 = createHighResolutionClock({ timestamper });
+      timestamper.time = 1_100_000_000n;
+      const clock2 = createHighResolutionClock({ timestamper });
 
-      expect(clock.now()).toBe(0);
-
-      perfTime = 1100;
-      expect(clock.now()).toBe(100);
-    });
-
-    it('falls back to dateNow when performance is null', () => {
-      let dateTime = 1000;
-      const clock = createHighResolutionClock({
-        environment: {
-          performance: null,
-          dateNow: () => dateTime,
-        },
-      });
-
-      expect(clock.now()).toBe(0);
-
-      dateTime = 1050;
-      expect(clock.now()).toBe(50);
-    });
-
-    it('uses default Date.now when no dateNow override', () => {
-      // This test verifies the default behavior works
-      const clock = createHighResolutionClock({
-        environment: {
-          performance: null,
-          process: null,
-          // No dateNow override - should use Date.now
-        },
-      });
-
-      const t1 = clock.wallClockMs();
-      expect(typeof t1).toBe('number');
-      expect(t1).toBeGreaterThan(0);
-    });
-
-    it('distinguishes undefined (use default) from null (disable)', () => {
-      // When performance is undefined, use globalThis.performance
-      // When performance is null, explicitly disable it
-
-      let dateTime = 5000;
-      const clock = createHighResolutionClock({
-        environment: {
-          performance: null, // Explicitly disable
-          dateNow: () => dateTime,
-        },
-      });
-
-      // Should use dateNow since performance is disabled
-      expect(clock.now()).toBe(0);
-      dateTime = 5100;
-      expect(clock.now()).toBe(100);
-    });
-
-    it('uses globalThis defaults when no environment override provided', () => {
-      // When no environment object is passed at all, should use globalThis defaults
-      // This exercises the fallback path in resolveEnvironment
-      const clock = createHighResolutionClock();
-
-      // Should be able to read time (using whatever globalThis provides)
-      const t1 = clock.now();
-      expect(typeof t1).toBe('number');
-
-      // wallClockMs should return current time
-      const wall = clock.wallClockMs();
-      expect(typeof wall).toBe('number');
-      expect(wall).toBeGreaterThan(0);
-    });
-
-    it('uses globalThis.performance when environment key not present', () => {
-      // Environment object exists but doesn't have performance key
-      // Should fall back to globalThis.performance
-      const clock = createHighResolutionClock({
-        environment: {
-          // performance not specified - should use globalThis.performance
-          // process not specified - should use globalThis.process
-        },
-      });
-
-      const t1 = clock.now();
-      expect(typeof t1).toBe('number');
+      // clock1 origin = 1_000_000_000n, clock2 origin = 1_100_000_000n
+      timestamper.time = 1_200_000_000n;
+      expect(clock1.now()).toBe(200); // 1200 - 1000 = 200ms
+      expect(clock2.now()).toBe(100); // 1200 - 1100 = 100ms
     });
   });
 
   describe('edge cases', () => {
-    it('handles very large time values', () => {
-      const largeTime = Number.MAX_SAFE_INTEGER - 1000;
+    it('handles zero origin', () => {
+      const timestamper = createMockTimestamper(100_000_000n);
       const clock = createHighResolutionClock({
-        readMs: () => largeTime,
-      });
-
-      expect(clock.now()).toBe(0);
-    });
-
-    it('throws on non-finite values in msToNs conversion', () => {
-      const clock = createHighResolutionClock({
-        readMs: () => Number.POSITIVE_INFINITY,
-        environment: { process: null },
-      });
-
-      // First now() is 0 (Infinity - Infinity = NaN, but origin capture happens first)
-      // This is a bit tricky - the origin is captured as Infinity
-      // So subsequent calls return NaN, which when converted to ns throws
-      expect(() => clock.hrtime()).toThrow('non-finite');
-    });
-
-    it('works with zero origin', () => {
-      const time = 100;
-      const clock = createHighResolutionClock({
-        readMs: () => time,
-        originMs: 0,
+        timestamper,
+        originNs: 0n,
       });
 
       expect(clock.now()).toBe(100);
     });
 
-    it('each clock instance has independent state', () => {
-      let time = 1000;
-      const readMs = () => time;
+    it('handles very large nanosecond values', () => {
+      // ~24 hours in nanoseconds
+      const largeNs = 86_400_000_000_000n;
+      const timestamper = createMockTimestamper(largeNs);
+      const clock = createHighResolutionClock({ timestamper });
 
-      const clock1 = createHighResolutionClock({ readMs });
-      time = 1100;
-      const clock2 = createHighResolutionClock({ readMs });
+      expect(clock.nowNs()).toBe(0n);
+      timestamper.time = largeNs + 1_000_000_000n; // +1 second
+      expect(clock.nowNs()).toBe(1_000_000_000n);
+    });
+  });
+});
 
-      // clock1 origin = 1000, clock2 origin = 1100
-      time = 1200;
-      expect(clock1.now()).toBe(200); // 1200 - 1000
-      expect(clock2.now()).toBe(100); // 1200 - 1100
+describe('Platform Timestamper Factories', () => {
+  describe('createNodeTimestamper()', () => {
+    it('returns a timestamper using process.hrtime.bigint()', () => {
+      const timestamper = createNodeTimestamper();
+
+      const t1 = timestamper.nowNs();
+      expect(typeof t1).toBe('bigint');
+      expect(t1).toBeGreaterThan(0n);
+
+      // Should increase over time
+      const t2 = timestamper.nowNs();
+      expect(t2).toBeGreaterThanOrEqual(t1);
+    });
+  });
+
+  describe('createBrowserTimestamper()', () => {
+    it('returns a timestamper using performance.now()', () => {
+      const timestamper = createBrowserTimestamper();
+
+      const t1 = timestamper.nowNs();
+      expect(typeof t1).toBe('bigint');
+      expect(t1).toBeGreaterThanOrEqual(0n);
+
+      // Should increase over time
+      const t2 = timestamper.nowNs();
+      expect(t2).toBeGreaterThanOrEqual(t1);
     });
 
-    it('falls back to null when globalThis.performance is undefined', () => {
-      // Save original values
-      const globals = globalThis as {
-        performance?: unknown;
-        process?: unknown;
-      };
-      const originalPerformance = globals.performance;
-      const originalProcess = globals.process;
+    it('converts milliseconds to nanoseconds', () => {
+      const timestamper = createBrowserTimestamper();
+      const ns = timestamper.nowNs();
 
-      try {
-        // Remove performance and process from globalThis
-        globals.performance = undefined;
-        globals.process = undefined;
-
-        // Create clock with empty environment (triggers globalThis fallback)
-        // Since performance is undefined, falls back to null, then uses dateNow
-        const clock = createHighResolutionClock({
-          environment: {
-            // No overrides - should use globalThis.performance ?? null
-            // Since we deleted globalThis.performance, ?? null triggers
-          },
-        });
-
-        // Should still work using Date.now fallback
-        const t1 = clock.now();
-        expect(typeof t1).toBe('number');
-
-        const wall = clock.wallClockMs();
-        expect(typeof wall).toBe('number');
-        expect(wall).toBeGreaterThan(0);
-      } finally {
-        // Restore original values
-        if (originalPerformance !== undefined) {
-          globals.performance = originalPerformance;
-        }
-        if (originalProcess !== undefined) {
-          globals.process = originalProcess;
-        }
-      }
+      // performance.now() returns ms since page load (usually small)
+      // In Node.js test environment, this should be reasonable
+      expect(ns).toBeGreaterThanOrEqual(0n);
     });
+  });
+
+  describe('createDateTimestamper()', () => {
+    it('returns a timestamper using Date.now()', () => {
+      const timestamper = createDateTimestamper();
+
+      const t1 = timestamper.nowNs();
+      expect(typeof t1).toBe('bigint');
+
+      // Should be roughly Date.now() * 1_000_000
+      const expectedNs = BigInt(Date.now()) * 1_000_000n;
+      const diff = t1 > expectedNs ? t1 - expectedNs : expectedNs - t1;
+      expect(diff).toBeLessThan(1_000_000_000n); // Within 1 second
+    });
+
+    it('converts milliseconds to nanoseconds correctly', () => {
+      const timestamper = createDateTimestamper();
+      const ns = timestamper.nowNs();
+
+      // Unix epoch in ns should be large (since 1970)
+      expect(ns).toBeGreaterThan(1_000_000_000_000_000_000n); // > year 2001
+    });
+  });
+});
+
+describe('Integration: Clock with Platform Timestampers', () => {
+  it('works with createNodeTimestamper()', () => {
+    const clock = createHighResolutionClock({
+      timestamper: createNodeTimestamper(),
+    });
+
+    const t1 = clock.now();
+    expect(typeof t1).toBe('number');
+    expect(t1).toBeGreaterThanOrEqual(0);
+
+    const t2 = clock.now();
+    expect(t2).toBeGreaterThanOrEqual(t1);
+  });
+
+  it('works with createBrowserTimestamper()', () => {
+    const clock = createHighResolutionClock({
+      timestamper: createBrowserTimestamper(),
+    });
+
+    const t1 = clock.now();
+    expect(typeof t1).toBe('number');
+    expect(t1).toBeGreaterThanOrEqual(0);
+  });
+
+  it('works with createDateTimestamper()', () => {
+    const clock = createHighResolutionClock({
+      timestamper: createDateTimestamper(),
+    });
+
+    const t1 = clock.now();
+    expect(typeof t1).toBe('number');
+    expect(t1).toBeGreaterThanOrEqual(0);
   });
 });
