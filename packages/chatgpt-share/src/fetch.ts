@@ -1,9 +1,11 @@
-import {
-  FetchError,
-  type FetchOptions,
-  type HttpFetcher,
-  InvalidURLError,
-} from '@conveaux/contracts';
+/**
+ * HTTP fetching for ChatGPT share pages.
+ */
+
+import { FetchError, InvalidURLError } from '@conveaux/contract-error';
+import type { HttpFetch } from '@conveaux/contract-http';
+
+import type { FetchShareOptions } from './types.js';
 
 const VALID_URL_PATTERNS = [
   /^https:\/\/chatgpt\.com\/share\/[a-zA-Z0-9-]+$/,
@@ -15,10 +17,16 @@ const DEFAULT_TIMEOUT = 10000;
 const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
+/**
+ * Validates that a URL is a supported ChatGPT share URL.
+ */
 export function validateURL(url: string): boolean {
   return VALID_URL_PATTERNS.some((pattern) => pattern.test(url));
 }
 
+/**
+ * Extracts the share ID from a ChatGPT share URL.
+ */
 export function extractShareId(url: string): string {
   const match = url.match(/\/share\/([a-zA-Z0-9-]+)$/);
   if (!match?.[1]) {
@@ -27,7 +35,19 @@ export function extractShareId(url: string): string {
   return match[1];
 }
 
-export async function fetchSharePage(url: string, options?: FetchOptions): Promise<string> {
+/**
+ * Fetches the HTML content of a ChatGPT share page.
+ *
+ * @param url - The ChatGPT share URL
+ * @param httpFetch - The fetch function to use (inject globalThis.fetch)
+ * @param options - Fetch options
+ * @returns The HTML content of the page
+ */
+export async function fetchSharePage(
+  url: string,
+  httpFetch: HttpFetch,
+  options?: FetchShareOptions
+): Promise<string> {
   if (!validateURL(url)) {
     throw new InvalidURLError(url);
   }
@@ -38,7 +58,7 @@ export async function fetchSharePage(url: string, options?: FetchOptions): Promi
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {
-    const response = await fetch(url, {
+    const response = await httpFetch(url, {
       headers: {
         'User-Agent': USER_AGENT,
         Accept:
@@ -52,11 +72,11 @@ export async function fetchSharePage(url: string, options?: FetchOptions): Promi
     clearTimeout(timeoutId);
 
     if (response.status === 404) {
-      throw new FetchError('Conversation not found (may be private or deleted)');
+      throw new FetchError('Conversation not found (may be private or deleted)', 404);
     }
 
     if (!response.ok) {
-      throw new FetchError(`HTTP error: ${response.status}`);
+      throw new FetchError(`HTTP error: ${response.status}`, response.status);
     }
 
     return await response.text();
@@ -67,19 +87,10 @@ export async function fetchSharePage(url: string, options?: FetchOptions): Promi
       throw error;
     }
 
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        throw new FetchError(`Request timed out after ${timeout / 1000} seconds`);
-      }
-      throw new FetchError(`Network error: ${error.message}`);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new FetchError('Request timed out');
     }
 
-    throw new FetchError('Unknown network error');
+    throw new FetchError(error instanceof Error ? error.message : 'Unknown fetch error');
   }
-}
-
-export function createHttpFetcher(): HttpFetcher {
-  return {
-    fetch: fetchSharePage,
-  };
 }

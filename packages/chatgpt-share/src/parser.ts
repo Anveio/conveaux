@@ -1,11 +1,16 @@
-import {
-  type ChatGPTConversation,
-  type ConversationNode,
-  ParseError,
-  type ParsedConversation,
-  type ParsedMessage,
-} from '@conveaux/contracts';
+/**
+ * HTML parsing for ChatGPT share pages.
+ */
+
+import { ParseError } from '@conveaux/contract-error';
 import * as cheerio from 'cheerio';
+
+import type {
+  ChatGPTConversation,
+  ConversationNode,
+  ParsedConversation,
+  ParsedMessage,
+} from './types.js';
 
 interface NextDataProps {
   pageProps?: {
@@ -96,6 +101,12 @@ function walkConversationTree(
   return messages;
 }
 
+/**
+ * Parses HTML from a ChatGPT share page into a structured conversation.
+ *
+ * @param html - The HTML content of the share page
+ * @returns The parsed conversation
+ */
 export function parseHTML(html: string): ParsedConversation {
   const $ = cheerio.load(html);
   const scriptTag = $('script#__NEXT_DATA__');

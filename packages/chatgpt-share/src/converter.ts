@@ -1,9 +1,20 @@
-import type { ConvertOptions, ParsedConversation } from '@conveaux/contracts';
+/**
+ * Markdown conversion for ChatGPT conversations.
+ */
+
+import type { ConvertOptions, ParsedConversation } from './types.js';
 
 function formatRole(role: 'user' | 'assistant'): string {
   return role === 'user' ? 'User' : 'Assistant';
 }
 
+/**
+ * Converts a parsed conversation to Markdown format.
+ *
+ * @param conversation - The parsed conversation
+ * @param options - Conversion options
+ * @returns Markdown string
+ */
 export function convertToMarkdown(
   conversation: ParsedConversation,
   options?: ConvertOptions

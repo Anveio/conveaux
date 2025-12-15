@@ -14,6 +14,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 |--------|-------|--------------|
 | package-setup | 3 | 2024-12-15 |
 | core-abstractions | 3 | 2024-12-15 |
+| contract-design | 1 | 2024-12-15 |
 | documentation | 1 | 2024-12-15 |
 | type-safety | 3 | 2024-12-15 |
 | meta-improvement | 3 | 2024-12-15 |
