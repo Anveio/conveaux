@@ -19,11 +19,18 @@ export interface AgentConfig {
   model?: string;
 }
 
+export interface AgentUsage {
+  apiCalls: number;
+  inputTokens: number;
+  outputTokens: number;
+}
+
 export interface AgentResult {
   success: boolean;
   output: string;
   toolCalls: Array<{ tool: string; input: unknown; result: string }>;
   error?: string;
+  usage?: AgentUsage;
 }
 
 /**
@@ -45,6 +52,11 @@ export async function runAgent(task: string, config: AgentConfig): Promise<Agent
   const toolCalls: AgentResult['toolCalls'] = [];
   const model = config.model ?? 'claude-sonnet-4-20250514';
 
+  // Track usage
+  let apiCalls = 0;
+  let inputTokens = 0;
+  let outputTokens = 0;
+
   let iterations = 0;
 
   while (iterations < config.maxIterations) {
@@ -59,6 +71,11 @@ export async function runAgent(task: string, config: AgentConfig): Promise<Agent
         tools: getToolDefinitions() as Anthropic.Tool[],
         messages,
       });
+
+      // Track API usage
+      apiCalls++;
+      inputTokens += response.usage?.input_tokens ?? 0;
+      outputTokens += response.usage?.output_tokens ?? 0;
 
       // Check for text response
       const textBlocks = response.content.filter(
@@ -77,6 +94,7 @@ export async function runAgent(task: string, config: AgentConfig): Promise<Agent
           success: true,
           output: finalOutput,
           toolCalls,
+          usage: { apiCalls, inputTokens, outputTokens },
         };
       }
 
@@ -122,6 +140,7 @@ export async function runAgent(task: string, config: AgentConfig): Promise<Agent
           success: true,
           output: finalOutput,
           toolCalls,
+          usage: { apiCalls, inputTokens, outputTokens },
         };
       }
     } catch (error) {
@@ -130,6 +149,7 @@ export async function runAgent(task: string, config: AgentConfig): Promise<Agent
         output: '',
         toolCalls,
         error: getErrorMessage(error),
+        usage: { apiCalls, inputTokens, outputTokens },
       };
     }
   }
@@ -139,6 +159,7 @@ export async function runAgent(task: string, config: AgentConfig): Promise<Agent
     output: '',
     toolCalls,
     error: `Max iterations (${config.maxIterations}) reached`,
+    usage: { apiCalls, inputTokens, outputTokens },
   };
 }
 

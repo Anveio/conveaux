@@ -8,6 +8,8 @@
  */
 
 import { runAgent } from './agent';
+import type { AgentBenchmark, LoopBenchmark } from './benchmark/contracts';
+import { aggregateBenchmarks } from './benchmark/index';
 import { type Instructions, getContextForTask } from './instructions';
 import { output } from './output';
 import { extractExecErrorOutput } from './type-guards';
@@ -25,6 +27,10 @@ export interface LoopConfig {
   packageName?: string;
   packageType?: string;
   description?: string;
+
+  // Optional overrides
+  model?: string;
+  benchmark?: boolean;
 }
 
 export interface LoopResult {
@@ -33,6 +39,7 @@ export interface LoopResult {
   lessonsRecorded: number;
   packagePath?: string;
   error?: string;
+  benchmark?: LoopBenchmark;
 }
 
 /**
@@ -40,6 +47,8 @@ export interface LoopResult {
  */
 export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
   const instructionContext = getContextForTask(config.instructions, config.mode);
+  const model = config.model ?? 'claude-sonnet-4-20250514';
+  const startedAt = new Date().toISOString();
 
   // Build the system prompt
   const systemPrompt = buildSystemPrompt(config, instructionContext);
@@ -50,14 +59,21 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
   output.header('OUTER LOOP START');
   output.info(`Mode: ${config.mode}`);
   output.info(`Max iterations: ${config.maxIterations}`);
+  if (config.benchmark) {
+    output.info(`Model: ${model}`);
+    output.info('Benchmarking: enabled');
+  }
 
   let iterations = 0;
   let lessonsRecorded = 0;
   let lastError: string | undefined;
+  const iterationBenchmarks: AgentBenchmark[] = [];
 
   while (iterations < config.maxIterations) {
     iterations++;
     output.header(`ITERATION ${iterations}`);
+
+    const iterationStart = Date.now();
 
     // Run the agent with the task
     const result = await runAgent(
@@ -67,8 +83,22 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
       {
         systemPrompt,
         maxIterations: 30, // Tool call iterations within a single outer loop iteration
+        model,
       }
     );
+
+    // Track benchmark if enabled
+    if (config.benchmark) {
+      const iterationBenchmark: AgentBenchmark = {
+        apiCalls: result.usage?.apiCalls ?? 0,
+        inputTokens: result.usage?.inputTokens ?? 0,
+        outputTokens: result.usage?.outputTokens ?? 0,
+        durationMs: Date.now() - iterationStart,
+        toolCalls: result.toolCalls.length,
+        model,
+      };
+      iterationBenchmarks.push(iterationBenchmark);
+    }
 
     if (!result.success) {
       output.error(`Agent failed: ${result.error}`);
@@ -97,6 +127,7 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
     if (signals.milestoneComplete) {
       output.success('Milestone complete!');
 
+      const completedAt = new Date().toISOString();
       return {
         success: true,
         iterations,
@@ -105,6 +136,14 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
           config.mode === 'create'
             ? `${config.projectRoot}/packages/${config.packageName}`
             : config.targetPackage,
+        benchmark: config.benchmark
+          ? {
+              iterations: iterationBenchmarks,
+              totals: aggregateBenchmarks(iterationBenchmarks),
+              startedAt,
+              completedAt,
+            }
+          : undefined,
       };
     }
 
@@ -123,6 +162,7 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
 
   // If we got here without success, determine outcome
   const verifyResult = await runVerification(config.projectRoot);
+  const completedAt = new Date().toISOString();
 
   if (verifyResult.passed) {
     return {
@@ -133,6 +173,14 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
         config.mode === 'create'
           ? `${config.projectRoot}/packages/${config.packageName}`
           : config.targetPackage,
+      benchmark: config.benchmark
+        ? {
+            iterations: iterationBenchmarks,
+            totals: aggregateBenchmarks(iterationBenchmarks),
+            startedAt,
+            completedAt,
+          }
+        : undefined,
     };
   }
 
@@ -141,6 +189,14 @@ export async function runOuterLoop(config: LoopConfig): Promise<LoopResult> {
     iterations,
     lessonsRecorded,
     error: lastError ?? 'Loop completed without achieving milestone',
+    benchmark: config.benchmark
+      ? {
+          iterations: iterationBenchmarks,
+          totals: aggregateBenchmarks(iterationBenchmarks),
+          startedAt,
+          completedAt,
+        }
+      : undefined,
   };
 }
 
