@@ -1,0 +1,22 @@
+{
+  "name": "@conveaux/contract-timers",
+  "version": "0.1.0",
+  "description": "Timers contract - injectable setTimeout/clearTimeout for async scheduling",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["src"],
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
+  }
+}
