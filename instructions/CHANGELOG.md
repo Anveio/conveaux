@@ -17,9 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `instructions/reference/patterns/contract-port.md` - Contract-port package architecture pattern
 - `instructions/improvements/proposals/IP-001-consolidate-port-documentation.md` - Port documentation consolidation
 - `instructions/improvements/proposals/IP-002-build-tool-guidance.md` - Build tool selection guidance
-- `instructions/skills/pr-review-loop.md` - PR review loop skill (PR → Review → Improve → Review)
 - `instructions/improvements/proposals/IP-003-claude-code-works-type-safety.md` - Type safety improvements for claude-code-works
 - `apps/claude-code-works/src/type-guards.ts` - Centralized type guards for runtime validation
+- `apps/claude-code-works/src/type-guards.ts:extractExecErrorOutput` - Helper for consistent exec error extraction
 
 ### Changed
 
@@ -36,7 +36,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
-- None
+- `instructions/skills/code-review.md` - Moved to github-cli skill
+- `instructions/skills/git.md` - Moved to github-cli skill
+- `instructions/skills/index.md` - Skills now managed via .claude/skills/
+- `instructions/skills/pr-review-loop.md` - Moved to github-cli skill
+- `instructions/skills/security.md` - Archived
 
 ---
 

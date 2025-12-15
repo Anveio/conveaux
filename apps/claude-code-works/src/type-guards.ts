@@ -75,3 +75,28 @@ export function isGrepNoMatchError(error: unknown): boolean {
     (!error.stderr || error.stderr === '')
   );
 }
+
+/**
+ * Extract output from an exec error.
+ *
+ * Node's child_process exec errors include stdout/stderr from the failed command.
+ * This function safely extracts that output along with the error message.
+ *
+ * @returns Combined output string (stdout + stderr + error message)
+ */
+export function extractExecErrorOutput(error: unknown): string {
+  const parts: string[] = [];
+
+  if (isRecord(error)) {
+    if (isString(error.stdout) && error.stdout) {
+      parts.push(error.stdout);
+    }
+    if (isString(error.stderr) && error.stderr) {
+      parts.push(error.stderr);
+    }
+  }
+
+  parts.push(getErrorMessage(error));
+
+  return parts.join('\n');
+}
