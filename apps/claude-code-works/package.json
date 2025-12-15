@@ -16,13 +16,17 @@
   },
   "scripts": {
     "start": "bun run src/cli.ts",
-    "typecheck": "bun x tsc --noEmit"
+    "typecheck": "bun x tsc --noEmit",
+    "test": "vitest run",
+    "test:smoke": "vitest run src/cli.smoke.test.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.33.0"
+    "@anthropic-ai/sdk": "^0.33.0",
+    "commander": "^12.1.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   }
 }

@@ -4,136 +4,110 @@
  *
  * A coding agent that follows the instructions framework to execute
  * recursive self-improvement on a target package.
- *
- * Usage:
- *   claude-code-works improve <package-path>
- *   claude-code-works create <package-name> --type=<type>
  */
 
-import { loadInstructions } from './instructions';
-import { runOuterLoop } from './loop';
+import { Command } from 'commander';
+import { runCreate, runDoctor, runImprove, runStatus } from './commands/index';
+import { resolveConfig } from './config';
 import { output } from './output';
 
-async function main(): Promise<void> {
-  const args = process.argv.slice(2);
-  const command = args[0];
+const program = new Command();
 
-  if (!command || command === '--help' || command === '-h') {
-    printHelp();
-    process.exit(0);
-  }
+program
+  .name('claude-code-works')
+  .description('A coding agent that follows instructions for recursive self-improvement')
+  .version('0.1.0');
 
-  // Load instructions framework
-  const projectRoot = process.cwd();
-  const instructions = await loadInstructions(projectRoot);
+// Improve command
+program
+  .command('improve <package-path>')
+  .description('Improve an existing package')
+  .option('-i, --iterations <n>', 'Maximum iterations', Number.parseInt)
+  .option('-m, --model <model>', 'Claude model to use')
+  .option('-b, --benchmark', 'Enable benchmark output')
+  .action(
+    async (
+      packagePath: string,
+      options: { iterations?: number; model?: string; benchmark?: boolean }
+    ) => {
+      const projectRoot = process.cwd();
+      const config = resolveConfig(projectRoot, {
+        improveIterations: options.iterations,
+        model: options.model,
+        benchmark: options.benchmark,
+      });
 
-  output.info('claude-code-works v0.1.0');
-  output.dim(`Project root: ${projectRoot}`);
-  output.dim(`Instructions loaded: ${instructions.files.length} files`);
-
-  if (command === 'improve') {
-    const targetPackage = args[1];
-    if (!targetPackage) {
-      output.error('Usage: claude-code-works improve <package-path>');
-      process.exit(1);
+      await runImprove(
+        packagePath,
+        {
+          iterations: options.iterations,
+          model: options.model,
+          benchmark: options.benchmark,
+        },
+        config
+      );
     }
+  );
 
-    output.info(`\nImproving package: ${targetPackage}`);
+// Create command
+program
+  .command('create <package-name>')
+  .description('Create a new package')
+  .option('-t, --type <type>', 'Package type (contract, port, adapter, core, app)', 'core')
+  .option('-d, --description <desc>', 'Package description')
+  .option('-i, --iterations <n>', 'Maximum iterations', Number.parseInt)
+  .option('-m, --model <model>', 'Claude model to use')
+  .option('-b, --benchmark', 'Enable benchmark output')
+  .action(
+    async (
+      packageName: string,
+      options: {
+        type?: string;
+        description?: string;
+        iterations?: number;
+        model?: string;
+        benchmark?: boolean;
+      }
+    ) => {
+      const projectRoot = process.cwd();
+      const config = resolveConfig(projectRoot, {
+        createIterations: options.iterations,
+        model: options.model,
+        benchmark: options.benchmark,
+      });
 
-    const result = await runOuterLoop({
-      mode: 'improve',
-      targetPackage,
-      projectRoot,
-      instructions,
-      maxIterations: parseIntFlag(args, '--iterations', 3),
-    });
-
-    if (result.success) {
-      output.success('\nImprovement complete!');
-      output.dim(`  Iterations: ${result.iterations}`);
-      output.dim(`  Lessons recorded: ${result.lessonsRecorded}`);
-    } else {
-      output.error(`\nImprovement failed: ${result.error}`);
-      process.exit(1);
+      await runCreate(
+        packageName,
+        {
+          type: options.type,
+          description: options.description,
+          iterations: options.iterations,
+          model: options.model,
+          benchmark: options.benchmark,
+        },
+        config
+      );
     }
-  } else if (command === 'create') {
-    const packageName = args[1];
-    if (!packageName) {
-      output.error('Usage: claude-code-works create <package-name> --type=<type>');
-      process.exit(1);
-    }
+  );
 
-    const packageType = parseStringFlag(args, '--type', 'core');
-    const description = parseStringFlag(args, '--description', `Package ${packageName}`);
+// Status command
+program
+  .command('status')
+  .description('Show repository state, lessons, IPs, and verification status')
+  .action(async () => {
+    await runStatus();
+  });
 
-    output.info(`\nCreating package: @conveaux/${packageName}`);
-    output.dim(`  Type: ${packageType}`);
+// Doctor command
+program
+  .command('doctor')
+  .description('Validate environment setup')
+  .action(async () => {
+    await runDoctor();
+  });
 
-    const result = await runOuterLoop({
-      mode: 'create',
-      packageName,
-      packageType,
-      description,
-      projectRoot,
-      instructions,
-      maxIterations: parseIntFlag(args, '--iterations', 5),
-    });
-
-    if (result.success) {
-      output.success('\nPackage created!');
-      output.dim(`  Path: ${result.packagePath}`);
-      output.dim(`  Iterations: ${result.iterations}`);
-    } else {
-      output.error(`\nCreation failed: ${result.error}`);
-      process.exit(1);
-    }
-  } else {
-    output.error(`Unknown command: ${command}`);
-    printHelp();
-    process.exit(1);
-  }
-}
-
-function printHelp(): void {
-  console.log(`
-claude-code-works - A coding agent that follows instructions for recursive self-improvement
-
-USAGE:
-  claude-code-works <command> [options]
-
-COMMANDS:
-  improve <package-path>    Improve an existing package
-  create <package-name>     Create a new package
-
-OPTIONS:
-  --type=<type>            Package type (contract, port, adapter, core, app)
-  --description=<desc>     Package description
-  --iterations=<n>         Maximum iterations (default: 3 for improve, 5 for create)
-  --help, -h               Show this help message
-
-ENVIRONMENT:
-  ANTHROPIC_API_KEY        Required. Your Anthropic API key.
-
-EXAMPLES:
-  claude-code-works improve packages/agent-core
-  claude-code-works create clock --type=port --description="Clock port implementation"
-`);
-}
-
-function parseStringFlag(args: string[], flag: string, defaultValue: string): string {
-  const prefix = `${flag}=`;
-  const found = args.find((a) => a.startsWith(prefix));
-  return found ? found.slice(prefix.length) : defaultValue;
-}
-
-function parseIntFlag(args: string[], flag: string, defaultValue: number): number {
-  const value = parseStringFlag(args, flag, '');
-  if (value === '') return defaultValue;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isNaN(parsed) ? defaultValue : parsed;
-}
-
-main().catch((error) => {
+// Parse arguments
+program.parseAsync(process.argv).catch((error) => {
   output.error(`Fatal error: ${error.message}`);
   process.exit(1);
 });
