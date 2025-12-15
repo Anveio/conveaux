@@ -18,6 +18,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 | type-safety | 3 | 2024-12-15 |
 | meta-improvement | 3 | 2024-12-15 |
 | git-workflow | 1 | 2024-12-15 |
+| cross-repo-sync | 1 | 2024-12-15 |
 
 ---
 
@@ -228,3 +229,19 @@ const clock: Clock = {
 - If you need to work on something else, create a new branch from current state
 - Ask the user before any operation that could discard uncommitted changes
 **Instruction Impact**: Formalized in `effective-git` skill
+
+---
+
+### Cross-Repo Sync
+
+#### L-015: Skills Must Stay Synced with Apps They Document
+
+**Date**: 2024-12-15
+**Context**: Discovered claude-code-works skill was out of sync with app
+**Lesson**: When an app has a corresponding skill in another repository, changes to the app must trigger updates to the skill. Skills document CLI commands, options, output signals, and completion criteria - all of which can drift. The completion gate must include a check for cross-repo artifact sync.
+**Evidence**: `claude-code-works` skill referenced `MILESTONE.md` (removed), missing `status`/`doctor` commands, missing `--model`/`--benchmark` options that exist in the actual CLI.
+**Anti-patterns**:
+- Updating app CLI without updating skill documentation
+- Assuming skills auto-update when code changes
+- Treating skills as "nice to have" rather than required documentation
+**Instruction Impact**: Added "Cross-Repository Artifact Sync" section to `completion-gate.md`

@@ -39,7 +39,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `apps/claude-code-works/src/loop.ts` - Fixed regex escaping, replaced type assertions (IP-003)
 - `apps/claude-code-works/src/cli.ts` - Fixed parseIntFlag to handle value 0 correctly (IP-003)
 - `instructions/reference/patterns/contract-port.md` - Replaced with stub referencing `contract-port` skill (reduces context ~3.5k tokens)
-- `instructions/improvements/lessons.md` - Added L-014 (parallel work on shared branches)
+- `instructions/improvements/lessons.md` - Added L-014 (parallel work on shared branches), L-015 (cross-repo sync)
+- `instructions/loop/completion-gate.md` - Added "Cross-Repository Artifact Sync" section
 
 ### Removed
 
