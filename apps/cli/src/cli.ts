@@ -9,13 +9,13 @@ import {
 } from '@conveaux/chatgpt-share';
 import { ConveauxError } from '@conveaux/contract-error';
 import { createLogger, createPrettyFormatter } from '@conveaux/port-logger';
-import { createStderrChannel } from '@conveaux/port-outchannel';
+import { createOutChannel } from '@conveaux/port-outchannel';
 import { createWallClock } from '@conveaux/port-wall-clock';
 import { Command } from 'commander';
 
 // Create logger with pretty colored output to stderr
 const logger = createLogger({
-  channel: createStderrChannel(),
+  channel: createOutChannel(process.stderr),
   clock: createWallClock(),
   options: {
     formatter: createPrettyFormatter({ colors: true }),

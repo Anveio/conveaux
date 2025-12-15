@@ -1,35 +1,46 @@
 /**
  * @conveaux/port-outchannel
  *
- * Output channel implementations for stdout and stderr.
+ * Platform-agnostic output channel implementation.
+ * The underlying write target is injected as a dependency.
  */
 
-import type { OutChannel } from '@conveaux/contract-outchannel';
+import type { OutChannel, WritableTarget } from '@conveaux/contract-outchannel';
 
-// Re-export the contract type for convenience
-export type { OutChannel } from '@conveaux/contract-outchannel';
+// Re-export contract types for convenience
+export type { OutChannel, WritableTarget } from '@conveaux/contract-outchannel';
 
 /**
- * Creates an OutChannel that writes to stderr.
+ * Creates an OutChannel that writes to the provided target.
  *
- * Use this for CLI tools that output JSON/data to stdout,
- * keeping logs on stderr to avoid interfering.
+ * This is the only factory function - inject your platform-specific
+ * write target at the composition root.
+ *
+ * @param target - Any object with a write(data: string) method
+ * @returns OutChannel implementation
+ *
+ * @example Node.js
+ * ```typescript
+ * import { createOutChannel } from '@conveaux/port-outchannel';
+ *
+ * // At composition root
+ * const stderr = createOutChannel(process.stderr);
+ * const stdout = createOutChannel(process.stdout);
+ * ```
+ *
+ * @example Testing
+ * ```typescript
+ * const captured: string[] = [];
+ * const channel = createOutChannel({ write: (d) => captured.push(d) });
+ *
+ * channel.write('hello');
+ * expect(captured).toEqual(['hello']);
+ * ```
  */
-export function createStderrChannel(): OutChannel {
+export function createOutChannel(target: WritableTarget): OutChannel {
   return {
     write(data: string): void {
-      process.stderr.write(data);
-    },
-  };
-}
-
-/**
- * Creates an OutChannel that writes to stdout.
- */
-export function createStdoutChannel(): OutChannel {
-  return {
-    write(data: string): void {
-      process.stdout.write(data);
+      target.write(data);
     },
   };
 }

@@ -73,11 +73,11 @@ function defaultGenerateId(): string {
  * import { createInstrumenter } from '@conveaux/port-instrumentation';
  * import { createLogger } from '@conveaux/port-logger';
  * import { createWallClock } from '@conveaux/port-wall-clock';
- * import { createStderrChannel } from '@conveaux/port-outchannel';
+ * import { createOutChannel } from '@conveaux/port-outchannel';
  *
  * const instrumenter = createInstrumenter({
  *   logger: createLogger({
- *     channel: createStderrChannel(),
+ *     channel: createOutChannel(process.stderr),
  *     clock: createWallClock(),
  *   }),
  *   clock: createWallClock(),
