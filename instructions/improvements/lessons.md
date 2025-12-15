@@ -143,26 +143,11 @@ const clock: Clock = {
 #### L-013: Primitive Ports Must Accept Environment Overrides
 
 **Date**: 2024-12-15
-**Context**: Review of @conveaux/port-clock implementation
-**Lesson**: Even ports that wrap platform primitives (Date, performance, console) must accept optional environment overrides. Direct global usage in primitive ports makes them untestable with deterministic behavior. Factory functions should accept an optional `environment` or `options` parameter that defaults to real globals when not provided.
-**Evidence**: `@conveaux/port-clock/src/index.ts` directly uses `new Date()` and `Date.now()`, making it impossible to test with deterministic time. Contrast with firedrill's `@firedrill/clock` which accepts `SystemClockEnvironmentOverrides` with optional `dateNow`, `performance`, and `process` overrides.
-**Reference Pattern**:
-```typescript
-// WRONG: Direct global usage
-export function createSystemClock(): Clock {
-  return { epochMs: () => Date.now() };  // Untestable
-}
-
-// CORRECT: Accept optional environment overrides
-export type ClockEnvironment = {
-  dateNow?: () => number;
-};
-
-export function createSystemClock(options: { environment?: ClockEnvironment } = {}): Clock {
-  const dateNow = options.environment?.dateNow ?? (() => Date.now());
-  return { epochMs: () => dateNow() };  // Testable with injected time
-}
-```
+**Context**: Review of @conveaux/port-clock implementation vs @firedrill/clock
+**Lesson**: Primitive ports require a layered approach: (1) duck-typed platform interfaces (`PerformanceLike`, not `Performance`), (2) separate resolved vs override types with null/undefined semantics, (3) resolution helper with `Object.hasOwn` to distinguish missing from undefined, (4) multiple factory option layers (direct overrides take precedence over environment).
+**Evidence**: `@conveaux/port-clock` directly uses `new Date()` and `Date.now()`. `@firedrill/clock` demonstrates production quality: `ClockEnvironmentOverrides` with null=disable semantics, `resolveEnvironment()` helper, `readMs`/`readHrtime` direct overrides, and proper fallback chain (`performance.now` → `Date.now`).
+**Key Insight**: `undefined` = use host default, `null` = explicitly disable source. Use `Object.hasOwn(overrides, key)` to distinguish these cases.
+**Reference**: See `@firedrill/clock/src/index.ts` for full implementation
 **Instruction Impact**: Added "Hermetic Primitive Ports" section to `instructions/reference/patterns/contract-port.md`
 
 ---
