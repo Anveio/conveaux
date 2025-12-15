@@ -1,0 +1,22 @@
+{
+  "name": "@conveaux/contract-abort",
+  "version": "0.1.0",
+  "description": "Abort contract - injectable AbortController/AbortSignal for cancellation",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["src"],
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
+  }
+}
