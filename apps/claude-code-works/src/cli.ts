@@ -127,8 +127,10 @@ function parseStringFlag(args: string[], flag: string, defaultValue: string): st
 }
 
 function parseIntFlag(args: string[], flag: string, defaultValue: number): number {
-  const value = parseStringFlag(args, flag, String(defaultValue));
-  return parseInt(value, 10) || defaultValue;
+  const value = parseStringFlag(args, flag, '');
+  if (value === '') return defaultValue;
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? defaultValue : parsed;
 }
 
 main().catch((error) => {

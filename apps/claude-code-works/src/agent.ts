@@ -7,6 +7,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { getToolDefinitions, executeTool } from './tools';
 import { output } from './output';
+import { isRecord, getErrorMessage } from './type-guards';
 
 type MessageParam = Anthropic.MessageParam;
 type ContentBlock = Anthropic.ContentBlock;
@@ -89,10 +90,9 @@ export async function runAgent(
       for (const toolUse of toolUseBlocks) {
         output.step(`${toolUse.name}(${summarizeInput(toolUse.input)})`);
 
-        const result = await executeTool(
-          toolUse.name,
-          toolUse.input as Record<string, unknown>
-        );
+        const result = isRecord(toolUse.input)
+          ? await executeTool(toolUse.name, toolUse.input)
+          : `Error: Invalid tool input for ${toolUse.name}`;
 
         toolCalls.push({
           tool: toolUse.name,
@@ -129,12 +129,11 @@ export async function runAgent(
         };
       }
     } catch (error) {
-      const err = error as Error;
       return {
         success: false,
         output: '',
         toolCalls,
-        error: err.message,
+        error: getErrorMessage(error),
       };
     }
   }
@@ -151,14 +150,13 @@ export async function runAgent(
  * Summarize tool input for logging.
  */
 function summarizeInput(input: unknown): string {
-  if (!input || typeof input !== 'object') {
+  if (!isRecord(input)) {
     return '';
   }
 
-  const obj = input as Record<string, unknown>;
   const parts: string[] = [];
 
-  for (const [key, value] of Object.entries(obj)) {
+  for (const [key, value] of Object.entries(input)) {
     if (typeof value === 'string') {
       // Truncate long strings
       const display = value.length > 50 ? value.slice(0, 47) + '...' : value;

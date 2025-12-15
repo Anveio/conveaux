@@ -10,6 +10,11 @@ import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import {
+  getErrorMessage,
+  getStringProperty,
+  isGrepNoMatchError,
+} from './type-guards';
 
 const execAsync = promisify(exec);
 
@@ -47,13 +52,13 @@ export const readFileTool: Tool = {
     },
   },
   execute: async (input) => {
-    const path = input.path as string;
+    const path = getStringProperty(input, 'path');
+    if (!path) return 'Error: path is required and must be a string';
     try {
       const content = await readFile(path, 'utf-8');
       return content;
     } catch (error) {
-      const err = error as Error;
-      return `Error reading file: ${err.message}`;
+      return `Error reading file: ${getErrorMessage(error)}`;
     }
   },
 };
@@ -81,15 +86,16 @@ export const writeFileTool: Tool = {
     },
   },
   execute: async (input) => {
-    const path = input.path as string;
-    const content = input.content as string;
+    const path = getStringProperty(input, 'path');
+    const content = getStringProperty(input, 'content');
+    if (!path) return 'Error: path is required and must be a string';
+    if (content === undefined) return 'Error: content is required and must be a string';
     try {
       await mkdir(dirname(path), { recursive: true });
       await writeFile(path, content, 'utf-8');
       return `Successfully wrote ${content.length} bytes to ${path}`;
     } catch (error) {
-      const err = error as Error;
-      return `Error writing file: ${err.message}`;
+      return `Error writing file: ${getErrorMessage(error)}`;
     }
   },
 };
@@ -113,7 +119,8 @@ export const listFilesTool: Tool = {
     },
   },
   execute: async (input) => {
-    const path = input.path as string;
+    const path = getStringProperty(input, 'path');
+    if (!path) return 'Error: path is required and must be a string';
     try {
       const entries = await readdir(path, { withFileTypes: true });
       const lines = entries.map(e => {
@@ -122,8 +129,7 @@ export const listFilesTool: Tool = {
       });
       return lines.join('\n') || '(empty directory)';
     } catch (error) {
-      const err = error as Error;
-      return `Error listing directory: ${err.message}`;
+      return `Error listing directory: ${getErrorMessage(error)}`;
     }
   },
 };
@@ -151,8 +157,9 @@ export const runCommandTool: Tool = {
     },
   },
   execute: async (input) => {
-    const command = input.command as string;
-    const cwd = (input.cwd as string) || process.cwd();
+    const command = getStringProperty(input, 'command');
+    if (!command) return 'Error: command is required and must be a string';
+    const cwd = getStringProperty(input, 'cwd') ?? process.cwd();
 
     // Safety check - don't allow dangerous commands
     const dangerous = ['rm -rf /', 'sudo', '> /dev/', 'mkfs'];
@@ -170,11 +177,14 @@ export const runCommandTool: Tool = {
       const output = [stdout, stderr].filter(Boolean).join('\n');
       return output || '(command completed with no output)';
     } catch (error) {
-      const err = error as Error & { stdout?: string; stderr?: string };
-      const output = [err.stdout, err.stderr, err.message]
-        .filter(Boolean)
-        .join('\n');
-      return `Command failed:\n${output}`;
+      // Extract stdout/stderr from exec error if available
+      const execError = error as { stdout?: string; stderr?: string };
+      const parts = [
+        execError.stdout,
+        execError.stderr,
+        getErrorMessage(error),
+      ].filter(Boolean);
+      return `Command failed:\n${parts.join('\n')}`;
     }
   },
 };
@@ -206,9 +216,11 @@ export const grepTool: Tool = {
     },
   },
   execute: async (input) => {
-    const pattern = input.pattern as string;
-    const path = input.path as string;
-    const include = input.include as string | undefined;
+    const pattern = getStringProperty(input, 'pattern');
+    const path = getStringProperty(input, 'path');
+    const include = getStringProperty(input, 'include');
+    if (!pattern) return 'Error: pattern is required and must be a string';
+    if (!path) return 'Error: path is required and must be a string';
 
     let command = `grep -rn "${pattern}" "${path}"`;
     if (include) {
@@ -222,8 +234,13 @@ export const grepTool: Tool = {
         maxBuffer: 1024 * 1024,
       });
       return stdout || '(no matches found)';
-    } catch {
-      return '(no matches found)';
+    } catch (error) {
+      // grep exits with code 1 for "no matches" - this is expected behavior
+      if (isGrepNoMatchError(error)) {
+        return '(no matches found)';
+      }
+      // Actual error (permission denied, invalid path, etc.)
+      return `Error running grep: ${getErrorMessage(error)}`;
     }
   },
 };
