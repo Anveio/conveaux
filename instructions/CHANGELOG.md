@@ -42,6 +42,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `instructions/reference/patterns/core-ports.md` - Replaced with stub referencing `coding-patterns` skill (reduces context ~2k tokens)
 - `instructions/improvements/lessons.md` - Added L-014 (parallel work on shared branches), L-015 (cross-repo sync)
 - `instructions/loop/completion-gate.md` - Added "Cross-Repository Artifact Sync" section
+- `~/.claude/skills/coding-loop/SKILL.md` - Added Hard Gates section with commit atomicity, review documentation, and size-based skill invocation gates (IP-004)
+- `instructions/improvements/lessons.md` - Added L-016 (skills need enforcement gates)
+- `instructions/improvements/proposals/IP-004-coding-loop-enforcement-gates.md` - Enforcement gates for coding-loop skill
 
 ### Removed
 

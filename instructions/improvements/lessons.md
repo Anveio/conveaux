@@ -19,6 +19,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 | meta-improvement | 3 | 2024-12-15 |
 | git-workflow | 1 | 2024-12-15 |
 | cross-repo-sync | 1 | 2024-12-15 |
+| pr-workflow | 1 | 2024-12-15 |
 
 ---
 
@@ -245,3 +246,21 @@ const clock: Clock = {
 - Assuming skills auto-update when code changes
 - Treating skills as "nice to have" rather than required documentation
 **Instruction Impact**: Added "Cross-Repository Artifact Sync" section to `completion-gate.md`
+
+---
+
+### PR Workflow
+
+#### L-016: Skills Exist but Need Enforcement Gates
+
+**Date**: 2024-12-15
+**Context**: feat/source-first-development - 52-file migration merged as single commit
+**Lesson**: Having good skills (code-review, effective-git) is insufficient if they aren't invoked or enforced. Large changes require hard gates: commit atomicity checks, documented review findings, and size-based skill invocation triggers. Without enforcement, agents take the path of least resistance.
+**Evidence**: PR #29 merged 52 files, 850 insertions as single commit. Skills existed but weren't invoked. `gh pr diff` was run but findings weren't documented. No gate blocked the monolithic commit.
+**Anti-patterns**:
+- Single commit for multi-concern changes (violates "one idea per commit")
+- Running `gh pr diff` without documenting review findings
+- Merging immediately after PR creation without substantive review
+- Skills as optional guidance rather than required gates
+**Key insight**: The loop must include checkpoints that BLOCK progression, not just suggest best practices.
+**Instruction Impact**: Formalized in IP-004; added Hard Gates section to `coding-loop` skill

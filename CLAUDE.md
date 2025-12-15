@@ -40,8 +40,6 @@ All instruction files are imported below for automatic context loading.
 @instructions/meta/self-improvement.md
 @instructions/improvements/lessons.md
 @instructions/improvements/meta-feedback.md
-@instructions/improvements/proposals/IP-001-consolidate-port-documentation.md
-@instructions/improvements/proposals/IP-002-build-tool-guidance.md
 
 ## Session Prompts
 @instructions/prompts/session-improve-package.md
