@@ -6,6 +6,7 @@
  */
 
 import type { DateConstructor } from '@conveaux/contract-date';
+import type { TraceIdGenerator } from '@conveaux/contract-id';
 import type {
   InstrumentOptions,
   Instrumenter,
@@ -18,6 +19,7 @@ import type { WallClock } from '@conveaux/contract-wall-clock';
 
 // Re-export all contract types for convenience
 export type { DateConstructor } from '@conveaux/contract-date';
+export type { TraceIdGenerator } from '@conveaux/contract-id';
 export type {
   Instrumenter,
   InstrumentOptions,
@@ -41,8 +43,8 @@ export interface InstrumenterDependencies {
   readonly logger: Logger;
   /** Clock for timestamps */
   readonly clock: WallClock;
-  /** ID generator for trace/span IDs */
-  readonly generateId: () => string;
+  /** ID generator for W3C Trace Context compliant trace/span IDs */
+  readonly ids: TraceIdGenerator;
   /** Optional: Handler for span lifecycle events */
   readonly spanHandler?: SpanHandler;
 }
@@ -64,13 +66,17 @@ export interface InstrumenterDependencies {
  * import { createLogger } from '@conveaux/port-logger';
  * import { createWallClock } from '@conveaux/port-wall-clock';
  * import { createOutChannel } from '@conveaux/port-outchannel';
+ * import { createTraceIdGenerator } from '@conveaux/port-id';
  *
+ * const clock = createWallClock();
  * const instrumenter = createInstrumenter({
+ *   Date,
  *   logger: createLogger({
- *     channel: createOutChannel(process.stderr),
- *     clock: createWallClock(),
+ *     channel: createOutChannel({ stream: process.stderr }),
+ *     clock,
  *   }),
- *   clock: createWallClock(),
+ *   clock,
+ *   ids: createTraceIdGenerator(),
  * });
  *
  * // Wrap a function
@@ -87,7 +93,7 @@ export function createInstrumenter(
   deps: InstrumenterDependencies,
   options?: InstrumenterOptions
 ): Instrumenter {
-  const { Date: DateCtor, logger, clock, generateId, spanHandler } = deps;
+  const { Date: DateCtor, logger, clock, ids, spanHandler } = deps;
   const {
     defaultSuccessLevel = 'debug',
     defaultFailureLevel = 'error',
@@ -108,8 +114,8 @@ export function createInstrumenter(
      * Create a span object.
      */
     const createSpan = (operation: string, parentSpan?: Span): Span => {
-      const spanId = generateId();
-      const traceId = parentSpan?.traceId ?? generateId();
+      const spanId = ids.spanId();
+      const traceId = parentSpan?.traceId ?? ids.traceId();
       const startedAt = new DateCtor(clock.nowMs()).toISOString();
 
       return {

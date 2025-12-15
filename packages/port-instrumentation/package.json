@@ -18,6 +18,7 @@
   "files": ["src"],
   "dependencies": {
     "@conveaux/contract-date": "*",
+    "@conveaux/contract-id": "*",
     "@conveaux/contract-instrumentation": "*",
     "@conveaux/contract-logger": "*",
     "@conveaux/contract-wall-clock": "*"

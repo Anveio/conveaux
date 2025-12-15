@@ -2,6 +2,7 @@
  * Tests for port-instrumentation.
  */
 
+import type { SpanId, TraceId, TraceIdGenerator } from '@conveaux/contract-id';
 import type { Span, SpanHandler } from '@conveaux/contract-instrumentation';
 import type { LogContext, Logger } from '@conveaux/contract-logger';
 import type { WallClock } from '@conveaux/contract-wall-clock';
@@ -103,10 +104,14 @@ function createMockSpanHandler(): SpanHandler & { startedSpans: Span[]; endedSpa
 
 /**
  * Counter-based ID generator for deterministic tests.
+ * Implements TraceIdGenerator interface with simple counter-based IDs.
  */
-function createMockIdGenerator(): () => string {
+function createMockTraceIdGenerator(): TraceIdGenerator {
   let counter = 0;
-  return () => `id-${++counter}`;
+  return {
+    traceId: () => `trace-${++counter}` as TraceId,
+    spanId: () => `span-${++counter}` as SpanId,
+  };
 }
 
 // =============================================================================
@@ -116,12 +121,12 @@ function createMockIdGenerator(): () => string {
 describe('createInstrumenter', () => {
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockClock: ReturnType<typeof createMockClock>;
-  let mockGenerateId: ReturnType<typeof createMockIdGenerator>;
+  let mockIds: TraceIdGenerator;
 
   beforeEach(() => {
     mockLogger = createMockLogger();
     mockClock = createMockClock(1702641000000); // 2024-12-15T10:30:00.000Z
-    mockGenerateId = createMockIdGenerator();
+    mockIds = createMockTraceIdGenerator();
   });
 
   describe('wrap - sync functions', () => {
@@ -130,7 +135,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const add = instrumenter.wrap(
@@ -158,7 +163,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const fail = instrumenter.wrap(
@@ -184,7 +189,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       function myNamedFunction() {
@@ -202,7 +207,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const wrapped = instrumenter.wrap(() => 'result');
@@ -216,7 +221,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const obj = {
@@ -239,7 +244,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const fetchData = instrumenter.wrap(
@@ -266,7 +271,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const failAsync = instrumenter.wrap(
@@ -292,7 +297,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const throwString = instrumenter.wrap(
@@ -316,7 +321,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const fn = instrumenter.wrap(() => 'result', { operation: 'test' });
@@ -325,8 +330,8 @@ describe('createInstrumenter', () => {
       const trace = getLog(mockLogger.logs, 0).context?.trace;
       expect(trace).toBeDefined();
       // spanId is generated first, then traceId (when no parent)
-      expect(trace?.spanId).toBe('id-1'); // First call to generateId
-      expect(trace?.traceId).toBe('id-2'); // Second call to generateId
+      expect(trace?.spanId).toBe('span-1'); // First call to ids.spanId()
+      expect(trace?.traceId).toBe('trace-2'); // Second call to ids.traceId()
       expect(trace?.parentSpanId).toBeUndefined();
       expect(trace?.sampled).toBe(true);
     });
@@ -336,7 +341,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const parentSpan = instrumenter.startSpan('parent');
@@ -358,7 +363,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const fail = instrumenter.wrap(
@@ -379,7 +384,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const failAsync = instrumenter.wrap(
@@ -400,7 +405,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const fn = instrumenter.wrap(() => 'result', {
@@ -417,7 +422,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const fn = instrumenter.wrap(
@@ -436,7 +441,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const fn = instrumenter.wrap(() => 'result', {
@@ -457,7 +462,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const result = instrumenter.execute(() => 'executed', { operation: 'oneOff' });
@@ -471,7 +476,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const result = await instrumenter.executeAsync(async () => 'async result', {
@@ -489,7 +494,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const child = instrumenter.child({ requestId: 'req-1' });
@@ -504,7 +509,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const child = instrumenter.child({ requestId: 'req-1' });
@@ -524,7 +529,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const child1 = instrumenter.child({ level: 1 });
@@ -543,7 +548,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const span = instrumenter.startSpan('manual');
@@ -565,7 +570,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const parent = instrumenter.startSpan('parent');
@@ -580,7 +585,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const span = instrumenter.startSpan('failing');
@@ -600,7 +605,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       expect(instrumenter.getCurrentSpan()).toBeUndefined();
@@ -611,7 +616,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       let capturedSpan: Span | undefined;
@@ -635,7 +640,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const span = instrumenter.startSpan('manual');
@@ -653,7 +658,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
         spanHandler,
       });
 
@@ -675,7 +680,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
         spanHandler,
       });
 
@@ -694,7 +699,7 @@ describe('createInstrumenter', () => {
           Date,
           logger: mockLogger,
           clock: mockClock,
-          generateId: mockGenerateId,
+          ids: mockIds,
         },
         { defaultSuccessLevel: 'info' }
       );
@@ -711,7 +716,7 @@ describe('createInstrumenter', () => {
           Date,
           logger: mockLogger,
           clock: mockClock,
-          generateId: mockGenerateId,
+          ids: mockIds,
         },
         { defaultFailureLevel: 'fatal' }
       );
@@ -733,7 +738,7 @@ describe('createInstrumenter', () => {
           Date,
           logger: mockLogger,
           clock: mockClock,
-          generateId: mockGenerateId,
+          ids: mockIds,
         },
         { baseContext: { service: 'test-service' } }
       );
@@ -751,7 +756,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const getNumber = instrumenter.wrap((): number => 42, { operation: 'getNumber' });
@@ -764,7 +769,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const getString = instrumenter.wrap(async (): Promise<string> => 'hello', {
@@ -779,7 +784,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const concat = instrumenter.wrap((a: string, b: string): string => a + b, {
@@ -794,7 +799,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       let called = false;
@@ -817,7 +822,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const fn = instrumenter.wrap(() => Promise.resolve('value'), { operation: 'promiseLike' });
@@ -832,7 +837,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const noArgs = instrumenter.wrap(() => 'no args', { operation: 'noArgs' });
@@ -844,7 +849,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const manyArgs = instrumenter.wrap(
@@ -859,7 +864,7 @@ describe('createInstrumenter', () => {
         Date,
         logger: mockLogger,
         clock: mockClock,
-        generateId: mockGenerateId,
+        ids: mockIds,
       });
 
       const inner = instrumenter.wrap(() => 'inner', { operation: 'inner' });
