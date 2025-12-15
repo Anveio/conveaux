@@ -17,6 +17,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 | documentation | 1 | 2024-12-15 |
 | type-safety | 3 | 2024-12-15 |
 | meta-improvement | 3 | 2024-12-15 |
+| git-workflow | 1 | 2024-12-15 |
 
 ---
 
@@ -205,3 +206,25 @@ const clock: Clock = {
 **Lesson**: When a command like `grep` returns exit code 1 for "no matches", distinguish this expected outcome from actual errors. Check error properties (code, stderr) to determine error type. Catching all errors as success cases hides real failures.
 **Evidence**: `grepTool` in `tools.ts` caught all errors as "(no matches found)", hiding permission denied, invalid path, and other real errors from the agent.
 **Instruction Impact**: Formalized in IP-003; `isGrepNoMatchError()` type guard added
+
+---
+
+### Git Workflow
+
+#### L-014: Never Undo Parallel Work on Shared Branches
+
+**Date**: 2024-12-15
+**Context**: Converting contract-port.md to skill while parallel work on same branch
+**Lesson**: When working on a shared branch where parallel work may occur, NEVER use `git stash`, `git checkout`, `git reset`, or any command that could discard uncommitted changes. Always commit your changes first, or create a new branch. Parallel work from humans or other agents may have modified files that would be lost.
+**Evidence**: Attempted `git stash && git checkout main` while parallel work was happening on `feat/verification-silent-success`, risking loss of uncommitted changes from parallel work.
+**Anti-patterns**:
+- `git stash` on a shared branch (discards parallel uncommitted work)
+- `git checkout <other-branch>` without committing (same issue)
+- `git reset --hard` (destroys all uncommitted changes)
+- `git clean -fd` (removes untracked files from parallel work)
+**Safe patterns**:
+- Always `git status` first to see what's changed
+- Commit your changes before switching branches
+- If you need to work on something else, create a new branch from current state
+- Ask the user before any operation that could discard uncommitted changes
+**Instruction Impact**: Formalized in `effective-git` skill
