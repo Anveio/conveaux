@@ -55,12 +55,14 @@ Production implementations for each contract:
 | Port Package | Implements | Factory Function |
 |-------------|------------|------------------|
 | `@conveaux/port-logger` | `Logger` | `createLogger(deps)` |
-| `@conveaux/port-clock` | `Clock` | `createSystemClock()` |
-| `@conveaux/port-outchannel` | `OutChannel` | `createStderrChannel()`, `createStdoutChannel()` |
+| `@conveaux/port-clock` | `Clock` | `createSystemClock(options?)` |
+| `@conveaux/port-outchannel` | `OutChannel` | `createStderrChannel(options?)`, `createStdoutChannel(options?)` |
+
+**Note**: Primitive ports (clock, outchannel) accept optional `environment` overrides for deterministic testing. See [contract-port.md](./contract-port.md) § "Hermetic Primitive Ports".
 
 ## Composition Root Pattern
 
-Inject ports at the application entry point:
+Inject ports at the application entry point. **This is the only place where real platform globals are referenced.**
 
 ```typescript
 // src/main.ts (composition root)
@@ -69,14 +71,24 @@ import { createSystemClock } from '@conveaux/port-clock';
 import { createStderrChannel } from '@conveaux/port-outchannel';
 import { createApp } from './app';
 
-const logger = createLogger({
-  channel: createStderrChannel(),
-  clock: createSystemClock(),
+// Option 1: Use defaults (primitive ports use real globals internally)
+const clock = createSystemClock();
+const channel = createStderrChannel();
+
+// Option 2: Explicit wiring (makes platform dependencies visible)
+const clock = createSystemClock({
+  environment: {
+    dateNow: () => Date.now(),
+    newDate: () => new Date(),
+  },
 });
 
-const app = createApp({ logger });
+const logger = createLogger({ channel, clock });
+const app = createApp({ logger, clock });
 app.start();
 ```
+
+**Key principle**: All packages except the composition root are hermetically sealed. They receive all dependencies (including platform primitives) via injection.
 
 ```typescript
 // src/app.ts (business logic)

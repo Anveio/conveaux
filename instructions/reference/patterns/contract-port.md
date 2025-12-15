@@ -93,6 +93,117 @@ When building a port, if you need to abstract something (time, I/O, randomness),
 
 This naturally grows a library of reusable contracts and ports.
 
+### 5. Hermetic Primitive Ports
+
+Some ports wrap platform primitives (Date, performance, console, process). Even these **must accept optional environment overrides** to enable deterministic testing.
+
+#### The Problem
+
+```typescript
+// WRONG: Direct global usage - untestable with deterministic time
+export function createSystemClock(): Clock {
+  return {
+    now(): Date { return new Date(); },
+    timestamp(): string { return new Date().toISOString(); },
+    epochMs(): number { return Date.now(); },
+  };
+}
+```
+
+This looks correct (it implements the Clock contract), but:
+- Tests cannot inject a fake time source
+- The port itself cannot be tested deterministically
+- Platform coupling is hidden inside the "platform abstraction"
+
+#### The Solution: Environment Overrides
+
+```typescript
+// Define what platform primitives this port needs
+export type ClockEnvironment = {
+  readonly dateNow?: () => number;
+  readonly newDate?: () => Date;
+  readonly performance?: { now(): number } | null;
+};
+
+export type ClockOptions = {
+  readonly environment?: ClockEnvironment;
+};
+
+// CORRECT: Accept optional overrides, default to real globals
+export function createSystemClock(options: ClockOptions = {}): Clock {
+  const env = options.environment ?? {};
+  const dateNow = env.dateNow ?? (() => Date.now());
+  const newDate = env.newDate ?? (() => new Date());
+
+  return {
+    now(): Date { return newDate(); },
+    timestamp(): string { return newDate().toISOString(); },
+    epochMs(): number { return dateNow(); },
+  };
+}
+```
+
+#### Testing Primitive Ports
+
+```typescript
+import { describe, it, expect } from 'vitest';
+import { createSystemClock } from './index';
+
+describe('createSystemClock', () => {
+  it('uses injected time source for deterministic testing', () => {
+    let fakeTime = 1000;
+    const clock = createSystemClock({
+      environment: {
+        dateNow: () => fakeTime,
+        newDate: () => new Date(fakeTime),
+      },
+    });
+
+    expect(clock.epochMs()).toBe(1000);
+
+    fakeTime = 2000;
+    expect(clock.epochMs()).toBe(2000);
+  });
+
+  it('defaults to real globals when no overrides provided', () => {
+    const clock = createSystemClock();
+    const before = Date.now();
+    const result = clock.epochMs();
+    const after = Date.now();
+
+    expect(result).toBeGreaterThanOrEqual(before);
+    expect(result).toBeLessThanOrEqual(after);
+  });
+});
+```
+
+#### Composition Root Wiring
+
+At the app entry point, you can either use defaults or explicitly wire globals:
+
+```typescript
+// Option 1: Use defaults (globals are used internally)
+const clock = createSystemClock();
+
+// Option 2: Explicit wiring (makes dependencies visible)
+const clock = createSystemClock({
+  environment: {
+    dateNow: () => Date.now(),
+    newDate: () => new Date(),
+    performance: globalThis.performance,
+  },
+});
+```
+
+#### Common Primitive Ports
+
+| Port | Wraps | Environment Type |
+|------|-------|------------------|
+| Clock | Date, Date.now(), performance.now() | `ClockEnvironment` |
+| Random | Math.random(), crypto.getRandomValues() | `RandomEnvironment` |
+| OutChannel | console, process.stdout/stderr | `ChannelEnvironment` |
+| Environment | process.env, process.cwd() | `EnvEnvironment` |
+
 ### Contract Extraction Decision Tree
 
 Use this flowchart when deciding what belongs in a contract vs implementation:
@@ -220,3 +331,5 @@ packages/port-{name}/
 - [ ] No direct usage of globals (console, Date, process, Math.random, etc.)
 - [ ] Factory function pattern: `create{Name}(deps): {Name}`
 - [ ] Tests use inline mocks, not shipped test implementations
+- [ ] If wrapping platform primitives, accepts optional environment overrides (see "Hermetic Primitive Ports")
+- [ ] Factory function allows deterministic testing via injected primitives
