@@ -17,11 +17,17 @@ This document defines the **PR → Review → Improve → Review** cycle - a fun
 │ Fix Issues  │                │
 └──────┬──────┘                │
        ↓                       │
-   Issues      NO              │
-   Found?  ─────────→  DONE    │
-       │                       │
-      YES                      │
-       └───────────────────────┘
+   Issues      NO     ┌────────────────┐
+   Found?  ─────────→ │ Merge Criteria │
+       │              │    Pass?       │
+      YES             └───────┬────────┘
+       │                      │
+       └──────────────────────┤
+                              │ YES
+                              ↓
+                      ┌───────────────┐
+                      │ Merge to Main │
+                      └───────────────┘
 ```
 
 ## When to Run This Loop
@@ -170,6 +176,103 @@ git push
 9. No new issues found
 10. git push
 11. Done - ready for human review
+```
+
+## Step 5: Merge (Autonomous)
+
+When all review criteria pass, merge the PR autonomously.
+
+### Merge Criteria Checklist
+
+All must be true before merging:
+
+| Criterion | How to Verify |
+|-----------|---------------|
+| **Build passes** | `npm run build` exits 0 |
+| **Tests pass** | `npm run test` exits 0 |
+| **No unresolved review comments** | `gh pr view <number> --comments` shows no pending items |
+| **Branch is up to date** | `git fetch origin main && git log HEAD..origin/main --oneline` is empty |
+| **PR description is complete** | Summary explains what/why, test plan exists |
+| **Self-review complete** | At least one PR review loop iteration done |
+
+### Merge Commands
+
+```bash
+# Verify all criteria first
+npm run build && npm run test
+
+# Check for conflicts with main
+git fetch origin main
+git log HEAD..origin/main --oneline  # Should be empty or rebase needed
+
+# If rebase needed
+git rebase origin/main
+git push --force-with-lease
+
+# Merge the PR (squash for clean history)
+gh pr merge <number> --squash --delete-branch
+
+# Or merge with all commits preserved
+gh pr merge <number> --merge --delete-branch
+```
+
+### Merge Strategy Selection
+
+| Strategy | When to Use |
+|----------|-------------|
+| `--squash` | Multiple small commits that form one logical change (default) |
+| `--merge` | Each commit is meaningful and should be preserved |
+| `--rebase` | Linear history preferred, commits are clean |
+
+### Post-Merge Verification
+
+After merging, verify main is healthy:
+
+```bash
+# Switch to main and pull
+git checkout main
+git pull origin main
+
+# Verify build and tests still pass
+npm run build && npm run test
+```
+
+### When NOT to Merge Autonomously
+
+Do **not** auto-merge if:
+
+1. **Human review requested** - User explicitly asked for review
+2. **Breaking changes** - API changes affecting other consumers
+3. **Security-sensitive** - Auth, credentials, permissions changes
+4. **Uncertain about correctness** - Edge cases unclear
+5. **Large scope** - PR touches many unrelated areas
+
+In these cases, request human review:
+
+```bash
+gh pr edit <number> --add-reviewer <username>
+# Or comment requesting review
+gh pr comment <number> --body "Ready for review. Please check [specific concern]."
+```
+
+### Autonomous Merge Example
+
+```bash
+# 1. Final verification
+npm run build && npm run test
+
+# 2. Check branch status
+git fetch origin main
+git log HEAD..origin/main --oneline  # Empty = good
+
+# 3. Merge
+gh pr merge 4 --squash --delete-branch
+
+# 4. Verify main
+git checkout main && git pull
+npm run build && npm run test
+
+# 5. Done - main is healthy
 ```
 
 ## Related Skills
