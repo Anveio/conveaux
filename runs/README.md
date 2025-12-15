@@ -25,9 +25,6 @@ The exact prompt or work item that initiated this run.
 ```markdown
 # Prompt
 
-## Source
-beads issue bd-abc123 / user request / continuation
-
 ## Content
 [The actual prompt or task description]
 ```
