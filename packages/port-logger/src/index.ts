@@ -61,9 +61,10 @@ export interface LoggerDependencies {
 }
 
 /**
- * A single log entry as written to the channel.
+ * Internal representation of a log entry before serialization.
+ * Named differently from contract's LogEntry to avoid confusion.
  */
-interface LogEntry {
+interface LogRecord {
   timestamp: string;
   level: LogLevel;
   message: string;
@@ -159,61 +160,54 @@ export function createLogger(deps: LoggerDependencies): Logger {
       return;
     }
 
-    const entry: LogEntry = {
+    const record: LogRecord = {
       timestamp: new Date(clock.nowMs()).toISOString(),
       level,
       message,
     };
 
-    // Spread context fields into the entry (except 'trace' and 'error' which get special handling)
+    // Spread context fields into the record (except 'trace' and 'error' which get special handling)
     if (context) {
       const { trace, error, ...fields } = context;
-      Object.assign(entry, fields);
+      Object.assign(record, fields);
       if (trace) {
-        entry.trace = trace;
+        record.trace = trace;
       }
       if (error instanceof Error) {
-        entry.error = serializeError(error);
+        record.error = serializeError(error);
       }
     }
 
-    channel.write(`${JSON.stringify(entry)}\n`);
+    channel.write(`${JSON.stringify(record)}\n`);
   };
 
-  const createChildLogger = (boundContext: LogContext): Logger => {
+  /**
+   * Creates a logger instance with optional bound context.
+   * Used for both root logger and child loggers.
+   */
+  const createLoggerInstance = (boundContext?: LogContext): Logger => {
+    const logWithContext = (level: LogLevel, message: string, context?: LogContext): void => {
+      const merged = boundContext ? mergeContext(boundContext, context) : context;
+      log(level, message, merged);
+    };
+
     return {
-      trace: (message: string, context?: LogContext) =>
-        log('trace', message, mergeContext(boundContext, context)),
-      debug: (message: string, context?: LogContext) =>
-        log('debug', message, mergeContext(boundContext, context)),
-      info: (message: string, context?: LogContext) =>
-        log('info', message, mergeContext(boundContext, context)),
-      warn: (message: string, context?: LogContext) =>
-        log('warn', message, mergeContext(boundContext, context)),
-      error: (message: string, context?: LogContext) =>
-        log('error', message, mergeContext(boundContext, context)),
-      fatal: (message: string, context?: LogContext) =>
-        log('fatal', message, mergeContext(boundContext, context)),
-      child: (newContext: LogContext) => createChildLogger(mergeContext(boundContext, newContext)),
+      trace: (message, context) => logWithContext('trace', message, context),
+      debug: (message, context) => logWithContext('debug', message, context),
+      info: (message, context) => logWithContext('info', message, context),
+      warn: (message, context) => logWithContext('warn', message, context),
+      error: (message, context) => logWithContext('error', message, context),
+      fatal: (message, context) => logWithContext('fatal', message, context),
+      child: (newContext) =>
+        createLoggerInstance(boundContext ? mergeContext(boundContext, newContext) : newContext),
       flush: async () => {
-        // Child loggers delegate to the same channel, no separate buffering
+        // Synchronous logger - no buffering, nothing to flush
+        // Future async implementation would flush batched entries here
       },
     };
   };
 
-  return {
-    trace: (message: string, context?: LogContext) => log('trace', message, context),
-    debug: (message: string, context?: LogContext) => log('debug', message, context),
-    info: (message: string, context?: LogContext) => log('info', message, context),
-    warn: (message: string, context?: LogContext) => log('warn', message, context),
-    error: (message: string, context?: LogContext) => log('error', message, context),
-    fatal: (message: string, context?: LogContext) => log('fatal', message, context),
-    child: createChildLogger,
-    flush: async () => {
-      // Synchronous logger - no buffering, nothing to flush
-      // Future async implementation would flush batched entries here
-    },
-  };
+  return createLoggerInstance();
 }
 
 /**
