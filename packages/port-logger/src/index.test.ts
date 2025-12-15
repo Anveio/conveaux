@@ -25,6 +25,7 @@ function createMockClock(timestamp: string): HighResolutionClock {
   return {
     now: () => monotonicMs++,
     hrtime: () => BigInt(monotonicMs) * 1_000_000n,
+    nowNs: () => BigInt(monotonicMs) * 1_000_000n,
     wallClockMs: () => date.getTime(),
   };
 }

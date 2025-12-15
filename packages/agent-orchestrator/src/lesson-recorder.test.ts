@@ -21,6 +21,7 @@ function createMockPorts() {
   const mockClock: HighResolutionClock = {
     now: () => 0, // monotonic ms since origin
     hrtime: () => 0n, // nanoseconds
+    nowNs: () => 0n, // monotonic nanoseconds since origin
     wallClockMs: () => 1734173400000, // 2024-12-14T10:30:00.000Z
   };
 

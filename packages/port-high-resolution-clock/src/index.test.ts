@@ -136,6 +136,78 @@ describe('createHighResolutionClock', () => {
     });
   });
 
+  describe('nowNs()', () => {
+    it('returns nanoseconds derived from now()', () => {
+      let time = 1000;
+      const clock = createHighResolutionClock({
+        readMs: () => time,
+        environment: { process: null },
+      });
+
+      // First call: now() = 0, nowNs() = 0
+      expect(clock.nowNs()).toBe(0n);
+
+      // After 10ms: now() = 10, nowNs() = 10_000_000
+      time = 1010;
+      expect(clock.nowNs()).toBe(10_000_000n);
+
+      // After 100ms: now() = 100, nowNs() = 100_000_000
+      time = 1100;
+      expect(clock.nowNs()).toBe(100_000_000n);
+    });
+
+    it('is always consistent with now() regardless of hrtime availability', () => {
+      let time = 1000;
+      const mockHrtime = Object.assign(() => [0, 0] as [number, number], {
+        bigint: () => 999_999_999n, // Native hrtime returns different value
+      });
+
+      const clock = createHighResolutionClock({
+        readMs: () => time,
+        environment: {
+          process: { hrtime: mockHrtime },
+        },
+      });
+
+      // nowNs() should be derived from now(), NOT from native hrtime
+      expect(clock.nowNs()).toBe(0n); // now() = 0
+
+      time = 1050;
+      expect(clock.nowNs()).toBe(50_000_000n); // now() = 50ms = 50_000_000ns
+
+      // hrtime() uses native source (different value)
+      expect(clock.hrtime()).toBe(999_999_999n);
+    });
+
+    it('maintains monotonicity when now() is monotonic', () => {
+      let time = 100;
+      const clock = createHighResolutionClock({
+        readMs: () => time,
+        environment: { process: null },
+      });
+
+      clock.now(); // Initialize
+      time = 200;
+      const ns1 = clock.nowNs(); // 100ms = 100_000_000ns
+
+      // Regress time
+      time = 50;
+      const ns2 = clock.nowNs();
+
+      // nowNs should still be monotonic (because now() is monotonic)
+      expect(ns2).toBeGreaterThanOrEqual(ns1);
+    });
+
+    it('throws on non-finite values', () => {
+      const clock = createHighResolutionClock({
+        readMs: () => Number.POSITIVE_INFINITY,
+        environment: { process: null },
+      });
+
+      expect(() => clock.nowNs()).toThrow('non-finite');
+    });
+  });
+
   describe('wallClockMs()', () => {
     it('returns current wall-clock time', () => {
       let wallTime = 1702648800000; // Some epoch time
