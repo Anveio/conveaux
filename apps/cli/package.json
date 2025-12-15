@@ -11,10 +11,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@conveaux/adapter-http": "*",
-    "@conveaux/contracts": "*",
-    "@conveaux/core": "*",
-    "chalk": "^5.3.0",
+    "@conveaux/chatgpt-share": "*",
+    "@conveaux/contract-error": "*",
+    "@conveaux/contract-logger": "*",
+    "@conveaux/contract-outchannel": "*",
+    "@conveaux/contract-wall-clock": "*",
+    "@conveaux/port-logger": "*",
+    "@conveaux/port-outchannel": "*",
+    "@conveaux/port-wall-clock": "*",
     "commander": "^12.1.0"
   },
   "devDependencies": {

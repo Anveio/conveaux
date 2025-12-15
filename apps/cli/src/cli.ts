@@ -1,11 +1,26 @@
 #!/usr/bin/env node
 
 import { writeFile } from 'node:fs/promises';
-import { extractShareId, fetchSharePage } from '@conveaux/adapter-http';
-import { ConveauxError } from '@conveaux/contracts';
-import { convertToMarkdown, parseHTML } from '@conveaux/core';
-import chalk from 'chalk';
+import {
+  convertToMarkdown,
+  extractShareId,
+  fetchSharePage,
+  parseHTML,
+} from '@conveaux/chatgpt-share';
+import { ConveauxError } from '@conveaux/contract-error';
+import { createLogger, createPrettyFormatter } from '@conveaux/port-logger';
+import { createStderrChannel } from '@conveaux/port-outchannel';
+import { createWallClock } from '@conveaux/port-wall-clock';
 import { Command } from 'commander';
+
+// Create logger with pretty colored output to stderr
+const logger = createLogger({
+  channel: createStderrChannel(),
+  clock: createWallClock(),
+  options: {
+    formatter: createPrettyFormatter({ colors: true }),
+  },
+});
 
 const program = new Command();
 
@@ -18,15 +33,15 @@ program
   .option('--no-metadata', 'Exclude metadata header from output')
   .action(async (url: string, options: { output?: string; metadata: boolean }) => {
     try {
-      console.log(chalk.blue('Fetching conversation...'));
+      logger.info('Fetching conversation...');
 
-      const html = await fetchSharePage(url);
+      const html = await fetchSharePage(url, globalThis.fetch);
 
-      console.log(chalk.blue('Parsing conversation...'));
+      logger.info('Parsing conversation...');
 
       const conversation = parseHTML(html);
 
-      console.log(chalk.blue('Converting to markdown...'));
+      logger.info('Converting to markdown...');
 
       const markdown = convertToMarkdown(conversation, {
         includeMetadata: options.metadata,
@@ -38,21 +53,23 @@ program
 
       await writeFile(outputPath, markdown, 'utf-8');
 
-      console.log(chalk.green(`\nSuccess! Conversation saved to ${chalk.bold(outputPath)}`));
-      console.log(chalk.dim(`  Title: ${conversation.title}`));
-      console.log(chalk.dim(`  Messages: ${conversation.messages.length}`));
+      logger.info('Success!', {
+        outputPath,
+        title: conversation.title,
+        messageCount: conversation.messages.length,
+      });
     } catch (error) {
       if (error instanceof ConveauxError) {
-        console.error(chalk.red(`\nError: ${error.message}`));
+        logger.error(error.message, { error });
         process.exit(1);
       }
 
       if (error instanceof Error) {
-        console.error(chalk.red(`\nUnexpected error: ${error.message}`));
+        logger.error('Unexpected error', { error });
         process.exit(1);
       }
 
-      console.error(chalk.red('\nAn unknown error occurred'));
+      logger.fatal('An unknown error occurred');
       process.exit(1);
     }
   });
