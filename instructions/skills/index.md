@@ -8,6 +8,7 @@ Skills are reference documents for common tasks. Read them when the task require
 |-------|--------------|
 | `git.md` | Before committing, staging, or branching |
 | `code-review.md` | When preparing PR or responding to feedback |
+| `pr-review-loop.md` | Before submitting any PR - the inner loop for quality |
 | `security.md` | Before adding integrations, handling credentials |
 
 ## Always Relevant
@@ -15,6 +16,7 @@ Skills are reference documents for common tasks. Read them when the task require
 These skills apply to most development work:
 
 - **Git** (`skills/git.md`): Every commit should follow git discipline
+- **PR Review Loop** (`skills/pr-review-loop.md`): Every PR should go through self-review before submission
 - **Code Review** (`skills/code-review.md`): Every PR should pass the checklist
 
 ## Situational
@@ -31,6 +33,13 @@ Read these when the situation calls for it:
 - One idea per commit
 - Clear commit messages (why, not what)
 - Verify before committing
+
+### PR Review Loop
+
+- Create PR with clear description
+- Self-review: `gh pr diff <number>`
+- Fix issues with targeted commits
+- Re-review until no issues remain
 
 ### Code Review
 

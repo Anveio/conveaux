@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `instructions/reference/patterns/contract-port.md` - Contract-port package architecture pattern
 - `instructions/improvements/proposals/IP-001-consolidate-port-documentation.md` - Port documentation consolidation
 - `instructions/improvements/proposals/IP-002-build-tool-guidance.md` - Build tool selection guidance
+- `instructions/skills/pr-review-loop.md` - PR review loop skill (PR → Review → Improve → Review)
 
 ### Changed
 
