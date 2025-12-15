@@ -145,6 +145,8 @@ function getStageHint(stage: StageName | undefined): string | null {
   switch (stage) {
     case 'check':
       return 'run=node --version && npm --version';
+    case 'docs':
+      return 'action=Update CLAUDE.md to import all files in instructions/ (excluding proposals/)';
     case 'install':
       return 'run=npm install';
     case 'lint':
