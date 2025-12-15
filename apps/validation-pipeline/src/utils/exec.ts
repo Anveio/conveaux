@@ -52,3 +52,19 @@ function isExecError(error: unknown): error is ExecError {
     ('stdout' in error || 'stderr' in error || 'code' in error)
   );
 }
+
+/** Maximum output size in bytes (100KB) */
+const MAX_OUTPUT_SIZE = 100 * 1024;
+
+/**
+ * Cap output to prevent memory issues when capturing for benchmarks.
+ *
+ * @param output - The output string to cap
+ * @returns The capped output string
+ */
+export function capOutput(output: string): string {
+  if (output.length <= MAX_OUTPUT_SIZE) {
+    return output;
+  }
+  return `${output.slice(0, MAX_OUTPUT_SIZE)}\n... [output truncated]`;
+}

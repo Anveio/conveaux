@@ -19,6 +19,16 @@ export interface StageContext {
   autofix: boolean;
   /** Output mode for stage feedback */
   ui: boolean;
+  /** Whether benchmarking is enabled */
+  benchmark?: boolean;
+}
+
+/**
+ * Captured command output for benchmarking.
+ */
+export interface StageOutput {
+  stdout: string;
+  stderr: string;
 }
 
 /**
@@ -33,6 +43,8 @@ export interface StageResult {
   durationMs: number;
   /** Error details if the stage failed */
   errors?: string[];
+  /** Raw command output (only when benchmark mode active) */
+  output?: StageOutput;
 }
 
 /**

@@ -3,7 +3,7 @@
  */
 
 import type { Stage, StageContext, StageResult } from '../contracts/index.js';
-import { execCommand } from '../utils/exec.js';
+import { capOutput, execCommand } from '../utils/exec.js';
 
 export const installStage: Stage = {
   name: 'install',
@@ -16,6 +16,11 @@ export const installStage: Stage = {
     const result = await execCommand(command, context.projectRoot);
     const durationMs = Date.now() - startTime;
 
+    // Capture output for benchmarking
+    const capturedOutput = context.benchmark
+      ? { stdout: capOutput(result.stdout), stderr: capOutput(result.stderr) }
+      : undefined;
+
     if (result.exitCode !== 0) {
       const output = result.stdout || result.stderr;
       return {
@@ -23,6 +28,7 @@ export const installStage: Stage = {
         message: 'npm install failed',
         durationMs,
         errors: [output.slice(0, 500)],
+        output: capturedOutput,
       };
     }
 
@@ -30,6 +36,7 @@ export const installStage: Stage = {
       success: true,
       message: 'Dependencies installed',
       durationMs,
+      output: capturedOutput,
     };
   },
 };

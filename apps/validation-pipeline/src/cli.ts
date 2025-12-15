@@ -6,7 +6,8 @@
 
 import { cwd } from 'node:process';
 import { Command } from 'commander';
-import type { StageName } from './contracts/index.js';
+import { type NamedStageResult, collectBenchmarks, reportBenchmarks } from './benchmark/index.js';
+import type { StageName, StageResult } from './contracts/index.js';
 import { headless, interactive } from './reporters/index.js';
 import { DEFAULT_STAGE_ORDER, getStage } from './stages/index.js';
 
@@ -20,81 +21,97 @@ program
   .option('--stage <name>', 'Run only a specific stage')
   .option('--no-autofix', 'Disable autofix for lint stage')
   .option('--ci', 'Run in CI mode (disables autofix, uses headless output)')
-  .action(async (options: { ui: string; stage?: string; autofix: boolean; ci?: boolean }) => {
-    const ui = options.ci ? false : options.ui !== 'false';
-    const autofix = options.ci ? false : options.autofix;
-    const projectRoot = cwd();
+  .option('--benchmark', 'Enable benchmarking metrics output')
+  .action(
+    async (options: {
+      ui: string;
+      stage?: string;
+      autofix: boolean;
+      ci?: boolean;
+      benchmark?: boolean;
+    }) => {
+      const ui = options.ci ? false : options.ui !== 'false';
+      const autofix = options.ci ? false : options.autofix;
+      const projectRoot = cwd();
 
-    // Determine which stages to run
-    let stages: StageName[] | undefined;
-    if (options.stage) {
-      const stageName = options.stage as StageName;
-      if (!DEFAULT_STAGE_ORDER.includes(stageName)) {
-        console.error(`Unknown stage: ${options.stage}`);
-        console.error(`Available stages: ${DEFAULT_STAGE_ORDER.join(', ')}`);
-        process.exit(2);
+      // Determine which stages to run
+      let stages: StageName[] | undefined;
+      if (options.stage) {
+        const stageName = options.stage as StageName;
+        if (!DEFAULT_STAGE_ORDER.includes(stageName)) {
+          console.error(`Unknown stage: ${options.stage}`);
+          console.error(`Available stages: ${DEFAULT_STAGE_ORDER.join(', ')}`);
+          process.exit(2);
+        }
+        stages = [stageName];
       }
-      stages = [stageName];
-    }
 
-    // Select reporter based on UI mode
-    const reporter = ui ? interactive : headless;
+      // Select reporter based on UI mode
+      const reporter = ui ? interactive : headless;
 
-    // Report pipeline start (headless only)
-    if (!ui) {
-      headless.reportPipelineStart();
-    }
+      // Report pipeline start (headless only)
+      if (!ui) {
+        headless.reportPipelineStart();
+      }
 
-    // Run each stage
-    const stagesToRun = stages ?? DEFAULT_STAGE_ORDER;
-    const results: Array<{
-      stage: StageName;
-      success: boolean;
-      message: string;
-      durationMs: number;
-      errors?: string[];
-    }> = [];
+      // Run each stage
+      const stagesToRun = stages ?? DEFAULT_STAGE_ORDER;
+      const results: Array<{ stage: StageName } & StageResult> = [];
+      const benchmarkResults: NamedStageResult[] = [];
 
-    const startTime = Date.now();
-    let failed = false;
-    let failedStage: StageName | undefined;
+      const startTime = Date.now();
+      let failed = false;
+      let failedStage: StageName | undefined;
 
-    for (const stageName of stagesToRun) {
-      reporter.reportStageStart(stageName);
+      for (const stageName of stagesToRun) {
+        reporter.reportStageStart(stageName);
 
-      const stage = getStage(stageName);
-      const result = await stage.run({
-        projectRoot,
-        ci: Boolean(options.ci),
-        autofix,
-        ui,
+        const stage = getStage(stageName);
+        const result = await stage.run({
+          projectRoot,
+          ci: Boolean(options.ci),
+          autofix,
+          ui,
+          benchmark: options.benchmark,
+        });
+
+        const executionResult = {
+          ...result,
+          stage: stageName,
+        };
+        results.push(executionResult);
+        reporter.reportStageResult(executionResult);
+
+        // Collect benchmark data
+        if (options.benchmark) {
+          benchmarkResults.push({ name: stageName, result });
+        }
+
+        if (!result.success) {
+          failed = true;
+          failedStage = stageName;
+          break;
+        }
+      }
+
+      const totalDurationMs = Date.now() - startTime;
+
+      // Report final result
+      reporter.reportPipelineResult({
+        success: !failed,
+        stages: results,
+        totalDurationMs,
+        failedStage,
       });
 
-      const executionResult = {
-        ...result,
-        stage: stageName,
-      };
-      results.push(executionResult);
-      reporter.reportStageResult(executionResult);
-
-      if (!result.success) {
-        failed = true;
-        failedStage = stageName;
-        break;
+      // Report benchmarks if enabled
+      if (options.benchmark) {
+        const benchmarks = collectBenchmarks(benchmarkResults);
+        reportBenchmarks(benchmarks, ui);
       }
+
+      process.exit(failed ? 1 : 0);
     }
-
-    const totalDurationMs = Date.now() - startTime;
-
-    // Report final result
-    reporter.reportPipelineResult({
-      success: !failed,
-      stages: results,
-      totalDurationMs,
-      failedStage,
-    });
-
-    process.exit(failed ? 1 : 0);
-  });
+  );
 
 program.parse();

@@ -3,7 +3,7 @@
  */
 
 import type { Stage, StageContext, StageResult } from '../contracts/index.js';
-import { execCommand } from '../utils/exec.js';
+import { capOutput, execCommand } from '../utils/exec.js';
 
 export const typecheckStage: Stage = {
   name: 'typecheck',
@@ -16,6 +16,11 @@ export const typecheckStage: Stage = {
     const command = 'npm run typecheck -- --output-logs=errors-only';
     const result = await execCommand(command, context.projectRoot);
     const durationMs = Date.now() - startTime;
+
+    // Capture output for benchmarking
+    const capturedOutput = context.benchmark
+      ? { stdout: capOutput(result.stdout), stderr: capOutput(result.stderr) }
+      : undefined;
 
     if (result.exitCode !== 0) {
       // Extract TypeScript errors from output
@@ -30,6 +35,7 @@ export const typecheckStage: Stage = {
         message: 'Type checking failed',
         durationMs,
         errors: errorLines.length > 0 ? errorLines : [output.slice(0, 500)],
+        output: capturedOutput,
       };
     }
 
@@ -37,6 +43,7 @@ export const typecheckStage: Stage = {
       success: true,
       message: 'Type checking passed',
       durationMs,
+      output: capturedOutput,
     };
   },
 };

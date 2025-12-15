@@ -3,7 +3,7 @@
  */
 
 import type { Stage, StageContext, StageResult } from '../contracts/index.js';
-import { execCommand } from '../utils/exec.js';
+import { capOutput, execCommand } from '../utils/exec.js';
 
 export const buildStage: Stage = {
   name: 'build',
@@ -15,6 +15,11 @@ export const buildStage: Stage = {
     const command = 'npm run build -- --output-logs=errors-only';
     const result = await execCommand(command, context.projectRoot);
     const durationMs = Date.now() - startTime;
+
+    // Capture output for benchmarking
+    const capturedOutput = context.benchmark
+      ? { stdout: capOutput(result.stdout), stderr: capOutput(result.stderr) }
+      : undefined;
 
     if (result.exitCode !== 0) {
       const output = result.stdout || result.stderr;
@@ -28,6 +33,7 @@ export const buildStage: Stage = {
         message: 'Build failed',
         durationMs,
         errors: errorLines.length > 0 ? errorLines : [output.slice(0, 500)],
+        output: capturedOutput,
       };
     }
 
@@ -35,6 +41,7 @@ export const buildStage: Stage = {
       success: true,
       message: 'Build passed',
       durationMs,
+      output: capturedOutput,
     };
   },
 };
