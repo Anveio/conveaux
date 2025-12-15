@@ -2,6 +2,21 @@
 
 ## Session Defaults (MANDATORY)
 
+### Coding Loop Skills (Required for All Coding Tasks)
+
+**At the start of every coding session**, read all coding-loop related skills:
+
+| Skill | Purpose | When Critical |
+|-------|---------|---------------|
+| `coding-loop` | Core verification gates | Always |
+| `code-review` | Rigorous PR review | Before any merge |
+| `effective-git` | Commit discipline | Changes > 200 lines |
+| `coding-patterns` | Architecture patterns | Creating/modifying packages |
+| `github-cli` | PR workflow | PR creation and merge |
+| `verification-pipeline` | Debugging verify.sh | When verification fails |
+
+**Invoke `Skill(coding-loop)` at session start.** The skill will guide you to related skills based on task size.
+
 ### Sandbox Mode
 - **Sandbox is DISABLED** - we rely on devcontainer isolation instead of Claude Code's built-in sandbox.
 - Always use `dangerouslyDisableSandbox: true` for bash commands to avoid temp file and heredoc issues.
@@ -47,6 +62,16 @@ All instruction files are imported below for automatic context loading.
 ## Changelog
 @instructions/CHANGELOG.md
 
-## Devcontainer Sandboxing Skill (auto-loaded)
+## Auto-loaded Skills
+
+### Devcontainer Sandboxing
 @~/.claude/skills/devcontainer-sandboxing/SKILL.md
 @~/.claude/skills/devcontainer-sandboxing/SECURITY-FOOTGUNS.md
+
+### Coding Loop (Core + Related)
+@~/.claude/skills/coding-loop/SKILL.md
+@~/.claude/skills/code-review/SKILL.md
+@~/.claude/skills/effective-git/SKILL.md
+@~/.claude/skills/coding-patterns/SKILL.md
+@~/.claude/skills/github-cli/SKILL.md
+@~/.claude/skills/verification-pipeline/SKILL.md
