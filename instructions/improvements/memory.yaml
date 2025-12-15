@@ -59,3 +59,42 @@ memories:
           ```
 
           This discards the local unpushed commits and aligns with the merged state.
+
+  - task: "vitest-4.0.15-upgrade"
+    date: "2025-12-15"
+    context: |
+      Upgraded vitest from ^2.1.8/^3.0.4 to ^4.0.15 across 8 packages. Also updated
+      @vitest/coverage-v8 to match. Major version bump from v2/v3 to v4 worked
+      smoothly with no breaking changes in test code.
+    learnings:
+      - type: "command-correction"
+        summary: "Use npm registry curl when npm view fails with permission errors"
+        detail: |
+          When npm view fails due to cache permission errors:
+          ```
+          npm error Your cache folder contains root-owned files...
+          ```
+
+          Use curl directly to the npm registry instead:
+          ```bash
+          curl -s https://registry.npmjs.org/vitest/latest | grep -o '"version":"[^"]*"'
+          ```
+
+          This bypasses the local npm cache entirely.
+
+      - type: "pattern"
+        summary: "Keep @vitest/coverage-v8 version in sync with vitest"
+        detail: |
+          When updating vitest, ensure @vitest/coverage-v8 is updated to the same
+          version. These packages are released together and should match.
+
+          Before: vitest ^3.0.4, @vitest/coverage-v8 ^3.0.4
+          After:  vitest ^4.0.15, @vitest/coverage-v8 ^4.0.15
+
+      - type: "insight"
+        summary: "Major vitest upgrades (2→4) work smoothly for basic test setups"
+        detail: |
+          Vitest major version upgrades from v2/v3 to v4 required no changes to test
+          code. The 242 tests across 8 packages all passed without modification.
+          This suggests vitest maintains good backwards compatibility for standard
+          test patterns (describe, it, expect, vi.fn, vi.spyOn).
