@@ -8,8 +8,9 @@ import { cwd } from 'node:process';
 import { Command } from 'commander';
 import { type NamedStageResult, collectBenchmarks, reportBenchmarks } from './benchmark/index.js';
 import type { Reporter, StageName, StageResult } from './contracts/index.js';
+import { runPipeline } from './pipeline.js';
 import { agentReporter, headlessReporter, interactiveReporter } from './reporters/index.js';
-import { DEFAULT_STAGE_ORDER, getStage } from './stages/index.js';
+import { DEFAULT_STAGE_ORDER } from './stages/index.js';
 
 const program = new Command();
 
@@ -23,6 +24,7 @@ program
   .option('--ci', 'Run in CI mode (disables autofix, uses headless output)')
   .option('--agent', 'Agent mode: minimal output optimized for LLM agents')
   .option('--benchmark', 'Enable benchmarking metrics output')
+  .option('--sequential', 'Force sequential execution (disable parallel)')
   .action(
     async (options: {
       ui: string;
@@ -31,6 +33,7 @@ program
       ci?: boolean;
       agent?: boolean;
       benchmark?: boolean;
+      sequential?: boolean;
     }) => {
       const ui = options.agent ? false : options.ci ? false : options.ui !== 'false';
       const autofix = options.ci ? false : options.autofix;
@@ -61,55 +64,39 @@ program
         headlessReporter.reportPipelineStart?.();
       }
 
-      // Run each stage
-      const stagesToRun = stages ?? DEFAULT_STAGE_ORDER;
-      const results: Array<{ stage: StageName } & StageResult> = [];
+      // Benchmark collection
       const benchmarkResults: NamedStageResult[] = [];
 
-      const startTime = Date.now();
-      let failed = false;
-      let failedStage: StageName | undefined;
+      // Run pipeline with callbacks for reporting
+      const result = await runPipeline({
+        projectRoot,
+        ci: Boolean(options.ci),
+        autofix,
+        ui,
+        stages,
+        sequential: options.sequential,
+        onStageStart: (stageName) => {
+          reporter.reportStageStart(stageName);
+        },
+        onStageComplete: (executionResult) => {
+          reporter.reportStageResult(executionResult);
 
-      for (const stageName of stagesToRun) {
-        reporter.reportStageStart(stageName);
-
-        const stage = getStage(stageName);
-        const result = await stage.run({
-          projectRoot,
-          ci: Boolean(options.ci),
-          autofix,
-          ui,
-          benchmark: options.benchmark,
-        });
-
-        const executionResult = {
-          ...result,
-          stage: stageName,
-        };
-        results.push(executionResult);
-        reporter.reportStageResult(executionResult);
-
-        // Collect benchmark data
-        if (options.benchmark) {
-          benchmarkResults.push({ name: stageName, result });
-        }
-
-        if (!result.success) {
-          failed = true;
-          failedStage = stageName;
-          break;
-        }
-      }
-
-      const totalDurationMs = Date.now() - startTime;
+          // Collect benchmark data
+          if (options.benchmark) {
+            const stageResult: StageResult = {
+              success: executionResult.success,
+              message: executionResult.message,
+              durationMs: executionResult.durationMs,
+              errors: executionResult.errors,
+              output: executionResult.output,
+            };
+            benchmarkResults.push({ name: executionResult.stage, result: stageResult });
+          }
+        },
+      });
 
       // Report final result
-      reporter.reportPipelineResult({
-        success: !failed,
-        stages: results,
-        totalDurationMs,
-        failedStage,
-      });
+      reporter.reportPipelineResult(result);
 
       // Report benchmarks if enabled
       if (options.benchmark) {
@@ -117,7 +104,7 @@ program
         reportBenchmarks(benchmarks, ui);
       }
 
-      process.exit(failed ? 1 : 0);
+      process.exit(result.success ? 0 : 1);
     }
   );
 
