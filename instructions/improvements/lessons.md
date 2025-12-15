@@ -15,6 +15,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 | package-setup | 3 | 2024-12-15 |
 | core-abstractions | 2 | 2024-12-15 |
 | documentation | 1 | 2024-12-15 |
+| type-safety | 3 | 2024-12-15 |
 
 ---
 
@@ -137,3 +138,31 @@ const clock: Clock = {
 **Lesson**: Contracts must contain only interfaces and types - never constants, functions, or any runtime values. If it emits JavaScript, it doesn't belong in a contract. Constants like `LOG_LEVEL_PRIORITY` belong in the port implementation, not the contract.
 **Evidence**: Attempted to add `export const LOG_LEVEL_PRIORITY = {...}` to `@conveaux/contract-logger`. This violated the "contracts are pure types" principle since constants emit JavaScript.
 **Instruction Impact**: Updated `instructions/reference/patterns/contract-port.md` to explicitly prohibit constants and add the rule "if it emits JS, it doesn't belong here"
+
+---
+
+### Type Safety
+
+#### L-007: Always Use Type Guards for catch Blocks
+
+**Date**: 2024-12-15
+**Context**: feat/claude-code-works self-improvement
+**Lesson**: Never use `error as Error` in catch blocks. The caught value is `unknown` and could be anything. Create a `getErrorMessage(error: unknown): string` type guard that handles Error instances, error-like objects with message property, strings, and falls back to 'Unknown error'.
+**Evidence**: 5 instances in `tools.ts`, 1 in `agent.ts`, 1 in `loop.ts` used `error as Error` without runtime validation, risking runtime failures if a non-Error was thrown.
+**Instruction Impact**: Formalized in IP-003; type-guards.ts created as reusable utility
+
+#### L-008: Validate Unknown Tool Inputs with Type Guards
+
+**Date**: 2024-12-15
+**Context**: feat/claude-code-works self-improvement
+**Lesson**: Tool inputs from LLMs are typed `unknown` at runtime regardless of TypeScript declarations. Create helper functions like `getStringProperty(record, key)` that safely extract and validate expected types rather than using `as string` assertions that can fail silently.
+**Evidence**: 9 instances in `tools.ts` used `input.property as string` without validation. If the LLM returned malformed input, these would fail at runtime.
+**Instruction Impact**: Formalized in IP-003; type-guards.ts provides safe extraction utilities
+
+#### L-009: Distinguish Expected vs Unexpected Errors
+
+**Date**: 2024-12-15
+**Context**: feat/claude-code-works self-improvement
+**Lesson**: When a command like `grep` returns exit code 1 for "no matches", distinguish this expected outcome from actual errors. Check error properties (code, stderr) to determine error type. Catching all errors as success cases hides real failures.
+**Evidence**: `grepTool` in `tools.ts` caught all errors as "(no matches found)", hiding permission denied, invalid path, and other real errors from the agent.
+**Instruction Impact**: Formalized in IP-003; `isGrepNoMatchError()` type guard added

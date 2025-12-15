@@ -10,6 +10,7 @@
 import { runAgent } from './agent';
 import { getContextForTask, type Instructions } from './instructions';
 import { output } from './output';
+import { getErrorMessage } from './type-guards';
 
 export interface LoopConfig {
   mode: 'create' | 'improve';
@@ -236,9 +237,11 @@ function parseSignals(agentOutput: string): {
  * Extract content from [TAG:content] markers.
  */
 function extractBracketContent(text: string, tag: string): string | null {
-  const regex = new RegExp(`\\[${tag}:([^\\]]+)\\]`);
+  // Escape special regex characters in tag to prevent injection
+  const escapedTag = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\[${escapedTag}:([^\\]]+)\\]`);
   const match = text.match(regex);
-  return match ? match[1] : null;
+  return match ? match[1]?.trim() ?? null : null;
 }
 
 /**
@@ -260,10 +263,16 @@ async function runVerification(projectRoot: string): Promise<{ passed: boolean; 
 
     return { passed, output };
   } catch (error) {
-    const err = error as Error & { stdout?: string; stderr?: string };
+    // Extract stdout/stderr from exec error if available
+    const execError = error as { stdout?: string; stderr?: string };
+    const parts = [
+      execError.stdout,
+      execError.stderr,
+      getErrorMessage(error),
+    ].filter(Boolean);
     return {
       passed: false,
-      output: [err.stdout, err.stderr, err.message].filter(Boolean).join('\n'),
+      output: parts.join('\n'),
     };
   }
 }
