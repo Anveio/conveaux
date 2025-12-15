@@ -1,0 +1,29 @@
+{
+  "name": "@conveaux/port-crypto",
+  "version": "0.1.0",
+  "description": "Crypto port - cryptographic hashing implementation with platform injection",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "source": "./src/index.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["dist", "src"],
+  "dependencies": {
+    "@conveaux/contract-crypto": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
