@@ -19,5 +19,8 @@
     "test": "echo 'No tests for contracts package'",
     "typecheck": "tsc --noEmit"
   },
-  "files": ["dist", "src"]
+  "files": ["dist", "src"],
+  "dependencies": {
+    "@conveaux/contract-clock": "*"
+  }
 }

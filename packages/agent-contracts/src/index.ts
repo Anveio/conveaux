@@ -193,18 +193,10 @@ export interface Logger {
   error(message: string, context?: Record<string, unknown>): void;
 }
 
-/**
- * Clock port - replaces direct Date usage.
- * Enables deterministic time in tests.
- */
-export interface Clock {
-  /** Get current date/time */
-  now(): Date;
-  /** Get ISO 8601 timestamp string */
-  timestamp(): string;
-  /** Get epoch milliseconds */
-  epochMs(): number;
-}
+// Clock interface imported from @conveaux/contract-clock
+// See that package for the high-resolution monotonic clock interface
+import type { Clock } from '@conveaux/contract-clock';
+export type { Clock };
 
 /**
  * Random port - replaces direct Math.random() and crypto usage.

@@ -25,7 +25,7 @@ interface LessonRecorderPorts {
  * Generate a unique lesson ID using injected ports.
  */
 function generateLessonId(clock: Clock, random: Random): string {
-  const date = clock.timestamp().slice(0, 10).replace(/-/g, '');
+  const date = new Date(clock.wallClockMs()).toISOString().slice(0, 10).replace(/-/g, '');
   const randomPart = random.number().toString(36).slice(2, 6);
   return `L-${date}-${randomPart}`;
 }
@@ -61,7 +61,7 @@ export async function recordLesson(params: {
 
   const lessonData: LessonLearned = {
     id: generateLessonId(clock, random),
-    date: clock.timestamp().slice(0, 10),
+    date: new Date(clock.wallClockMs()).toISOString().slice(0, 10),
     context,
     lesson,
     evidence,
