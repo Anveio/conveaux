@@ -57,9 +57,14 @@ Templates: `instructions/living-docs/templates/`
    - Approach and constraints
    - Numbered steps with verification checkpoints
    - Rollback strategy
-2. Break down tasks in PLAN.md
-3. Identify when to run verification
+2. Consult patterns (if architectural decisions involved):
+   - Creating a package? → Read instructions/reference/patterns/package-setup.md
+   - Using time/logging/random/env? → Read instructions/reference/patterns/core-ports.md
+3. Break down tasks in PLAN.md
+4. Identify when to run verification
 ```
+
+**Pattern Consultation**: Before making architectural decisions, check `instructions/reference/architecture.md` for required reading. This ensures institutional knowledge is applied.
 
 ### 3. Implement (Iterative)
 

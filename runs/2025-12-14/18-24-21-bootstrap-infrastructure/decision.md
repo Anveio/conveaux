@@ -37,4 +37,3 @@ This establishes the workflow before adding programmatic complexity.
 ### Constrains
 - No automated triggering (manual sessions only)
 - No budget enforcement (developer responsibility)
-- Beads CLI integration is available but not formalized into orchestrator
