@@ -13,14 +13,20 @@ import { createOutChannel } from '@conveaux/port-outchannel';
 import { createWallClock } from '@conveaux/port-wall-clock';
 import { Command } from 'commander';
 
-// Create logger with pretty colored output to stderr
+// Composition root: inject platform globals here
+const clock = createWallClock({ Date });
 const logger = createLogger({
+  Date,
   channel: createOutChannel(process.stderr),
-  clock: createWallClock(),
+  clock,
   options: {
     formatter: createPrettyFormatter({ colors: true }),
   },
 });
+
+// Dependencies for chatgpt-share functions
+const fetchDeps = { AbortController, setTimeout, clearTimeout };
+const parseDeps = { Date };
 
 const program = new Command();
 
@@ -35,11 +41,11 @@ program
     try {
       logger.info('Fetching conversation...');
 
-      const html = await fetchSharePage(url, globalThis.fetch);
+      const html = await fetchSharePage(fetchDeps, url, globalThis.fetch);
 
       logger.info('Parsing conversation...');
 
-      const conversation = parseHTML(html);
+      const conversation = parseHTML(parseDeps, html);
 
       logger.info('Converting to markdown...');
 
