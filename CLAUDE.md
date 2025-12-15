@@ -1,77 +1,47 @@
-# Conveaux Instructions
+Your task is always autonomous and recursive self-improvement.
 
-## Session Defaults (MANDATORY)
+## Project Rules
 
-### Coding Loop Skills (Required for All Coding Tasks)
+- **Sandbox DISABLED** - We rely on devcontainer isolation, not Claude Code's sandbox. Always use `dangerouslyDisableSandbox: true`.
+- **Never push to main** - Create feature branches, merge via PR.
+- **No `any` outside test files** - Use precise types.
+- **`./verify.sh --ui=false` must pass** before PR merge.
 
-**At the start of every coding session**, read all coding-loop related skills:
+## Development Framework (RSID)
 
-| Skill | Purpose | When Critical |
-|-------|---------|---------------|
-| `coding-loop` | Core verification gates | Always |
-| `code-review` | Rigorous PR review | Before any merge |
-| `effective-git` | Commit discipline | Changes > 200 lines |
-| `coding-patterns` | Architecture patterns | Creating/modifying packages |
-| `github-cli` | PR workflow | PR creation and merge |
-| `verification-pipeline` | Debugging verify.sh | When verification fails |
+Recursive Self-Improving Development:
 
-**Invoke `Skill(coding-loop)` at session start.** The skill will guide you to related skills based on task size.
+1. **TSC (human) provides goals** - What to build, success criteria
+2. **PLAN → IMPLEMENT → VERIFY → DECIDE** loop - TodoWrite for planning, verify.sh for gates
+3. **Skills provide detailed guidance** - Invoke on demand (see below)
 
-### Sandbox Mode
-- **Sandbox is DISABLED** - we rely on devcontainer isolation instead of Claude Code's built-in sandbox.
-- Always use `dangerouslyDisableSandbox: true` for bash commands to avoid temp file and heredoc issues.
+## Skills Reference
 
-### Devcontainer Sandboxing (Primary Security Layer)
-- **At the start of every session**, invoke the `devcontainer-sandboxing` skill to ensure the development environment is properly containerized and hardened.
-- Before executing any destructive or system-modifying commands, verify you are running inside a devcontainer.
-- Follow all security guidelines from the devcontainer-sandboxing skill (non-root user, no docker socket mount, no privileged mode).
+| Need | Skill to Invoke |
+|------|-----------------|
+| Development workflow & gates | `coding-loop` |
+| Architecture patterns (contracts, ports) | `coding-patterns` |
+| Verification pipeline | `verification-pipeline` |
+| Git commit discipline | `effective-git` |
+| PR review process | `code-review` |
+| GitHub CLI usage | `github-cli` |
 
----
+## Quick Commands
 
-All instruction files are imported below for automatic context loading.
+```bash
+./verify.sh --ui=false    # Full verification (required before merge)
+./verify.sh --agent       # Minimal output for agents
+./verify.sh --stage=lint  # Single stage
+```
 
-## Core Entry Point
-@instructions/START.md
+## Project Structure
 
-## Architecture & Reference
-@instructions/reference/architecture.md
-@instructions/reference/tsc-coordination.md
-@instructions/reference/env-patterns.md
-@instructions/reference/error-handling.md
-@instructions/reference/patterns/contract-port.md
-@instructions/reference/patterns/core-ports.md
-@instructions/reference/patterns/package-setup.md
+```
+packages/           # Reusable packages (contracts, ports)
+apps/               # Applications (cli, validation-pipeline)
+instructions/       # Archived instructions & lessons
+```
 
-## Agent Loop Protocol
-@instructions/loop/outer-loop.md
-@instructions/loop/completion-gate.md
-@instructions/loop/session-continuity.md
+## Lessons
 
-## Verification
-@instructions/verification/pipeline.md
-@instructions/verification/gates.md
-
-## Meta & Self-Improvement
-@instructions/meta/self-improvement.md
-@instructions/improvements/lessons.md
-@instructions/improvements/meta-feedback.md
-
-## Session Prompts
-@instructions/prompts/session-improve-package.md
-
-## Changelog
-@instructions/CHANGELOG.md
-
-## Auto-loaded Skills
-
-### Devcontainer Sandboxing
-@~/.claude/skills/devcontainer-sandboxing/SKILL.md
-@~/.claude/skills/devcontainer-sandboxing/SECURITY-FOOTGUNS.md
-
-### Coding Loop (Core + Related)
-@~/.claude/skills/coding-loop/SKILL.md
-@~/.claude/skills/code-review/SKILL.md
-@~/.claude/skills/effective-git/SKILL.md
-@~/.claude/skills/coding-patterns/SKILL.md
-@~/.claude/skills/github-cli/SKILL.md
-@~/.claude/skills/verification-pipeline/SKILL.md
+Accumulated wisdom lives in `instructions/improvements/lessons.md`. Periodically integrate key patterns into skills.
