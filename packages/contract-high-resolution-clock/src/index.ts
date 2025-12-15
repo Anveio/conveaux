@@ -34,6 +34,18 @@ export interface HighResolutionClock {
   hrtime(): bigint;
 
   /**
+   * Monotonic nanoseconds since clock origin.
+   * Always derived from now() * 1_000_000, ensuring consistent semantics
+   * regardless of platform capabilities.
+   *
+   * Use this when you need guaranteed monotonic nanosecond precision.
+   * Unlike hrtime(), this is always relative to clock creation time.
+   *
+   * @returns Nanoseconds elapsed since clock creation
+   */
+  nowNs(): bigint;
+
+  /**
    * Wall-clock milliseconds since Unix epoch.
    * Use for timestamps that need absolute time (e.g., logging).
    * Unlike now(), this is NOT guaranteed monotonic.

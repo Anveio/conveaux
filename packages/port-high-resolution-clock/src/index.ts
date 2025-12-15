@@ -255,6 +255,10 @@ export function createHighResolutionClock(
     return msToNs(now());
   };
 
+  const nowNs = (): bigint => {
+    return msToNs(now());
+  };
+
   const wallClockMs = (): number => {
     return environment.dateNow();
   };
@@ -262,6 +266,7 @@ export function createHighResolutionClock(
   return {
     now,
     hrtime,
+    nowNs,
     wallClockMs,
   };
 }
