@@ -6,7 +6,15 @@
  * Available stage names in the validation pipeline.
  * Note: 'build' was removed - we use source-first development with tsx.
  */
-export type StageName = 'check' | 'docs' | 'install' | 'lint' | 'typecheck' | 'hermetic' | 'test';
+export type StageName =
+  | 'check'
+  | 'docs'
+  | 'install'
+  | 'doctor'
+  | 'lint'
+  | 'typecheck'
+  | 'hermetic'
+  | 'test';
 
 /**
  * Context passed to each stage during execution.
@@ -27,7 +35,7 @@ export interface StageContext {
 /**
  * Captured command output for benchmarking.
  */
-export interface StageOutput {
+interface StageOutput {
   stdout: string;
   stderr: string;
 }

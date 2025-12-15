@@ -25,6 +25,7 @@ program
   .option('--agent', 'Agent mode: minimal output optimized for LLM agents')
   .option('--benchmark', 'Enable benchmarking metrics output')
   .option('--sequential', 'Force sequential execution (disable parallel)')
+  .option('--no-doctor', 'Skip doctor stage (code health fixes)')
   .action(
     async (options: {
       ui: string;
@@ -34,6 +35,7 @@ program
       agent?: boolean;
       benchmark?: boolean;
       sequential?: boolean;
+      doctor: boolean;
     }) => {
       const ui = options.agent ? false : options.ci ? false : options.ui !== 'false';
       const autofix = options.ci ? false : options.autofix;
@@ -49,6 +51,9 @@ program
           process.exit(2);
         }
         stages = [stageName];
+      } else if (!options.doctor) {
+        // Skip doctor stage if --no-doctor specified
+        stages = DEFAULT_STAGE_ORDER.filter((s) => s !== 'doctor');
       }
 
       // Select reporter based on mode

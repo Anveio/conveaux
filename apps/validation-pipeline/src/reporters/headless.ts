@@ -31,6 +31,12 @@ function reportStageResult(result: StageExecutionResult): void {
     console.log(`STAGE:${result.stage}:PASS`);
   } else {
     console.log(`STAGE:${result.stage}:FAIL`);
+    // Output errors for failed stages
+    if (result.errors && result.errors.length > 0) {
+      for (const error of result.errors) {
+        console.log(`  ${error}`);
+      }
+    }
   }
 }
 

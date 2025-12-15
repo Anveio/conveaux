@@ -7,8 +7,10 @@
  *           [check]
  *          ↙     ↘
  *     [docs]    [install]
- *                ↙   ↘
- *           [lint]  [typecheck]
+ *                   ↓
+ *               [doctor]
+ *               ↙     ↘
+ *          [lint]    [typecheck]
  *                        ↓
  *                   [hermetic]
  *                        ↓
@@ -61,8 +63,9 @@ const STAGE_DEPENDENCIES: Record<StageName, StageName[]> = {
   check: [],
   docs: ['check'],
   install: ['check'],
-  lint: ['install'],
-  typecheck: ['install'],
+  doctor: ['install'],
+  lint: ['doctor'],
+  typecheck: ['doctor'],
   hermetic: ['typecheck'],
   test: ['hermetic'],
 };
