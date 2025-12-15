@@ -60,16 +60,23 @@ Create PR → Self-Review → Fix Issues → Re-Review
 See `instructions/skills/pr-review-loop.md` for detailed checklist.
 
 ### Phase 5: MERGE (Autonomous)
-Verify all criteria pass, then merge:
+
+**CRITICAL**: Always review PR diff before merging. Never skip this step.
+
 ```bash
-# For port packages (no external services):
-./verify.sh --ui=false
+# 1. Run verification
+./verify.sh --ui=false                    # For port packages
+./verify.sh --ui=false --e2e=smoke        # For adapter packages (external deps)
 
-# For adapter packages (external deps):
-./verify.sh --ui=false --e2e=smoke
+# 2. MANDATORY: Review PR before merge
+gh pr diff <number>                       # Review all file changes
+gh pr view <number>                       # Verify title, description, checks
 
+# 3. Merge only after review
 git fetch origin main && git log HEAD..origin/main --oneline  # Empty = good
 gh pr merge <number> --squash --delete-branch
+
+# 4. Verify main post-merge
 git checkout main && git pull && ./verify.sh --ui=false
 ```
 

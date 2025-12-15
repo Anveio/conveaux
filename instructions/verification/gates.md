@@ -11,7 +11,7 @@ Quality gates define checkpoints where verification must pass before proceeding.
 ```
 
 Must pass before:
-- Declaring a milestone complete
+- Declaring TSC goals complete
 - Merging to main branch
 - Creating a release
 
@@ -24,17 +24,17 @@ Must pass before:
 Run when:
 - Touching integration/adapter code
 - Before merging AWS-related changes
-- Milestone involves external services
+- Goals involve external services
 
 ## When to Run Gates
 
 | Situation | Gate Required |
 |-----------|---------------|
-| Completing a milestone | Full verification |
+| Completing TSC goals | Full verification |
 | Merging PR | Full verification |
 | Touching adapter code | Verification + E2E |
 | Quick iteration | Targeted checks OK |
-| Before HANDOFF.md | Full verification |
+| Before ending session | Full verification |
 
 ## Gate Failure = Stop and Fix
 
@@ -63,18 +63,18 @@ npm run lint         # Just lint
 
 But run full verification:
 - Before committing (if significant changes)
-- Before declaring milestone done
+- Before declaring goals complete
 - When switching between tasks
 
 ## Definition of Done Gate
 
-Every milestone's Definition of Done includes:
+Every TSC goal set includes this implicit gate:
 
 ```markdown
 - [ ] ./verify.sh --ui=false passes
 ```
 
-This is non-negotiable. No milestone is done without green verification.
+This is non-negotiable. No goal is done without green verification.
 
 ## E2E Tiers
 
@@ -92,7 +92,7 @@ This is non-negotiable. No milestone is done without green verification.
 
 ## Continuous Improvement
 
-After completing a milestone, consider:
+After completing TSC goals, consider:
 
 - Can we add tests for the new behavior?
 - Can we speed up the pipeline?
@@ -110,4 +110,4 @@ If verification has been broken for multiple attempts:
 3. Isolate the breaking change
 4. Fix or escalate
 
-Max 3 fix attempts before escalating to human.
+Max 3 fix attempts before escalating to TSC.

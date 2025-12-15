@@ -137,7 +137,7 @@ RSID does NOT make instruction improvement the primary activity. Product work re
 
 ## Session Close Checklist
 
-**CRITICAL**: A task is NOT complete until the PR is merged to main. Creating a PR is not completion.
+**CRITICAL**: A task is NOT complete until the PR is reviewed AND merged to main.
 
 Before marking work complete:
 - [ ] All observations captured in `lessons.md` (or noted for next session)
@@ -145,8 +145,24 @@ Before marking work complete:
 - [ ] No contradictions introduced between instruction files
 - [ ] `./verify.sh --ui=false` passes
 - [ ] Changes committed and pushed
+- [ ] **PR self-reviewed** via `gh pr diff` (never skip this step)
 - [ ] **PR merged to main** (not just created)
 - [ ] Main branch verified healthy post-merge
+
+### PR Review Requirements
+
+Every PR must be reviewed before merge. Use this sequence:
+```bash
+gh pr diff <number>           # Review all changes
+gh pr view <number>           # Verify title, description, checks
+gh pr merge <number> --squash --delete-branch
+```
+
+**Never merge without reviewing the diff first.** This catches:
+- Unintended file changes
+- Debug code left in
+- Missing test coverage
+- Instruction contradictions
 
 ## IP Verification Checklist
 

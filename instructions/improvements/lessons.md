@@ -16,7 +16,7 @@ This document accumulates wisdom from development sessions. Each lesson is index
 | core-abstractions | 2 | 2024-12-15 |
 | documentation | 1 | 2024-12-15 |
 | type-safety | 3 | 2024-12-15 |
-| meta-improvement | 2 | 2024-12-15 |
+| meta-improvement | 3 | 2024-12-15 |
 
 ---
 
@@ -179,6 +179,14 @@ const clock: Clock = {
 **Lesson**: Creating a PR is an intermediate step, not completion. A task is only complete when the PR is merged to main and main is verified healthy. Never mark todos as complete after PR creation - the merge is the finish line.
 **Evidence**: PR #10 was created and task marked complete, but PR remained unmerged. User had to intervene to enforce completion.
 **Instruction Impact**: Added CRITICAL warnings to session-improve-package.md and self-improvement.md Session Close Checklist emphasizing PR merge requirement
+
+#### L-012: Never Merge Without Reviewing PR Diff
+
+**Date**: 2024-12-15
+**Context**: RSID loop iteration 2 - PR #11 merged without review
+**Lesson**: Every PR must be reviewed before merge, even when you authored it. Use `gh pr diff <number>` to review all changes before running `gh pr merge`. This catches unintended file changes, debug code, and instruction contradictions.
+**Evidence**: PR #11 was merged immediately after creation without running `gh pr diff`. User had to intervene to enforce review requirement.
+**Instruction Impact**: Added PR Review Requirements section to self-improvement.md Session Close Checklist; updated Phase 5 in session-improve-package.md with mandatory review step
 
 #### L-009: Distinguish Expected vs Unexpected Errors
 
