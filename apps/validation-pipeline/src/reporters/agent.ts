@@ -7,21 +7,18 @@
  * - No intermediate progress noise
  */
 
-import type { PipelineResult, StageExecutionResult, StageName } from '../contracts/index.js';
-
-/**
- * Report the start of the pipeline.
- * Agent mode: silent (no output).
- */
-export function reportPipelineStart(): void {
-  // Silent - agents don't need progress indication
-}
+import type {
+  PipelineResult,
+  Reporter,
+  StageExecutionResult,
+  StageName,
+} from '../contracts/index.js';
 
 /**
  * Report the start of a stage.
  * Agent mode: silent (no output).
  */
-export function reportStageStart(_stageName: StageName): void {
+function reportStageStart(_stageName: StageName): void {
   // Silent - agents don't need per-stage progress
 }
 
@@ -29,7 +26,7 @@ export function reportStageStart(_stageName: StageName): void {
  * Report a stage result.
  * Agent mode: silent for success, structured for failure.
  */
-export function reportStageResult(_result: StageExecutionResult): void {
+function reportStageResult(_result: StageExecutionResult): void {
   // Silent - all output deferred to reportPipelineResult
 }
 
@@ -37,7 +34,7 @@ export function reportStageResult(_result: StageExecutionResult): void {
  * Report pipeline result summary.
  * This is the ONLY output in agent mode.
  */
-export function reportPipelineResult(result: PipelineResult): void {
+function reportPipelineResult(result: PipelineResult): void {
   if (result.success) {
     // Single line output for success - minimal tokens
     console.log(`VERIFY:PASS:duration_ms=${result.totalDurationMs}`);
@@ -71,6 +68,15 @@ export function reportPipelineResult(result: PipelineResult): void {
 /**
  * Parse an error line into structured format.
  * Returns null if the line doesn't match known patterns.
+ *
+ * Supported error formats:
+ * - TypeScript: src/foo.ts(42,5): error TS2345: ...
+ * - TypeScript (alt): src/foo.ts:42:5 - error TS2345: ...
+ * - Biome: src/foo.ts:42:5 lint/rule FIXABLE
+ * - ESLint: src/foo.ts:42:5 error rule-name Message
+ * - Jest/Vitest: FAIL src/foo.test.ts
+ * - Node.js module: Error: Cannot find module 'foo'
+ * - Generic: src/foo.ts:42:5: Message
  */
 function parseErrorLine(line: string): string | null {
   // TypeScript error: src/foo.ts(42,5): error TS2345: ...
@@ -94,11 +100,39 @@ function parseErrorLine(line: string): string | null {
     return `ERROR:file=${file}:line=${lineNum}:col=${col}:rule=${rule}`;
   }
 
+  // ESLint error: src/foo.ts:42:5 error rule-name Message
+  const eslintMatch = line.match(/^(.+?):(\d+):(\d+)\s+(error|warning)\s+(\S+)\s+(.+)$/);
+  if (eslintMatch) {
+    const [, file, lineNum, col, severity, rule, message] = eslintMatch;
+    return `ERROR:file=${file}:line=${lineNum}:col=${col}:rule=${rule}:severity=${severity}:${message}`;
+  }
+
   // Jest/Vitest failure: FAIL src/foo.test.ts
   const testMatch = line.match(/^FAIL\s+(.+\.(?:test|spec)\.[jt]sx?)$/);
   if (testMatch) {
     const [, file] = testMatch;
     return `ERROR:file=${file}:test_failed`;
+  }
+
+  // Node.js module error: Error: Cannot find module 'foo'
+  const moduleMatch = line.match(/^Error:\s*Cannot find module '([^']+)'/);
+  if (moduleMatch) {
+    const [, moduleName] = moduleMatch;
+    return `ERROR:type=module_not_found:module=${moduleName}`;
+  }
+
+  // Generic file:line:col pattern: src/foo.ts:42:5: Message
+  const genericMatch = line.match(/^([^:]+\.[a-z]+):(\d+):(\d+):\s*(.+)$/i);
+  if (genericMatch) {
+    const [, file, lineNum, col, message] = genericMatch;
+    return `ERROR:file=${file}:line=${lineNum}:col=${col}:${message}`;
+  }
+
+  // Generic file:line pattern (no column): src/foo.ts:42: Message
+  const genericNoColMatch = line.match(/^([^:]+\.[a-z]+):(\d+):\s*(.+)$/i);
+  if (genericNoColMatch) {
+    const [, file, lineNum, message] = genericNoColMatch;
+    return `ERROR:file=${file}:line=${lineNum}:${message}`;
   }
 
   return null;
@@ -125,3 +159,13 @@ function getStageHint(stage: StageName | undefined): string | null {
       return null;
   }
 }
+
+/**
+ * Agent reporter - minimal output optimized for LLM agents.
+ * Implements the Reporter interface with silent progress updates.
+ */
+export const agentReporter: Reporter = {
+  reportStageStart,
+  reportStageResult,
+  reportPipelineResult,
+};

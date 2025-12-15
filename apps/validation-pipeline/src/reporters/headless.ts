@@ -2,26 +2,31 @@
  * Headless reporter - machine-parseable output for CI.
  */
 
-import type { PipelineResult, StageExecutionResult, StageName } from '../contracts/index.js';
+import type {
+  PipelineResult,
+  Reporter,
+  StageExecutionResult,
+  StageName,
+} from '../contracts/index.js';
 
 /**
  * Report the start of the pipeline.
  */
-export function reportPipelineStart(): void {
+function reportPipelineStart(): void {
   console.log('VERIFICATION:START');
 }
 
 /**
  * Report the start of a stage.
  */
-export function reportStageStart(stageName: StageName): void {
+function reportStageStart(stageName: StageName): void {
   console.log(`STAGE:${stageName}:START`);
 }
 
 /**
  * Report a stage result.
  */
-export function reportStageResult(result: StageExecutionResult): void {
+function reportStageResult(result: StageExecutionResult): void {
   if (result.success) {
     console.log(`STAGE:${result.stage}:PASS`);
   } else {
@@ -32,10 +37,21 @@ export function reportStageResult(result: StageExecutionResult): void {
 /**
  * Report pipeline result summary.
  */
-export function reportPipelineResult(result: PipelineResult): void {
+function reportPipelineResult(result: PipelineResult): void {
   if (result.success) {
     console.log('VERIFICATION:PASS');
   } else {
     console.log('VERIFICATION:FAIL');
   }
 }
+
+/**
+ * Headless reporter - machine-parseable output for CI.
+ * Implements the Reporter interface with structured text output.
+ */
+export const headlessReporter: Reporter = {
+  reportPipelineStart,
+  reportStageStart,
+  reportStageResult,
+  reportPipelineResult,
+};

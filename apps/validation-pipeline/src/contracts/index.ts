@@ -13,3 +13,5 @@ export type {
   PipelineResult,
   StageExecutionResult,
 } from './result.js';
+
+export type { Reporter } from './reporter.js';
