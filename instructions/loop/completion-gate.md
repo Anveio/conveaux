@@ -6,35 +6,33 @@ This document defines exactly when work is "done". No ambiguity.
 
 You are "done" ONLY when **ALL** conditions are true:
 
-1. `MILESTONE.md` contains the exact line: `Status: done`
+1. TSC goals are achieved (all stated objectives met)
 2. `./verify.sh --ui=false` exits with code `0`
 3. No draft IPs older than 2 sessions remain unresolved
-4. Any lessons learned during this milestone are recorded
+4. Any lessons learned during this session are recorded
 
-The first two are machine-checkable. The last two are self-verified.
+The first two are the primary gates. The last two are self-verified.
 
 ## Machine-Checkable Contract
 
 ```bash
-# Check 1: Milestone status
-grep -q "^Status: done$" MILESTONE.md
-MILESTONE_DONE=$?
-
-# Check 2: Verification passes
+# Check: Verification passes
 ./verify.sh --ui=false
 VERIFY_PASSED=$?
 
-# Both must be 0
-if [ $MILESTONE_DONE -eq 0 ] && [ $VERIFY_PASSED -eq 0 ]; then
-  echo "DONE"
+# Must be 0
+if [ $VERIFY_PASSED -eq 0 ]; then
+  echo "VERIFICATION GATE: PASS"
 else
-  echo "NOT DONE"
+  echo "VERIFICATION GATE: FAIL"
 fi
 ```
 
+Goal completion is evaluated by the TSC based on stated objectives.
+
 ## What Counts as Done
 
-- `Status: done` is written in MILESTONE.md by YOU (the agent)
+- TSC confirms goals are achieved
 - `./verify.sh --ui=false` exits 0
 
 ## What Does NOT Count as Done
@@ -42,49 +40,22 @@ fi
 | Situation | Why Not Done |
 |-----------|--------------|
 | "I think it's working" | No machine verification |
-| Tests pass but `Status: done` not set | Completion contract not met |
-| `Status: done` set but verify fails | Gate not satisfied |
+| Code written but verify fails | Gate not satisfied |
 | All code written but not verified | Verify command not run |
-| Partial implementation | Definition of Done not met |
+| Partial implementation | TSC goals not met |
 | "Just needs review" | Gate checks, not opinions |
 
 ## Agent Accountability
 
-You must write `Status: done` yourself. The gate checks for this marker.
+You must:
+- Complete all TSC goals before declaring success
+- Run verification and confirm it passes
+- Report clearly to TSC what was accomplished
 
 Do NOT:
-- Claim success verbally without setting the marker
-- Set the marker before verify passes
-- Set the marker for partial work
-
-Do:
-- Complete all items in Definition of Done
-- Run verification until green
-- Then and only then set `Status: done`
-
-## Milestone Status Values
-
-| Status | Meaning |
-|--------|---------|
-| `Status: draft` | Milestone defined but not started |
-| `Status: in-progress` | Work has begun |
-| `Status: blocked` | Cannot proceed (document why) |
-| `Status: done` | Complete AND verified |
-
-## Definition of Done
-
-Each milestone must have a "Definition of Done" section listing specific criteria:
-
-```markdown
-## Definition of Done
-
-- [ ] Feature X implemented
-- [ ] Tests added for feature X
-- [ ] Documentation updated
-- [ ] ./verify.sh --ui=false passes
-```
-
-All items must be checked before setting `Status: done`.
+- Claim success verbally without verification
+- Skip verification before declaring done
+- Leave goals partially complete without communicating to TSC
 
 ## Verification Command
 
@@ -102,21 +73,20 @@ E2E tests are opt-in:
 ./verify.sh --ui=false --e2e=standard
 ```
 
-Only run E2E when the milestone touches integration code.
+Only run E2E when the goal touches integration code.
 
 ## When Blocked
 
-If you cannot complete the milestone:
+If you cannot complete the goals:
 
-1. Do NOT set `Status: done`
-2. Set `Status: blocked` instead
-3. Document the blocker in MILESTONE.md
-4. Write HANDOFF.md with details
-5. Escalate to human
+1. Do NOT claim success
+2. Document what's blocking progress
+3. Communicate clearly to TSC
+4. Wait for TSC guidance
 
 ## Instruction Quality Check
 
-At milestone completion, verify instructions haven't drifted:
+At goal completion, verify instructions haven't drifted:
 
 1. **Did I follow the instructions as written?**
    - If no: Did the deviation work better? → Create IP

@@ -42,9 +42,6 @@ All instruction files are imported below for automatic context loading.
 @instructions/improvements/proposals/IP-001-consolidate-port-documentation.md
 @instructions/improvements/proposals/IP-002-build-tool-guidance.md
 
-## Living Documentation
-@instructions/living-docs/overview.md
-
 ## Session Prompts
 @instructions/prompts/session-improve-package.md
 
