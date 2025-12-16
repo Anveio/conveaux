@@ -35,12 +35,23 @@ Avoid these unless you have a written justification and you understand the host 
   - Fix: Always use `dangerouslyDisableSandbox: true` in Bash tool calls
   - Rationale: Devcontainer isolation is stronger and more appropriate than Claude Code's sandbox
 
+## Multi-agent coordination pitfalls
+
+When multiple agents share a repository:
+
+- **Modifying files outside your owned packages** - Causes merge conflicts and overwrites other agents' work
+- **Working on main branch** - All agents must use their `agent-{N}/` branch prefix
+- **Holding Git locks** - Keep commits fast; long-running uncommitted changes block other agents
+- **Force-removing `.git/index.lock`** - May corrupt another agent's in-progress operation; wait and retry instead
+- **Simultaneous Git operations** - `git push`, `git pull` can collide; retry on lock errors
+- **API rate limit exhaustion** - 20 agents hitting Anthropic API can trigger 429s; stagger work types
+
 ## If you must do something risky
 
 Write down:
 
-- why it’s required
+- why it's required
 - what the blast radius is
-- how you’ll detect misuse
+- how you'll detect misuse
 - what the rollback/recovery plan is
 

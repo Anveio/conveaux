@@ -9,6 +9,10 @@
   "containerUser": "developer",
 
   // Security: minimal privileges, resource limits
+  // Resource sizing for parallel agents:
+  //   1-5 agents:  --memory=2g --cpus=2 (host: 16GB RAM, 8 cores)
+  //   6-10 agents: --memory=1g --cpus=1 (host: 32GB RAM, 16 cores)
+  //   11-20 agents: --memory=512m --cpus=0.5 (host: 64GB RAM, 32 cores)
   "runArgs": [
     "--cap-drop=ALL",
     "--security-opt=no-new-privileges:true",
