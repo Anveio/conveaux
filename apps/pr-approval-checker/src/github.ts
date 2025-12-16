@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import type { Logger } from '@conveaux/contract-logger';
 import type { GitHubComment, GitHubReaction } from './types.js';
 
@@ -7,6 +7,7 @@ import type { GitHubComment, GitHubReaction } from './types.js';
 // ============================================================================
 
 export interface GitHubClient {
+  getPrReactions(owner: string, repo: string, prNumber: number): GitHubReaction[];
   getIssueComments(owner: string, repo: string, prNumber: number): GitHubComment[];
   getReviewComments(owner: string, repo: string, prNumber: number): GitHubComment[];
   getIssueCommentReactions(owner: string, repo: string, commentId: number): GitHubReaction[];
@@ -38,7 +39,7 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
     logger.debug('GitHub API request', { endpoint });
 
     try {
-      const result = execSync(`gh api ${endpoint}`, {
+      const result = execFileSync('gh', ['api', endpoint], {
         encoding: 'utf-8',
         maxBuffer: 10 * 1024 * 1024, // 10MB for large PRs
       });
@@ -58,18 +59,43 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
     }
   }
 
+  function ghApiAllPages<T>(endpoint: string): T[] {
+    const perPage = 100;
+    const maxPages = 100;
+    const results: T[] = [];
+
+    for (let page = 1; page <= maxPages; page++) {
+      const separator = endpoint.includes('?') ? '&' : '?';
+      const pageEndpoint = `${endpoint}${separator}per_page=${perPage}&page=${page}`;
+
+      const items = ghApi<T[]>(pageEndpoint);
+      results.push(...items);
+
+      if (items.length < perPage) {
+        break;
+      }
+    }
+
+    return results;
+  }
+
   return {
+    getPrReactions: (owner, repo, prNumber) =>
+      ghApiAllPages<GitHubReaction>(`repos/${owner}/${repo}/issues/${prNumber}/reactions`),
+
     getIssueComments: (owner, repo, prNumber) =>
-      ghApi<GitHubComment[]>(`repos/${owner}/${repo}/issues/${prNumber}/comments`),
+      ghApiAllPages<GitHubComment>(`repos/${owner}/${repo}/issues/${prNumber}/comments`),
 
     getReviewComments: (owner, repo, prNumber) =>
-      ghApi<GitHubComment[]>(`repos/${owner}/${repo}/pulls/${prNumber}/comments`),
+      ghApiAllPages<GitHubComment>(`repos/${owner}/${repo}/pulls/${prNumber}/comments`),
 
     getIssueCommentReactions: (owner, repo, commentId) =>
-      ghApi<GitHubReaction[]>(`repos/${owner}/${repo}/issues/comments/${commentId}/reactions`),
+      ghApiAllPages<GitHubReaction>(
+        `repos/${owner}/${repo}/issues/comments/${commentId}/reactions`
+      ),
 
     getReviewCommentReactions: (owner, repo, commentId) =>
-      ghApi<GitHubReaction[]>(`repos/${owner}/${repo}/pulls/comments/${commentId}/reactions`),
+      ghApiAllPages<GitHubReaction>(`repos/${owner}/${repo}/pulls/comments/${commentId}/reactions`),
   };
 }
 
@@ -82,7 +108,7 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
  */
 export function checkGhInstalled(): boolean {
   try {
-    execSync('gh --version', { stdio: 'ignore' });
+    execFileSync('gh', ['--version'], { stdio: 'ignore' });
     return true;
   } catch {
     return false;
@@ -94,7 +120,7 @@ export function checkGhInstalled(): boolean {
  */
 export function checkGhAuthenticated(): boolean {
   try {
-    execSync('gh auth status', { stdio: 'ignore' });
+    execFileSync('gh', ['auth', 'status'], { stdio: 'ignore' });
     return true;
   } catch {
     return false;

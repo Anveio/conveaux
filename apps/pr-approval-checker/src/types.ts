@@ -41,7 +41,7 @@ export interface PrInfo {
 
 export interface ApprovalInfo {
   readonly commentId: number;
-  readonly commentType: 'issue' | 'review';
+  readonly commentType: 'pr_body' | 'issue' | 'review';
   readonly reactedBy: string;
   readonly reactedAt: string;
 }

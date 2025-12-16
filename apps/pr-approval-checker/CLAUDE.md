@@ -66,6 +66,6 @@ const scheduler = createEphemeralScheduler({
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PR_CHECKER_BOT` | `chatgpt-codex-connector` | Bot username |
+| `PR_CHECKER_BOT` | `chatgpt-codex-connector[bot]` | Bot username |
 | `PR_CHECKER_TIMEOUT` | `10` | Timeout in minutes |
 | `PR_CHECKER_INTERVAL` | `30` | Poll interval in seconds |

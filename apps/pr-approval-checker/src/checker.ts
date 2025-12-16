@@ -50,10 +50,24 @@ function findBotComment(github: GitHubClient, config: CheckerConfig): FeedbackIn
 }
 
 /**
- * Find a thumbs up reaction from the bot on any comment.
+ * Find a thumbs up reaction from the bot on the PR body or any comment.
  */
 function findBotApproval(github: GitHubClient, config: CheckerConfig): ApprovalInfo | null {
   const { owner, repo, prNumber, botUsername } = config;
+
+  // Check PR body for bot's thumbs up reaction
+  const prReactions = github.getPrReactions(owner, repo, prNumber);
+  const prBodyThumbsUp = prReactions.find(
+    (r) => r.user.login === botUsername && r.content === '+1'
+  );
+  if (prBodyThumbsUp) {
+    return {
+      commentId: prNumber, // Use PR number as identifier for PR body
+      commentType: 'pr_body',
+      reactedBy: prBodyThumbsUp.user.login,
+      reactedAt: prBodyThumbsUp.created_at,
+    };
+  }
 
   // Check issue comments for bot's thumbs up
   const issueComments = github.getIssueComments(owner, repo, prNumber);
