@@ -12,10 +12,7 @@
   },
   "dependencies": {
     "@conveaux/chatgpt-share": "*",
-    "@conveaux/contract-error": "*",
-    "@conveaux/contract-logger": "*",
-    "@conveaux/contract-outchannel": "*",
-    "@conveaux/contract-wall-clock": "*",
+    "@conveaux/port-control-flow": "*",
     "@conveaux/port-logger": "*",
     "@conveaux/port-outchannel": "*",
     "@conveaux/port-wall-clock": "*",

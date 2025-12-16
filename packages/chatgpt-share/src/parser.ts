@@ -3,7 +3,7 @@
  */
 
 import type { DateConstructor } from '@conveaux/contract-date';
-import { ParseError } from '@conveaux/contract-error';
+import { ParseError } from '@conveaux/port-control-flow';
 import * as cheerio from 'cheerio';
 
 import type {

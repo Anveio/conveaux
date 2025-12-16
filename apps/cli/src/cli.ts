@@ -7,7 +7,7 @@ import {
   fetchSharePage,
   parseHTML,
 } from '@conveaux/chatgpt-share';
-import { ConveauxError } from '@conveaux/contract-error';
+import { ConveauxError } from '@conveaux/port-control-flow';
 import { createLogger, createPrettyFormatter } from '@conveaux/port-logger';
 import { createOutChannel } from '@conveaux/port-outchannel';
 import { createWallClock } from '@conveaux/port-wall-clock';
