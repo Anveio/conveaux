@@ -1,6 +1,6 @@
 ---
 name: memory-processor
-description: Process memory.yaml, propose skill/settings updates via PR, clear processed memories. Spawned during RSID Loop 0. All changes require TSC review.
+description: Process memory.yaml, propose skill/settings updates via PR, clear processed memories. Spawned during RSID Reflect stage. All changes require TSC review.
 tools: Read, Write, Edit, Bash, Grep, Glob
 skills: memory-consolidation, writing-claude-skills, pull-request
 model: opus
@@ -148,7 +148,7 @@ Use keyword matching to identify the appropriate skill:
 | handoff, HANDOFF.md, transition, documentation | handoff-writing |
 | memory, consolidation, memory.yaml, archive | memory-consolidation |
 | plan, design, RFC, implementation plan | plan-writing |
-| RSID, self-improvement, reflection, Loop 0 | rsid |
+| RSID, self-improvement, reflection, Reflect | rsid |
 
 If no existing skill matches, DO NOT create a new skill. Archive with reason "no matching skill".
 

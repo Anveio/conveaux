@@ -9,15 +9,14 @@ description: Write rigorous implementation plans as if presenting to distinguish
 
 ## Context: Where Plan-Writing Fits
 
-This skill operates within **RSID Loop 2 (Execution)**. The full loop is:
+This skill operates within the **Execute** stage of RSID:
 
 ```
-Loop 0: Post-Merge Reflection → Loop 1: Idea Generation → Loop 2: Execution
-                                                              ↑
-                                                         YOU ARE HERE
+USER-DRIVEN:    Listen → Execute ← YOU ARE HERE → Reflect
+AUTONOMOUS:     Ideate → Execute ← YOU ARE HERE → Reflect
 ```
 
-After your plan is executed and merged, control returns to Loop 0 for reflection. See the **rsid** skill for the full loop model.
+After your plan is executed and merged, proceed to Reflect. See the **rsid** skill for the full model.
 
 ## The Core Technique
 
