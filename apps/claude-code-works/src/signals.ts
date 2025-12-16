@@ -112,5 +112,6 @@ export function extractSignal<T extends CoordinationSignal['type']>(
 ): Extract<CoordinationSignal, { type: T }> | null {
   const signals = parseSignals(output);
   const found = signals.find((s) => s.type === type);
-  return found as Extract<CoordinationSignal, { type: T }> | null;
+  // Convert undefined to null for consistent null return type
+  return (found ?? null) as Extract<CoordinationSignal, { type: T }> | null;
 }

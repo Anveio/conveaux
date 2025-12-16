@@ -6,6 +6,7 @@
  */
 
 import * as crypto from 'node:crypto';
+import type { DurableStorage } from '@conveaux/contract-durable-storage';
 import type { Instrumenter } from '@conveaux/contract-instrumentation';
 import type { Logger } from '@conveaux/contract-logger';
 import { createTraceIdGenerator } from '@conveaux/port-id';
@@ -14,6 +15,8 @@ import { createColorEnvironment, createLogger, createPrettyFormatter } from '@co
 import { createOutChannel } from '@conveaux/port-outchannel';
 import { createRandom } from '@conveaux/port-random';
 import { createWallClock } from '@conveaux/port-wall-clock';
+
+import { createNodeSqliteStorage } from './storage/node-sqlite-adapter.js';
 
 /**
  * Runtime dependencies wired at composition time.
@@ -25,6 +28,8 @@ export interface RuntimeDeps {
   readonly instrumenter: Instrumenter;
   /** Project root directory */
   readonly projectRoot: string;
+  /** Durable storage for learnings (optional until learning store is implemented) */
+  readonly storage?: DurableStorage;
 }
 
 /**
@@ -37,6 +42,10 @@ export interface CompositionOptions {
   readonly logLevel?: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
   /** Enable colors in output (default: auto-detect) */
   readonly colors?: boolean;
+  /** Path to SQLite storage file (default: projectRoot/.claude/learnings.db) */
+  readonly storagePath?: string;
+  /** Disable storage (for testing or when not needed) */
+  readonly disableStorage?: boolean;
 }
 
 /**
@@ -99,9 +108,15 @@ export function createRuntimeDeps(options: CompositionOptions): RuntimeDeps {
     }
   );
 
+  // Create durable storage (optional)
+  const storage = options.disableStorage
+    ? undefined
+    : createNodeSqliteStorage(options.storagePath ?? `${projectRoot}/.claude/learnings.db`);
+
   return {
     logger,
     instrumenter,
     projectRoot,
+    storage,
   };
 }
