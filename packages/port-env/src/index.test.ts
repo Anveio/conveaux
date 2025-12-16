@@ -370,6 +370,11 @@ describe('parseDotEnv', () => {
       expect(result).toEqual({ FOO: 'path\\to\\file' });
     });
 
+    it('should not treat placeholder-like strings as special', () => {
+      const result = parseDotEnv('FOO="__CONVEAUX_BACKSLASH__"');
+      expect(result).toEqual({ FOO: '__CONVEAUX_BACKSLASH__' });
+    });
+
     it('should expand escaped quotes', () => {
       const result = parseDotEnv('FOO="say \\"hello\\""');
       expect(result).toEqual({ FOO: 'say "hello"' });
