@@ -5,6 +5,25 @@
 import type { Stage, StageContext, StageResult } from '../contracts/index.js';
 import { capOutput, execCommand } from '../utils/exec.js';
 
+/**
+ * Extract error locations from Biome output.
+ * Biome format: ./path/file.ts:line:col ruleName ━━━━
+ */
+function extractBiomeErrors(output: string): string[] {
+  const lines = output.split('\n');
+  const errors: string[] = [];
+
+  for (const line of lines) {
+    // Match file:line:col patterns (Biome error locations)
+    // Example: ./apps/validation-pipeline/src/pipeline.ts:152:12 lint/style/noNonNullAssertion
+    if (line.match(/^\.\/.+:\d+:\d+\s+\S+/)) {
+      errors.push(line.trim());
+    }
+  }
+
+  return errors;
+}
+
 export const lintStage: Stage = {
   name: 'lint',
   description: 'Run Biome.js linter',
@@ -26,18 +45,21 @@ export const lintStage: Stage = {
 
     // Biome exits with 0 on success, non-zero on errors
     if (result.exitCode !== 0) {
-      // Extract error summary from output
-      const output = result.stdout || result.stderr;
-      const errorLines = output
-        .split('\n')
-        .filter((line) => line.includes('error') || line.includes('Error'))
-        .slice(0, 5);
+      // In autofix mode, the --write flag doesn't show detailed error output
+      // Run lint:check to get detailed error locations
+      let output = result.stdout + result.stderr;
+      if (context.autofix) {
+        const checkResult = await execCommand('npm run lint:check', context.projectRoot);
+        output = checkResult.stdout + checkResult.stderr;
+      }
+
+      const errors = extractBiomeErrors(output);
 
       return {
         success: false,
         message: 'Lint check failed',
         durationMs,
-        errors: errorLines.length > 0 ? errorLines : [output.slice(0, 500)],
+        errors: errors.length > 0 ? errors : [output.slice(0, 500)],
         output: capturedOutput,
       };
     }
