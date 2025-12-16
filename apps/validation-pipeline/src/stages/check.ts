@@ -101,7 +101,7 @@ export const checkStage: Stage = {
   description: 'Validate prerequisites (Node.js, npm, Bun, git)',
 
   async run(context: StageContext): Promise<StageResult> {
-    const startTime = Date.now();
+    const startTime = context.clock.nowMs();
     const errors: string[] = [];
     const messages: string[] = [];
     const allStdout: string[] = [];
@@ -117,7 +117,7 @@ export const checkStage: Stage = {
       }
     }
 
-    const durationMs = Date.now() - startTime;
+    const durationMs = context.clock.nowMs() - startTime;
 
     // Capture output for benchmarking
     const capturedOutput = context.benchmark

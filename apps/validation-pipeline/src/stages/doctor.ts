@@ -19,7 +19,7 @@ export const doctorStage: Stage = {
   description: 'Automated code health fixes (unused imports, etc.)',
 
   async run(context: StageContext): Promise<StageResult> {
-    const startTime = Date.now();
+    const startTime = context.clock.nowMs();
 
     // Build doctor context - fixes only apply if autofix is enabled
     const doctorContext: DoctorContext = {
@@ -50,7 +50,7 @@ export const doctorStage: Stage = {
       }
     }
 
-    const durationMs = Date.now() - startTime;
+    const durationMs = context.clock.nowMs() - startTime;
 
     // Determine overall success
     // In fix mode: success if all steps succeeded

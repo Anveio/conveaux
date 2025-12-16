@@ -3,8 +3,8 @@
  *
  * Ensures:
  * 1. CLAUDE.md exists
- * 2. Contains required sections (Project Rules, Skills Reference)
- * 3. Skills table references expected skills
+ * 2. Contains required sections (Project Rules)
+ * 3. References the rsid skill for development workflow
  */
 
 import { readFile } from 'node:fs/promises';
@@ -14,25 +14,19 @@ import type { Stage, StageContext, StageResult } from '../contracts/index.js';
 /**
  * Required sections that must appear in CLAUDE.md.
  */
-const REQUIRED_SECTIONS = ['## Project Rules', '## Development Framework', '## Skills Reference'];
+const REQUIRED_SECTIONS = ['## Project Rules'];
 
 /**
- * Skills that should be referenced in the Skills Reference table.
+ * Skills that should be referenced in CLAUDE.md.
  */
-const EXPECTED_SKILLS = [
-  'coding-loop',
-  'coding-patterns',
-  'verification-pipeline',
-  'effective-git',
-  'code-review',
-];
+const EXPECTED_SKILLS = ['rsid'];
 
 export const docsStage: Stage = {
   name: 'docs',
   description: 'Validate CLAUDE.md structure',
 
   async run(context: StageContext): Promise<StageResult> {
-    const startTime = Date.now();
+    const startTime = context.clock.nowMs();
     const errors: string[] = [];
 
     const claudeMdPath = join(context.projectRoot, 'CLAUDE.md');
@@ -45,7 +39,7 @@ export const docsStage: Stage = {
       return {
         success: false,
         message: 'CLAUDE.md not found',
-        durationMs: Date.now() - startTime,
+        durationMs: context.clock.nowMs() - startTime,
         errors: ['CLAUDE.md file not found in project root'],
       };
     }
@@ -72,7 +66,7 @@ export const docsStage: Stage = {
       }
     }
 
-    const durationMs = Date.now() - startTime;
+    const durationMs = context.clock.nowMs() - startTime;
 
     if (errors.length > 0) {
       return {

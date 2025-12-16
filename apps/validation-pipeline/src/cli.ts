@@ -5,6 +5,7 @@
  */
 
 import { cwd } from 'node:process';
+import { createWallClock } from '@conveaux/port-wall-clock';
 import { Command } from 'commander';
 import { type NamedStageResult, collectBenchmarks, reportBenchmarks } from './benchmark/index.js';
 import type { Reporter, StageName, StageResult } from './contracts/index.js';
@@ -72,12 +73,16 @@ program
       // Benchmark collection
       const benchmarkResults: NamedStageResult[] = [];
 
+      // Create clock for timing measurements
+      const clock = createWallClock({ Date });
+
       // Run pipeline with callbacks for reporting
       const result = await runPipeline({
         projectRoot,
         ci: Boolean(options.ci),
         autofix,
         ui,
+        clock,
         stages,
         sequential: options.sequential,
         onStageStart: (stageName) => {

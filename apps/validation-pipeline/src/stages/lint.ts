@@ -29,14 +29,14 @@ export const lintStage: Stage = {
   description: 'Run Biome.js linter',
 
   async run(context: StageContext): Promise<StageResult> {
-    const startTime = Date.now();
+    const startTime = context.clock.nowMs();
 
     // In autofix mode, use `npm run lint` which applies fixes
     // In check mode (CI), use `npm run lint:check` which only checks
     const command = context.autofix ? 'npm run lint' : 'npm run lint:check';
 
     const result = await execCommand(command, context.projectRoot);
-    const durationMs = Date.now() - startTime;
+    const durationMs = context.clock.nowMs() - startTime;
 
     // Capture output for benchmarking
     const capturedOutput = context.benchmark

@@ -21,7 +21,9 @@
   },
   "files": ["src"],
   "dependencies": {
+    "@conveaux/contract-wall-clock": "*",
     "@conveaux/port-dag": "*",
+    "@conveaux/port-wall-clock": "*",
     "chalk": "^5.3.0",
     "commander": "^12.1.0"
   },

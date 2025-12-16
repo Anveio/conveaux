@@ -10,12 +10,12 @@ export const typecheckStage: Stage = {
   description: 'Run TypeScript type checking',
 
   async run(context: StageContext): Promise<StageResult> {
-    const startTime = Date.now();
+    const startTime = context.clock.nowMs();
 
     // Use npm run typecheck which delegates to turbo
     const command = 'npm run typecheck -- --output-logs=errors-only';
     const result = await execCommand(command, context.projectRoot);
-    const durationMs = Date.now() - startTime;
+    const durationMs = context.clock.nowMs() - startTime;
 
     // Capture output for benchmarking
     const capturedOutput = context.benchmark
