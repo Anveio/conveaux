@@ -6,6 +6,202 @@
  */
 
 // =============================================================================
+// Color Configuration Types
+// =============================================================================
+
+/**
+ * Basic 4-bit ANSI color names (foreground).
+ * These map to standard terminal colors (30-37, 90-97).
+ */
+export type AnsiColorName =
+  | 'black'
+  | 'red'
+  | 'green'
+  | 'yellow'
+  | 'blue'
+  | 'magenta'
+  | 'cyan'
+  | 'white'
+  | 'gray'
+  | 'brightBlack'
+  | 'brightRed'
+  | 'brightGreen'
+  | 'brightYellow'
+  | 'brightBlue'
+  | 'brightMagenta'
+  | 'brightCyan'
+  | 'brightWhite';
+
+/**
+ * ANSI text style modifiers.
+ */
+export type AnsiStyle = 'bold' | 'dim' | 'italic' | 'underline' | 'inverse';
+
+/**
+ * 256-color palette index (0-255).
+ * @see https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
+ */
+export type Ansi256Color = { readonly type: '256'; readonly index: number };
+
+/**
+ * True color (24-bit RGB).
+ * @see https://en.wikipedia.org/wiki/ANSI_escape_code#24-bit
+ */
+export type RgbColor = {
+  readonly type: 'rgb';
+  readonly r: number;
+  readonly g: number;
+  readonly b: number;
+};
+
+/**
+ * Hex color string (e.g., '#ff5733' or 'ff5733').
+ * Parsed to RGB at runtime.
+ */
+export type HexColor = { readonly type: 'hex'; readonly value: string };
+
+/**
+ * Color specification - can be a named color, 256-index, RGB, or hex.
+ */
+export type ColorSpec = AnsiColorName | Ansi256Color | RgbColor | HexColor;
+
+/**
+ * Style definition for a single element.
+ * Combines foreground color with optional background and text styles.
+ */
+export interface StyleDefinition {
+  /** Foreground color */
+  readonly color?: ColorSpec;
+  /** Background color */
+  readonly background?: ColorSpec;
+  /** Text styles to apply */
+  readonly styles?: readonly AnsiStyle[];
+}
+
+/**
+ * Theme definition for log levels and structural elements.
+ * All properties are optional - unspecified values use defaults.
+ */
+export interface LoggerTheme {
+  /** Style for trace level */
+  readonly trace?: StyleDefinition;
+  /** Style for debug level */
+  readonly debug?: StyleDefinition;
+  /** Style for info level */
+  readonly info?: StyleDefinition;
+  /** Style for warn level */
+  readonly warn?: StyleDefinition;
+  /** Style for error level */
+  readonly error?: StyleDefinition;
+  /** Style for fatal level */
+  readonly fatal?: StyleDefinition;
+  /** Style for timestamp */
+  readonly timestamp?: StyleDefinition;
+  /** Style for message text */
+  readonly message?: StyleDefinition;
+  /** Style for context fields JSON */
+  readonly fields?: StyleDefinition;
+  /** Style for error name/message */
+  readonly errorText?: StyleDefinition;
+  /** Style for stack trace */
+  readonly stackTrace?: StyleDefinition;
+}
+
+/**
+ * Preset theme names.
+ */
+export type ThemeName = 'default' | 'high-contrast' | 'minimal';
+
+/**
+ * Color configuration for the pretty formatter.
+ *
+ * Resolution order:
+ * 1. If `enabled: false`, no colors
+ * 2. If NO_COLOR env is set and `respectNoColor: true` (default), no colors
+ * 3. If FORCE_COLOR env is set, colors enabled regardless of terminal
+ * 4. Apply theme (preset or custom)
+ * 5. Apply level overrides on top of theme
+ *
+ * @example Disable colors
+ * ```typescript
+ * { enabled: false }
+ * ```
+ *
+ * @example Use preset theme
+ * ```typescript
+ * { theme: 'high-contrast' }
+ * ```
+ *
+ * @example Custom theme
+ * ```typescript
+ * {
+ *   theme: {
+ *     info: { color: 'brightGreen', styles: ['bold'] },
+ *     error: { color: { type: 'rgb', r: 255, g: 100, b: 100 } }
+ *   }
+ * }
+ * ```
+ */
+export interface ColorConfig {
+  /**
+   * Enable or disable colors entirely.
+   * @default true (unless NO_COLOR is set)
+   */
+  readonly enabled?: boolean;
+
+  /**
+   * Respect NO_COLOR environment variable.
+   * When true and NO_COLOR is set (any value), colors are disabled.
+   * @default true
+   * @see https://no-color.org/
+   */
+  readonly respectNoColor?: boolean;
+
+  /**
+   * Force color output even when terminal detection suggests no support.
+   * Useful for CI environments that support colors but don't advertise it.
+   * @default false
+   */
+  readonly forceColor?: boolean;
+
+  /**
+   * Theme to use - either a preset name or custom theme object.
+   * @default 'default'
+   */
+  readonly theme?: ThemeName | LoggerTheme;
+
+  /**
+   * Per-level style overrides applied on top of the theme.
+   * Allows customizing specific levels without defining a full theme.
+   */
+  readonly levels?: Partial<Record<LogLevel, StyleDefinition>>;
+}
+
+/**
+ * Environment detection interface for color support.
+ * Injected to make the formatter testable without depending on process.env.
+ */
+export interface ColorEnvironment {
+  /**
+   * Check if NO_COLOR environment variable is set.
+   * @returns true if NO_COLOR is set to any value
+   */
+  readonly isNoColorSet: () => boolean;
+
+  /**
+   * Check if FORCE_COLOR environment variable is set.
+   * @returns true if FORCE_COLOR is set to any truthy value
+   */
+  readonly isForceColorSet: () => boolean;
+
+  /**
+   * Check if the output supports colors (e.g., is a TTY).
+   * @returns true if the output appears to support ANSI colors
+   */
+  readonly supportsColor: () => boolean;
+}
+
+// =============================================================================
 // Core Types
 // =============================================================================
 
