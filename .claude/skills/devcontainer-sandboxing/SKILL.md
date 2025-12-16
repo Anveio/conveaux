@@ -209,5 +209,6 @@ If you need concrete starting points, read:
 - `.devcontainer/devcontainer.json` - This repo's actual devcontainer config
 - `.devcontainer/vm-bootstrap.sh` - Script to set up an Ubuntu VM for parallel agents
 - `.devcontainer/run-parallel-agents.sh` - Script to launch N parallel Claude Code instances
+- `.devcontainer/claude-settings.json` - Permissive Claude settings for isolated environments (**WARNING**: Only use in VMs/containers, never on host machines)
 - `.claude/skills/devcontainer-sandboxing/SECURITY-FOOTGUNS.md` - Common security mistakes
 

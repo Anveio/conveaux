@@ -1,6 +1,12 @@
 #!/bin/bash
 # Bootstrap script for Ubuntu VM to run 20 parallel Claude Code instances
 # Run as root: sudo bash vm-bootstrap.sh
+#
+# SECURITY NOTE: This script uses curl | sh patterns for Docker and Node.js
+# installation. While convenient, this carries MITM risk. For production VMs:
+# 1. Verify checksums of downloaded scripts before execution
+# 2. Or use your distro's package manager (apt install docker.io nodejs)
+# 3. Only run this on isolated/disposable VMs, never on production hosts
 
 set -euo pipefail
 
@@ -9,11 +15,11 @@ echo "=== VM Bootstrap for Claude Code Development ==="
 # System updates
 apt-get update && apt-get upgrade -y
 
-# Install Docker
+# Install Docker (official convenience script - see security note above)
 curl -fsSL https://get.docker.com | sh
 usermod -aG docker $SUDO_USER
 
-# Install Node.js 22 (for running Claude Code outside containers too)
+# Install Node.js 22 (NodeSource script - see security note above)
 curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
 apt-get install -y nodejs
 
