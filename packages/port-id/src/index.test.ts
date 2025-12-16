@@ -155,35 +155,6 @@ describe('createRandomIdGenerator', () => {
     });
   });
 
-  describe('custom generate function', () => {
-    it('should use injected generate function', () => {
-      const random = createNodeRandom();
-      let callCount = 0;
-      const gen = createRandomIdGenerator(
-        { random },
-        {
-          generate: () => {
-            callCount++;
-            return `custom-id-${callCount}`;
-          },
-        }
-      );
-      expect(gen.randomId()).toBe('custom-id-1');
-      expect(gen.randomId()).toBe('custom-id-2');
-      expect(callCount).toBe(2);
-    });
-
-    it('should work with uuid-like injection', () => {
-      const random = createNodeRandom();
-      const gen = createRandomIdGenerator(
-        { random },
-        { generate: () => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'.replace(/-/g, '') }
-      );
-      const id = gen.randomId();
-      expect(id).toBe('a1b2c3d4e5f67890abcdef1234567890');
-    });
-  });
-
   describe('deterministic testing', () => {
     it('should use mock random for deterministic output', () => {
       const random = createFilledRandom(0xab);
@@ -278,49 +249,6 @@ describe('createTimeOrderedIdGenerator', () => {
       // 6 bytes timestamp + 10 bytes random = 16 bytes = 32 hex chars
       expect(id).toHaveLength(32);
       expect(id).toMatch(/^[0-9a-f]{32}$/);
-    });
-  });
-
-  describe('custom generate function', () => {
-    it('should pass timestamp to generate function', () => {
-      const clock = createMockClock(1700000000000);
-      const random = createNodeRandom();
-      let capturedTs: number | undefined;
-      const gen = createTimeOrderedIdGenerator(
-        { clock, random },
-        {
-          generate: (ts) => {
-            capturedTs = ts;
-            return `ulid-${ts}`;
-          },
-        }
-      );
-      gen.timeOrderedId();
-      expect(capturedTs).toBe(1700000000000);
-    });
-
-    it('should use custom extractTimestamp', () => {
-      const clock = createMockClock(1700000000000);
-      const random = createNodeRandom();
-      const gen = createTimeOrderedIdGenerator(
-        { clock, random },
-        {
-          generate: (ts) => `custom-${ts}`,
-          extractTimestamp: (id) => {
-            const match = id.match(/custom-(\d+)/);
-            return match?.[1] ? Number.parseInt(match[1], 10) : undefined;
-          },
-        }
-      );
-      const id = gen.timeOrderedId();
-      expect(gen.extractTimestamp(id)).toBe(1700000000000);
-    });
-
-    it('should return undefined when no extractTimestamp provided', () => {
-      const clock = createMockClock();
-      const random = createNodeRandom();
-      const gen = createTimeOrderedIdGenerator({ clock, random }, { generate: () => 'fixed-id' });
-      expect(gen.extractTimestamp('fixed-id' as TimeOrderedId)).toBeUndefined();
     });
   });
 
@@ -513,22 +441,26 @@ describe('createIdGenerator', () => {
 
   it('should allow per-category configuration', () => {
     const clock = createMockClock();
-    const random = createNodeRandom();
+    const { random, calls } = createCapturingRandom();
 
     const ids = createIdGenerator(
       { clock, random },
       {
-        random: {
-          generate: () => 'custom-random',
-        },
-        timeOrdered: {
-          generate: (ts) => `custom-time-${ts}`,
-        },
+        random: { config: { sizeBytes: 8, encoding: 'hex' } },
+        timeOrdered: { config: { randomSuffixBytes: 5, encoding: 'hex' } },
       }
     );
 
-    expect(ids.randomId()).toBe('custom-random');
-    expect(ids.timeOrderedId()).toMatch(/^custom-time-\d+$/);
+    // Random ID with 8 bytes = 16 hex chars
+    expect(ids.randomId()).toHaveLength(16);
+    expect(calls[0]).toBe(8);
+
+    // Time-ordered ID with 6 bytes timestamp + 5 bytes random = 22 hex chars
+    const timeId = ids.timeOrderedId();
+    expect(timeId).toHaveLength(22);
+    expect(timeId).toMatch(/^[0-9a-f]{22}$/);
+    expect(calls[1]).toBe(5);
+
     // Trace IDs should still use default
     expect(ids.traceId()).toHaveLength(32);
   });

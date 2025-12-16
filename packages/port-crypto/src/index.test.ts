@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { HashAlgorithm, HashEncoding } from './index.js';
+import type { HashAlgorithm } from './index.js';
 import { createCrypto } from './index.js';
 
 // =============================================================================
@@ -22,33 +22,6 @@ const TEST_VECTORS = {
 // =============================================================================
 // Inline Mock Helpers
 // =============================================================================
-
-/**
- * Creates a mock hash function that returns predictable values.
- * Useful for testing that the factory correctly delegates to hashFn.
- */
-function createMockHashFn(returnValue: string) {
-  return (_algorithm: HashAlgorithm, _data: Uint8Array, _encoding: HashEncoding) => returnValue;
-}
-
-/**
- * Creates a mock hash function that captures its arguments.
- * Useful for testing argument passing.
- */
-function createCapturingHashFn() {
-  const calls: Array<{
-    algorithm: HashAlgorithm;
-    data: Uint8Array;
-    encoding: HashEncoding;
-  }> = [];
-
-  const fn = (algorithm: HashAlgorithm, data: Uint8Array, encoding: HashEncoding) => {
-    calls.push({ algorithm, data, encoding });
-    return 'captured';
-  };
-
-  return { fn, calls };
-}
 
 /**
  * Creates a mock CryptoLike implementation.
@@ -148,52 +121,8 @@ describe('createCrypto', () => {
     });
   });
 
-  describe('hashFn override', () => {
-    it('should use provided hashFn instead of platform crypto', () => {
-      const crypto = createCrypto(deps, {
-        hashFn: createMockHashFn('mock-hash-result'),
-      });
-
-      const result = crypto.hash('sha256', 'any input');
-      expect(result).toBe('mock-hash-result');
-    });
-
-    it('should pass algorithm to hashFn', () => {
-      const { fn, calls } = createCapturingHashFn();
-      const crypto = createCrypto(deps, { hashFn: fn });
-
-      crypto.hash('sha512', 'test');
-      expect(calls[0]?.algorithm).toBe('sha512');
-    });
-
-    it('should pass encoding to hashFn', () => {
-      const { fn, calls } = createCapturingHashFn();
-      const crypto = createCrypto(deps, { hashFn: fn });
-
-      crypto.hash('sha256', 'test', { encoding: 'base64' });
-      expect(calls[0]?.encoding).toBe('base64');
-    });
-
-    it('should pass data as Uint8Array to hashFn', () => {
-      const { fn, calls } = createCapturingHashFn();
-      const crypto = createCrypto(deps, { hashFn: fn });
-
-      crypto.hash('sha256', 'hello');
-      expect(calls[0]?.data).toBeInstanceOf(Uint8Array);
-      expect(new TextDecoder().decode(calls[0]?.data)).toBe('hello');
-    });
-
-    it('should default encoding to hex when not specified', () => {
-      const { fn, calls } = createCapturingHashFn();
-      const crypto = createCrypto(deps, { hashFn: fn });
-
-      crypto.hash('sha256', 'test');
-      expect(calls[0]?.encoding).toBe('hex');
-    });
-  });
-
   describe('environment override', () => {
-    it('should throw when crypto is explicitly null and no hashFn provided', () => {
+    it('should throw when crypto is explicitly null', () => {
       const crypto = createCrypto(deps, {
         environment: { crypto: null },
       });
@@ -210,17 +139,6 @@ describe('createCrypto', () => {
 
       const result = crypto.hash('sha256', 'test');
       expect(result).toBe('custom-crypto-result');
-    });
-
-    it('should prefer hashFn over environment crypto', () => {
-      const mockCrypto = createMockCryptoLike('from-environment');
-      const crypto = createCrypto(deps, {
-        hashFn: createMockHashFn('from-hashFn'),
-        environment: { crypto: mockCrypto },
-      });
-
-      const result = crypto.hash('sha256', 'test');
-      expect(result).toBe('from-hashFn');
     });
   });
 

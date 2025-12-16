@@ -7,13 +7,7 @@
 
 import * as nodeCrypto from 'node:crypto';
 
-import type {
-  Crypto,
-  HashAlgorithm,
-  HashEncoding,
-  HashInput,
-  HashOptions,
-} from '@conveaux/contract-crypto';
+import type { Crypto, HashAlgorithm, HashInput, HashOptions } from '@conveaux/contract-crypto';
 import type { TextEncoderConstructor } from '@conveaux/contract-encoding';
 
 // Re-export contract types for convenience
@@ -90,22 +84,9 @@ export type CryptoEnvironmentOverrides = {
 // =============================================================================
 
 /**
- * Hash function signature for direct override.
- * Allows complete control over hashing for tests or alternative implementations.
- */
-type HashFn = (algorithm: HashAlgorithm, data: Uint8Array, encoding: HashEncoding) => string;
-
-/**
  * Options for creating a crypto instance.
  */
 export type CryptoOptions = {
-  /**
-   * Direct override for the hash function.
-   * Takes precedence over environment resolution.
-   * Useful for testing with deterministic mocks.
-   */
-  readonly hashFn?: HashFn;
-
   /**
    * Overrides the host environment used to resolve crypto.
    * Provide `null` to explicitly disable host crypto.
@@ -176,14 +157,20 @@ const resolveEnvironment = (overrides?: CryptoEnvironmentOverrides): CryptoEnvir
  * const crypto = createCrypto({ TextEncoder });
  * const hash = crypto.hash('sha256', 'hello world');
  *
- * // Test usage - inject mock hash function
- * const mockCrypto = createCrypto({ TextEncoder }, {
- *   hashFn: () => 'mock-hash-result',
+ * // Custom crypto backend
+ * const customCrypto = createCrypto({ TextEncoder }, {
+ *   environment: { crypto: myCustomCryptoImpl },
  * });
  *
- * // Disable host crypto (will throw on use)
- * const disabledCrypto = createCrypto({ TextEncoder }, {
- *   environment: { crypto: null },
+ * // Test usage - inject mock crypto
+ * const mockCryptoImpl = {
+ *   createHash: () => ({
+ *     update: () => mockCryptoImpl.createHash(),
+ *     digest: () => 'mock-hash-result',
+ *   }),
+ * };
+ * const testCrypto = createCrypto({ TextEncoder }, {
+ *   environment: { crypto: mockCryptoImpl },
  * });
  * ```
  */
@@ -198,24 +185,6 @@ export function createCrypto(deps: CryptoDependencies, options: CryptoOptions = 
     return data;
   };
 
-  const hashWithPlatform = (
-    algorithm: HashAlgorithm,
-    data: Uint8Array,
-    encoding: HashEncoding
-  ): string => {
-    if (!environment.crypto) {
-      throw new Error(
-        'No crypto implementation available. Provide a crypto override or run in Node.js.'
-      );
-    }
-
-    const hash = environment.crypto.createHash(algorithm);
-    hash.update(data);
-    return hash.digest(encoding);
-  };
-
-  const hashFn = options.hashFn ?? hashWithPlatform;
-
   const hash = (algorithm: HashAlgorithm, data: HashInput, hashOptions?: HashOptions): string => {
     if (!isValidAlgorithm(algorithm)) {
       throw new Error(
@@ -223,10 +192,18 @@ export function createCrypto(deps: CryptoDependencies, options: CryptoOptions = 
       );
     }
 
+    if (!environment.crypto) {
+      throw new Error(
+        'No crypto implementation available. Provide a crypto override or run in Node.js.'
+      );
+    }
+
     const encoding = hashOptions?.encoding ?? 'hex';
     const bytes = toUint8Array(data);
 
-    return hashFn(algorithm, bytes, encoding);
+    const hashObj = environment.crypto.createHash(algorithm);
+    hashObj.update(bytes);
+    return hashObj.digest(encoding);
   };
 
   return { hash };

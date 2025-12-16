@@ -79,41 +79,6 @@ describe('createRandom', () => {
     });
   });
 
-  describe('with bytes option override', () => {
-    it('should use bytes option instead of deps.randomBytes', () => {
-      const random = createRandom(
-        { randomBytes: createFilledRandomBytes(0x00) }, // Should not be used
-        { bytes: createFilledRandomBytes(0xff) }
-      );
-      const bytes = random.bytes(4);
-
-      expect(Array.from(bytes)).toEqual([0xff, 0xff, 0xff, 0xff]);
-    });
-
-    it('should allow deterministic testing with bytes override', () => {
-      let counter = 0;
-      const random = createRandom(
-        { randomBytes: () => new Uint8Array(0) }, // Unused
-        {
-          bytes: (size) => {
-            const bytes = new Uint8Array(size);
-            for (let i = 0; i < size; i++) {
-              bytes[i] = (counter + i) % 256;
-            }
-            counter += size;
-            return bytes;
-          },
-        }
-      );
-
-      const first = random.bytes(4);
-      expect(Array.from(first)).toEqual([0, 1, 2, 3]);
-
-      const second = random.bytes(4);
-      expect(Array.from(second)).toEqual([4, 5, 6, 7]);
-    });
-  });
-
   describe('instance independence', () => {
     it('each random instance uses its own injected function', () => {
       const random1 = createRandom({ randomBytes: createFilledRandomBytes(0x11) });

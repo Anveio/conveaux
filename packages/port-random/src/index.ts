@@ -39,22 +39,9 @@ export type RandomDependencies = {
 };
 
 /**
- * Options for creating a Random instance.
- */
-export type RandomOptions = {
-  /**
-   * Optional: custom bytes override.
-   * If provided, takes precedence over deps.randomBytes.
-   * Useful for deterministic testing.
-   */
-  readonly bytes?: (size: number) => Uint8Array;
-};
-
-/**
  * Creates a Random instance for random byte generation.
  *
  * @param deps - Required dependencies (randomBytes function)
- * @param options - Optional configuration
  * @returns A Random instance
  *
  * @example
@@ -70,17 +57,14 @@ export type RandomOptions = {
  * });
  * const bytes = random.bytes(16);
  *
- * // Test usage - deterministic values
- * const mockRandom = createRandom(
- *   { randomBytes: () => new Uint8Array(0) }, // unused
- *   { bytes: (size) => new Uint8Array(size).fill(0x42) }
- * );
+ * // Test usage - inject deterministic function
+ * const mockRandom = createRandom({
+ *   randomBytes: (size) => new Uint8Array(size).fill(0x42)
+ * });
  * ```
  */
-export function createRandom(deps: RandomDependencies, options: RandomOptions = {}): Random {
-  const bytes = options.bytes ?? deps.randomBytes;
-
+export function createRandom(deps: RandomDependencies): Random {
   return {
-    bytes: (size: number): Uint8Array => bytes(size),
+    bytes: (size: number): Uint8Array => deps.randomBytes(size),
   };
 }

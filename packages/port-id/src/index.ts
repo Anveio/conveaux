@@ -118,14 +118,7 @@ export type RandomIdGeneratorDependencies = {
  */
 export type RandomIdGeneratorOptions = {
   /**
-   * Direct override for the generate function.
-   * If provided, config is ignored.
-   * Useful for injecting external libraries (uuid.v4, nanoid, etc.).
-   */
-  readonly generate?: () => string;
-
-  /**
-   * Configuration for the default implementation.
+   * Configuration for ID generation.
    */
   readonly config?: RandomIdConfig;
 };
@@ -134,7 +127,6 @@ export type RandomIdGeneratorOptions = {
  * Creates a random ID generator.
  *
  * Default: hex-encoded random bytes (16 bytes = 32 chars).
- * Override with: uuid.v4, nanoid, custom entropy source.
  *
  * @param deps - Required dependencies (random)
  * @param options - Optional configuration
@@ -145,26 +137,20 @@ export type RandomIdGeneratorOptions = {
  * import { createRandom } from '@conveaux/port-random';
  *
  * // Default: 16 bytes hex (32 chars)
- * const gen = createRandomIdGenerator({ random: createRandom() });
+ * const gen = createRandomIdGenerator({ random });
  * const id = gen.randomId();
  *
  * // Custom size and encoding
  * const gen21 = createRandomIdGenerator(
- *   { random: createRandom() },
+ *   { random },
  *   { config: { sizeBytes: 21, encoding: 'base64url' } }
  * );
  *
- * // Inject uuid.v4
- * const genUuid = createRandomIdGenerator(
- *   { random: createRandom() },
- *   { generate: () => uuid.v4().replace(/-/g, '') }
- * );
- *
- * // Inject nanoid
- * const genNano = createRandomIdGenerator(
- *   { random: createRandom() },
- *   { generate: () => nanoid() }
- * );
+ * // For deterministic testing, inject a deterministic random source
+ * const mockRandom = createRandom({
+ *   randomBytes: (size) => new Uint8Array(size).fill(0x42)
+ * });
+ * const testGen = createRandomIdGenerator({ random: mockRandom });
  * ```
  */
 export function createRandomIdGenerator(
@@ -172,15 +158,8 @@ export function createRandomIdGenerator(
   options: RandomIdGeneratorOptions = {}
 ): RandomIdGenerator {
   const { random } = deps;
-  const { generate, config = {} } = options;
+  const { config = {} } = options;
   const { sizeBytes = DEFAULT_RANDOM_ID_BYTES, encoding = 'hex' } = config;
-
-  // If generate is provided, use it directly
-  if (generate) {
-    return {
-      randomId: () => generate() as RandomId,
-    };
-  }
 
   return {
     randomId(): RandomId {
@@ -214,20 +193,7 @@ export type TimeOrderedIdGeneratorDependencies = {
  */
 export type TimeOrderedIdGeneratorOptions = {
   /**
-   * Direct override for the generate function.
-   * Receives timestamp in milliseconds, returns ID string.
-   * If provided, config is ignored.
-   */
-  readonly generate?: (timestampMs: number) => string;
-
-  /**
-   * Direct override for timestamp extraction.
-   * Receives ID string, returns milliseconds or undefined.
-   */
-  readonly extractTimestamp?: (id: string) => number | undefined;
-
-  /**
-   * Configuration for the default implementation.
+   * Configuration for ID generation.
    */
   readonly config?: TimeOrderedIdConfig;
 };
@@ -237,8 +203,6 @@ export type TimeOrderedIdGeneratorOptions = {
  *
  * Default format: 48-bit timestamp (ms) + 80-bit random = 128 bits total.
  * Encoded as 26 Crockford Base32 characters (lexicographically sortable).
- *
- * Override with: ULID, UUIDv7, KSUID, Snowflake.
  *
  * @param deps - Required dependencies (clock, random)
  * @param options - Optional configuration
@@ -250,22 +214,15 @@ export type TimeOrderedIdGeneratorOptions = {
  * import { createRandom } from '@conveaux/port-random';
  *
  * // Default implementation
- * const gen = createTimeOrderedIdGenerator({
- *   clock: createWallClock({ Date }),
- *   random: createRandom(),
- * });
+ * const gen = createTimeOrderedIdGenerator({ clock, random });
  * const id = gen.timeOrderedId();
  * const ts = gen.extractTimestamp(id);
  *
- * // Inject ULID
- * import { ulid, decodeTime } from 'ulid';
- * const genUlid = createTimeOrderedIdGenerator(
- *   { clock: createWallClock({ Date }), random: createRandom() },
- *   {
- *     generate: (ts) => ulid(ts),
- *     extractTimestamp: (id) => decodeTime(id)
- *   }
- * );
+ * // For deterministic testing, inject mock deps
+ * let time = 1702648800000;
+ * const mockClock = createWallClock({ Date: { now: () => time } as DateConstructor });
+ * const mockRandom = createRandom({ randomBytes: (size) => new Uint8Array(size).fill(0x42) });
+ * const testGen = createTimeOrderedIdGenerator({ clock: mockClock, random: mockRandom });
  * ```
  */
 export function createTimeOrderedIdGenerator(
@@ -273,21 +230,8 @@ export function createTimeOrderedIdGenerator(
   options: TimeOrderedIdGeneratorOptions = {}
 ): TimeOrderedIdGenerator {
   const { clock, random } = deps;
-  const { generate, extractTimestamp: extractFn, config = {} } = options;
+  const { config = {} } = options;
   const { randomSuffixBytes = DEFAULT_TIME_ORDERED_SUFFIX_BYTES, encoding = 'base32' } = config;
-
-  // If generate is provided, use it
-  if (generate) {
-    return {
-      timeOrderedId(): TimeOrderedId {
-        const ts = clock.nowMs();
-        return generate(ts) as TimeOrderedId;
-      },
-      extractTimestamp(id: TimeOrderedId): number | undefined {
-        return extractFn?.(id);
-      },
-    };
-  }
 
   return {
     timeOrderedId(): TimeOrderedId {
@@ -364,7 +308,7 @@ export type TraceIdGeneratorOptions = Record<string, never>;
  *
  * // For testing with deterministic values
  * const mockRandom = createRandom({
- *   bytesFn: (size) => new Uint8Array(size).fill(0x42)
+ *   randomBytes: (size) => new Uint8Array(size).fill(0x42)
  * });
  * const testGen = createTraceIdGenerator({ random: mockRandom });
  * ```
@@ -453,7 +397,7 @@ export type IdGeneratorOptions = {
  *
  * const ids = createIdGenerator({
  *   clock: createWallClock({ Date }),
- *   random: createRandom(),
+ *   random: createRandom({ randomBytes }),
  * });
  *
  * ids.randomId();      // Session tokens
@@ -461,15 +405,12 @@ export type IdGeneratorOptions = {
  * ids.traceId();       // Distributed tracing
  * ids.spanId();        // Span identification
  *
- * // With custom implementations
+ * // With custom config
  * const customIds = createIdGenerator(
- *   { clock: createWallClock({ Date }), random: createRandom() },
+ *   { clock, random },
  *   {
- *     random: { generate: () => nanoid() },
- *     timeOrdered: {
- *       generate: (ts) => ulid(ts),
- *       extractTimestamp: (id) => decodeTime(id)
- *     }
+ *     random: { config: { sizeBytes: 21, encoding: 'base64url' } },
+ *     timeOrdered: { config: { encoding: 'hex' } }
  *   }
  * );
  * ```

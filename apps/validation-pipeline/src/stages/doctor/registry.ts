@@ -5,16 +5,12 @@
  * Steps are executed sequentially in the order they appear.
  */
 
-import { contractImportsStep } from './steps/contract-imports.js';
-import { knipStep } from './steps/knip.js';
 import type { DoctorStep } from './types.js';
 
 /**
  * Registered doctor steps in execution order.
  */
 export const doctorSteps: readonly DoctorStep[] = [
-  knipStep,
-  contractImportsStep,
   // Future steps can be added here:
   // sortImportsStep,
   // updateDependenciesStep,

@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@conveaux/tsconfig": "*",
-    "knip": "^5.41.1",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

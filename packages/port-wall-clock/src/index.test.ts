@@ -1,8 +1,16 @@
+import type { DateConstructor } from '@conveaux/contract-date';
 import { describe, expect, it } from 'vitest';
 import { createWallClock } from './index.js';
 
+/**
+ * Create a mock Date with controllable time.
+ */
+function createMockDate(getNow: () => number): DateConstructor {
+  return { now: getNow } as DateConstructor;
+}
+
 describe('createWallClock', () => {
-  it('returns current time from Date.now by default', () => {
+  it('returns current time from Date.now', () => {
     const clock = createWallClock({ Date });
     const before = Date.now();
     const result = clock.nowMs();
@@ -12,9 +20,10 @@ describe('createWallClock', () => {
     expect(result).toBeLessThanOrEqual(after);
   });
 
-  it('uses custom nowMs when provided', () => {
+  it('uses injected Date.now for time', () => {
     let time = 1702648800000;
-    const clock = createWallClock({ Date }, { nowMs: () => time });
+    const mockDate = createMockDate(() => time);
+    const clock = createWallClock({ Date: mockDate });
 
     expect(clock.nowMs()).toBe(1702648800000);
 
@@ -22,9 +31,10 @@ describe('createWallClock', () => {
     expect(clock.nowMs()).toBe(1702648801000);
   });
 
-  it('returns consistent values on multiple calls', () => {
+  it('returns consistent values on multiple calls with fixed time', () => {
     const fixedTime = 1702648800000;
-    const clock = createWallClock({ Date }, { nowMs: () => fixedTime });
+    const mockDate = createMockDate(() => fixedTime);
+    const clock = createWallClock({ Date: mockDate });
 
     expect(clock.nowMs()).toBe(fixedTime);
     expect(clock.nowMs()).toBe(fixedTime);
@@ -35,8 +45,8 @@ describe('createWallClock', () => {
     let time1 = 1000;
     let time2 = 2000;
 
-    const clock1 = createWallClock({ Date }, { nowMs: () => time1 });
-    const clock2 = createWallClock({ Date }, { nowMs: () => time2 });
+    const clock1 = createWallClock({ Date: createMockDate(() => time1) });
+    const clock2 = createWallClock({ Date: createMockDate(() => time2) });
 
     expect(clock1.nowMs()).toBe(1000);
     expect(clock2.nowMs()).toBe(2000);

@@ -26,21 +26,9 @@ export type WallClockDependencies = {
 };
 
 /**
- * Options for creating a wall clock.
- */
-export type WallClockOptions = {
-  /**
-   * Optional: custom time source override.
-   * If provided, takes precedence over Date.now().
-   */
-  readonly nowMs?: () => number;
-};
-
-/**
  * Creates a wall clock for absolute timestamps.
  *
  * @param deps - Required dependencies (DateConstructor)
- * @param options - Optional configuration
  * @returns A WallClock instance
  *
  * @example
@@ -49,20 +37,16 @@ export type WallClockOptions = {
  * const clock = createWallClock({ Date });
  * console.log(clock.nowMs()); // 1702648800000
  *
- * // Test usage - injectable time
+ * // Test usage - inject controllable Date mock
  * let time = 1702648800000;
- * const clock = createWallClock({ Date }, { nowMs: () => time });
+ * const mockDate = { now: () => time } as DateConstructor;
+ * const clock = createWallClock({ Date: mockDate });
  * time += 1000; // Advance 1 second
  * console.log(clock.nowMs()); // 1702648801000
  * ```
  */
-export function createWallClock(
-  deps: WallClockDependencies,
-  options: WallClockOptions = {}
-): WallClock {
-  const nowMs = options.nowMs ?? (() => deps.Date.now());
-
+export function createWallClock(deps: WallClockDependencies): WallClock {
   return {
-    nowMs: () => nowMs(),
+    nowMs: () => deps.Date.now(),
   };
 }
