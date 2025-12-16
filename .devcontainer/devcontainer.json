@@ -1,26 +1,19 @@
 {
-  "name": "secure-dev-sandbox",
+  "name": "conveaux-dev",
   "build": {
     "dockerfile": "Dockerfile"
   },
-
-  // Security: non-root user
   "remoteUser": "developer",
   "containerUser": "developer",
 
-  // Security: minimal privileges, resource limits
-  "runArgs": [
-    "--cap-drop=ALL",
-    "--security-opt=no-new-privileges:true",
-    "--memory=2g",
-    "--cpus=2"
-  ],
+  // Security: minimal privileges
+  "runArgs": ["--cap-drop=ALL", "--security-opt=no-new-privileges:true", "--memory=2g", "--cpus=2"],
 
   // Only mount workspace - nothing else writable on host
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
   "workspaceFolder": "/workspace",
 
-  // Required tools (pin versions for reproducibility)
+  // Required tools
   "features": {
     "ghcr.io/devcontainers/features/node:1": {
       "version": "22"
@@ -28,7 +21,7 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
-  // Secrets via runtime injection (never bake into image)
+  // Environment for Claude Code
   "containerEnv": {
     "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
   },
@@ -39,10 +32,7 @@
   // VS Code extensions (optional)
   "customizations": {
     "vscode": {
-      "extensions": [
-        "dbaeumer.vscode-eslint",
-        "esbenp.prettier-vscode"
-      ]
+      "extensions": ["dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
     }
   }
 }

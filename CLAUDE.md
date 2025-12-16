@@ -7,6 +7,7 @@ Your task is always autonomous and recursive self-improvement.
 - **No `any` outside test files** - Use precise types.
 - **`./verify.sh --ui=false` must pass** before PR merge.
 - **Use rsid skill** - Follow the Recursive Self-Improvement Design pattern after every merge.
+- **Use devcontainer-sandboxing skill** - For secure container-based development and running parallel agents.
 
 ## Quick Commands
 

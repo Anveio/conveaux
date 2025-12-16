@@ -4,17 +4,17 @@
  * Stages run in parallel when their dependencies are satisfied.
  * The dependency graph is:
  *
- *           [check]
- *          ↙     ↘
- *     [docs]    [install]
- *                   ↓
- *               [doctor]
- *               ↙     ↘
- *          [lint]    [typecheck]
- *                        ↓
- *                   [hermetic]
- *                        ↓
- *                     [test]
+ *                [check]
+ *             ↙    ↓     ↘
+ *     [docs] [devcontainer] [install]
+ *                              ↓
+ *                          [doctor]
+ *                          ↙     ↘
+ *                     [lint]    [typecheck]
+ *                                   ↓
+ *                              [hermetic]
+ *                                   ↓
+ *                                [test]
  */
 
 import type { WallClock } from '@conveaux/contract-wall-clock';
@@ -64,6 +64,7 @@ export interface PipelineOptions {
  */
 const STAGE_DEPENDENCIES: Record<StageName, StageName[]> = {
   check: [],
+  devcontainer: ['check'],
   docs: ['check'],
   install: ['check'],
   doctor: ['install'],

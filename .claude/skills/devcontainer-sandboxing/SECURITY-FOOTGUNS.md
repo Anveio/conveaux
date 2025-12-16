@@ -2,6 +2,8 @@
 
 Avoid these unless you have a written justification and you understand the host impact.
 
+> **Automated checking**: These footguns are automatically detected by `./verify.sh --stage=devcontainer`. The verification stage catches root users, privileged mode, docker socket mounts, missing hardening, and dangerous capabilities.
+
 ## Host-escape primitives
 
 - Mounting the Docker socket: `/var/run/docker.sock`
