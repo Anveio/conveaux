@@ -8,7 +8,9 @@
  * - createShellEnvSource: Wraps shell environment (process.env)
  * - createStaticEnvSource: Fixed key-value mapping
  * - createOverrideEnvSource: Three-state override semantics
+ * - createDotEnvSource: Loads .env files asynchronously
  * - createEnv: Main resolver with priority-based conflict resolution
+ * - parseDotEnv: Pure function to parse .env file content
  */
 
 import type {
@@ -18,6 +20,8 @@ import type {
   SourcePriority,
   StaticEnvVars,
 } from '@conveaux/contract-env';
+import type { FileReader } from '@conveaux/contract-file-reader';
+import { isOk } from '@conveaux/port-control-flow';
 
 // Re-export all contract types for convenience
 export type {
@@ -241,5 +245,175 @@ export function createEnv(options: EnvOptions): Env {
       }
       return undefined;
     },
+  };
+}
+
+// =============================================================================
+// DotEnv Parser
+// =============================================================================
+
+/**
+ * Parse .env file content into key-value pairs.
+ *
+ * Supports:
+ * - KEY=value (basic assignment)
+ * - KEY="quoted value" (double quotes, \n expanded)
+ * - KEY='literal value' (single quotes, no expansion)
+ * - # comments (full line)
+ * - KEY=value # inline comment (unquoted only)
+ * - export KEY=value (export prefix stripped)
+ * - Empty lines (ignored)
+ *
+ * @param content - Raw .env file content
+ * @returns Parsed key-value mapping
+ *
+ * @example
+ * ```typescript
+ * const vars = parseDotEnv(`
+ *   # Database config
+ *   DB_HOST=localhost
+ *   DB_PASSWORD="secret with spaces"
+ *   export API_KEY=abc123
+ * `);
+ * // { DB_HOST: 'localhost', DB_PASSWORD: 'secret with spaces', API_KEY: 'abc123' }
+ * ```
+ */
+export function parseDotEnv(content: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  const lines = content.split(/\r?\n/);
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Skip empty lines and comments
+    if (trimmed === '' || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    // Strip optional 'export ' prefix
+    const normalized = trimmed.startsWith('export ') ? trimmed.slice(7) : trimmed;
+
+    // Find first = sign
+    const eqIndex = normalized.indexOf('=');
+    if (eqIndex === -1) {
+      continue; // Invalid line, skip
+    }
+
+    const key = normalized.slice(0, eqIndex).trim();
+    if (key === '') {
+      continue; // Empty key, skip
+    }
+
+    let value = normalized.slice(eqIndex + 1);
+
+    // Parse value based on quoting
+    if (value.startsWith('"') && value.includes('"', 1)) {
+      // Double-quoted: extract content, expand escapes
+      const endQuote = value.lastIndexOf('"');
+      if (endQuote > 0) {
+        value = value.slice(1, endQuote);
+        // Expand common escape sequences
+        // IMPORTANT: Process \\\\ first to avoid matching \\t as tab
+        const BACKSLASH_PLACEHOLDER = '__CONVEAUX_BACKSLASH__';
+        value = value
+          .replace(/\\\\/g, BACKSLASH_PLACEHOLDER) // Temp placeholder for literal backslash
+          .replace(/\\n/g, '\n')
+          .replace(/\\r/g, '\r')
+          .replace(/\\t/g, '\t')
+          .replace(/\\"/g, '"')
+          .replace(new RegExp(BACKSLASH_PLACEHOLDER, 'g'), '\\'); // Restore literal backslashes
+      }
+    } else if (value.startsWith("'") && value.includes("'", 1)) {
+      // Single-quoted: extract content, no expansion
+      const endQuote = value.lastIndexOf("'");
+      if (endQuote > 0) {
+        value = value.slice(1, endQuote);
+      }
+    } else {
+      // Unquoted: strip inline comment
+      const commentIndex = value.indexOf(' #');
+      if (commentIndex !== -1) {
+        value = value.slice(0, commentIndex);
+      }
+      value = value.trim();
+    }
+
+    result[key] = value;
+  }
+
+  return result;
+}
+
+// =============================================================================
+// DotEnv Source Factory
+// =============================================================================
+
+/**
+ * Dependencies for creating a .env file source.
+ */
+export interface DotEnvSourceDeps {
+  /** FileReader to load the .env file */
+  readonly fileReader: FileReader;
+}
+
+/**
+ * Options for creating a .env file source.
+ */
+export interface DotEnvSourceOptions {
+  /** Path to the .env file (required) */
+  readonly path: string;
+  /** Source name for debugging (default: 'dotenv:{path}') */
+  readonly name?: string;
+  /** Source priority (default: 40) */
+  readonly priority?: SourcePriority;
+}
+
+/**
+ * Creates a source that reads from a .env file.
+ *
+ * The file is parsed once at creation time. Changes to the file
+ * after creation are not reflected (immutable snapshot).
+ *
+ * If the file cannot be read (missing, permissions), the source
+ * returns undefined for all keys (graceful degradation).
+ *
+ * @param deps - File reading dependencies
+ * @param options - Configuration including file path
+ * @returns Promise resolving to an EnvSource with parsed .env values
+ *
+ * @example
+ * ```typescript
+ * import { createNodeFileReader } from '@conveaux/port-file-reader';
+ *
+ * const fileReader = createNodeFileReader();
+ * const dotEnvSource = await createDotEnvSource(
+ *   { fileReader },
+ *   { path: '.env', priority: 40 }
+ * );
+ *
+ * const env = createEnv({
+ *   sources: [
+ *     createShellEnvSource({ getEnv: k => process.env[k] }, { priority: 100 }),
+ *     dotEnvSource,
+ *   ],
+ * });
+ * ```
+ */
+export async function createDotEnvSource(
+  deps: DotEnvSourceDeps,
+  options: DotEnvSourceOptions
+): Promise<EnvSource> {
+  const { path } = options;
+  const name = options.name ?? `dotenv:${path}`;
+  const priority = options.priority ?? 40;
+
+  // Parse file once at creation (immutable snapshot)
+  const result = await deps.fileReader.readText(path);
+  const vars: Record<string, string> = isOk(result) ? parseDotEnv(result.value) : {}; // Graceful degradation: missing file = empty source
+
+  return {
+    name,
+    priority,
+    get: (key: string): string | undefined => vars[key],
   };
 }

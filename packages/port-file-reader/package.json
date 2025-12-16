@@ -1,7 +1,7 @@
 {
-  "name": "@conveaux/port-env",
+  "name": "@conveaux/port-file-reader",
   "version": "0.1.0",
-  "description": "Environment variable management port - priority-based env var resolution implementation",
+  "description": "File reader port - Node.js and fetch implementations",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -13,16 +13,17 @@
   },
   "scripts": {
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit"
   },
   "files": ["src"],
   "dependencies": {
-    "@conveaux/contract-env": "*",
     "@conveaux/contract-file-reader": "*",
     "@conveaux/port-control-flow": "*"
   },
   "devDependencies": {
     "@conveaux/tsconfig": "*",
+    "@vitest/coverage-v8": "^4.0.15",
     "typescript": "^5.7.2",
     "vitest": "^4.0.15"
   }

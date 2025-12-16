@@ -6,6 +6,7 @@ import { exec } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import { getAppEnv } from '../env';
 import { output } from '../output';
 
 const execAsync = promisify(exec);
@@ -27,7 +28,7 @@ export async function runDoctor(): Promise<void> {
   output.header('ENVIRONMENT CHECK');
 
   // Check ANTHROPIC_API_KEY
-  checks.push(checkApiKey());
+  checks.push(await checkApiKey());
 
   // Check Bun
   checks.push(await checkBun());
@@ -76,14 +77,15 @@ export async function runDoctor(): Promise<void> {
   }
 }
 
-function checkApiKey(): CheckResult {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+async function checkApiKey(): Promise<CheckResult> {
+  const env = await getAppEnv();
+  const apiKey = env.get('ANTHROPIC_API_KEY');
   return {
     name: 'ANTHROPIC_API_KEY',
     passed: Boolean(apiKey),
     message: apiKey
       ? `Set (${apiKey.slice(0, 8)}...)`
-      : 'Not set. Export ANTHROPIC_API_KEY to use the agent.',
+      : 'Not set. Export ANTHROPIC_API_KEY or add to .env.local',
     required: true,
   };
 }

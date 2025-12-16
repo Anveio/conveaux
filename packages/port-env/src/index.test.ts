@@ -1,11 +1,35 @@
+import type { Result } from '@conveaux/contract-control-flow';
+import type { FileReadError, FileReader } from '@conveaux/contract-file-reader';
+import { err, ok } from '@conveaux/port-control-flow';
 import { describe, expect, it } from 'vitest';
 
 import {
+  createDotEnvSource,
   createEnv,
   createOverrideEnvSource,
   createShellEnvSource,
   createStaticEnvSource,
+  parseDotEnv,
 } from './index.js';
+
+// =============================================================================
+// Mock FileReader Factory
+// =============================================================================
+
+function createMockFileReader(files: Record<string, string | Error>): FileReader {
+  return {
+    async readText(path: string): Promise<Result<string, FileReadError>> {
+      const content = files[path];
+      if (content === undefined) {
+        return err({ path, message: `ENOENT: file not found: ${path}` });
+      }
+      if (content instanceof Error) {
+        return err({ path, message: content.message });
+      }
+      return ok(content);
+    },
+  };
+}
 
 // =============================================================================
 // Source Factory Tests
@@ -275,5 +299,236 @@ describe('AWS CLI integration pattern', () => {
 
     // Unknown returns undefined
     expect(env.get('UNKNOWN_VAR')).toBeUndefined();
+  });
+});
+
+// =============================================================================
+// parseDotEnv Tests
+// =============================================================================
+
+describe('parseDotEnv', () => {
+  describe('basic parsing', () => {
+    it('should parse basic KEY=value pairs', () => {
+      const result = parseDotEnv('FOO=bar\nBAZ=qux');
+      expect(result).toEqual({ FOO: 'bar', BAZ: 'qux' });
+    });
+
+    it('should ignore empty lines', () => {
+      const result = parseDotEnv('FOO=bar\n\nBAZ=qux');
+      expect(result).toEqual({ FOO: 'bar', BAZ: 'qux' });
+    });
+
+    it('should ignore comment lines', () => {
+      const result = parseDotEnv('# comment\nFOO=bar\n# another');
+      expect(result).toEqual({ FOO: 'bar' });
+    });
+
+    it('should strip export prefix', () => {
+      const result = parseDotEnv('export FOO=bar');
+      expect(result).toEqual({ FOO: 'bar' });
+    });
+
+    it('should handle empty values', () => {
+      const result = parseDotEnv('EMPTY=');
+      expect(result).toEqual({ EMPTY: '' });
+    });
+
+    it('should handle Windows line endings', () => {
+      const result = parseDotEnv('FOO=bar\r\nBAZ=qux');
+      expect(result).toEqual({ FOO: 'bar', BAZ: 'qux' });
+    });
+
+    it('should skip malformed lines', () => {
+      const result = parseDotEnv('VALID=yes\nno equals sign\n=no key');
+      expect(result).toEqual({ VALID: 'yes' });
+    });
+
+    it('should handle keys with equals in value', () => {
+      const result = parseDotEnv('URL=https://example.com?foo=bar');
+      expect(result).toEqual({ URL: 'https://example.com?foo=bar' });
+    });
+  });
+
+  describe('double-quoted values', () => {
+    it('should strip quotes', () => {
+      const result = parseDotEnv('FOO="bar baz"');
+      expect(result).toEqual({ FOO: 'bar baz' });
+    });
+
+    it('should expand \\n to newline', () => {
+      const result = parseDotEnv('FOO="line1\\nline2"');
+      expect(result).toEqual({ FOO: 'line1\nline2' });
+    });
+
+    it('should expand escape sequences', () => {
+      const result = parseDotEnv('FOO="tab\\there\\r\\n"');
+      expect(result).toEqual({ FOO: 'tab\there\r\n' });
+    });
+
+    it('should expand escaped backslash', () => {
+      const result = parseDotEnv('FOO="path\\\\to\\\\file"');
+      expect(result).toEqual({ FOO: 'path\\to\\file' });
+    });
+
+    it('should expand escaped quotes', () => {
+      const result = parseDotEnv('FOO="say \\"hello\\""');
+      expect(result).toEqual({ FOO: 'say "hello"' });
+    });
+  });
+
+  describe('single-quoted values', () => {
+    it('should strip quotes', () => {
+      const result = parseDotEnv("FOO='bar baz'");
+      expect(result).toEqual({ FOO: 'bar baz' });
+    });
+
+    it('should NOT expand \\n (literal)', () => {
+      const result = parseDotEnv("FOO='line1\\nline2'");
+      expect(result).toEqual({ FOO: 'line1\\nline2' });
+    });
+  });
+
+  describe('unquoted values', () => {
+    it('should strip inline comments', () => {
+      const result = parseDotEnv('FOO=bar # this is a comment');
+      expect(result).toEqual({ FOO: 'bar' });
+    });
+
+    it('should trim whitespace', () => {
+      const result = parseDotEnv('FOO=  bar  ');
+      expect(result).toEqual({ FOO: 'bar' });
+    });
+  });
+});
+
+// =============================================================================
+// createDotEnvSource Tests
+// =============================================================================
+
+describe('createDotEnvSource', () => {
+  it('should read and parse .env file', async () => {
+    const fileReader = createMockFileReader({
+      '.env': 'FOO=bar\nBAZ=qux',
+    });
+
+    const source = await createDotEnvSource({ fileReader }, { path: '.env' });
+
+    expect(source.get('FOO')).toBe('bar');
+    expect(source.get('BAZ')).toBe('qux');
+    expect(source.get('MISSING')).toBeUndefined();
+  });
+
+  it('should use default name based on path', async () => {
+    const fileReader = createMockFileReader({ '.env.local': '' });
+
+    const source = await createDotEnvSource({ fileReader }, { path: '.env.local' });
+
+    expect(source.name).toBe('dotenv:.env.local');
+  });
+
+  it('should use custom name when provided', async () => {
+    const fileReader = createMockFileReader({ '.env': '' });
+
+    const source = await createDotEnvSource({ fileReader }, { path: '.env', name: 'local-config' });
+
+    expect(source.name).toBe('local-config');
+  });
+
+  it('should use default priority of 40', async () => {
+    const fileReader = createMockFileReader({ '.env': '' });
+
+    const source = await createDotEnvSource({ fileReader }, { path: '.env' });
+
+    expect(source.priority).toBe(40);
+  });
+
+  it('should use custom priority when provided', async () => {
+    const fileReader = createMockFileReader({ '.env': '' });
+
+    const source = await createDotEnvSource({ fileReader }, { path: '.env', priority: 50 });
+
+    expect(source.priority).toBe(50);
+  });
+
+  it('should gracefully handle missing file', async () => {
+    const fileReader = createMockFileReader({});
+
+    const source = await createDotEnvSource({ fileReader }, { path: '.env.missing' });
+
+    // Should not throw, just return undefined for all keys
+    expect(source.get('ANY_KEY')).toBeUndefined();
+  });
+
+  it('should gracefully handle read errors', async () => {
+    const fileReader = createMockFileReader({
+      '.env.locked': new Error('Permission denied'),
+    });
+
+    const source = await createDotEnvSource({ fileReader }, { path: '.env.locked' });
+
+    expect(source.get('ANY_KEY')).toBeUndefined();
+  });
+});
+
+// =============================================================================
+// Integration Tests (dotenv with priority resolution)
+// =============================================================================
+
+describe('createEnv with .env sources', () => {
+  it('should resolve from shell > .env.local > .env', async () => {
+    const shellEnv: Record<string, string> = {
+      // CI provides API key via shell
+      ANTHROPIC_API_KEY: 'sk-ci-key',
+    };
+
+    const dotEnvLocal = `
+# Local development overrides
+ANTHROPIC_API_KEY=sk-local-key
+DEBUG=true
+    `;
+
+    const dotEnv = `
+# Shared defaults
+ANTHROPIC_API_KEY=sk-placeholder
+LOG_LEVEL=info
+    `;
+
+    const fileReader = createMockFileReader({
+      '.env.local': dotEnvLocal,
+      '.env': dotEnv,
+    });
+
+    const env = createEnv({
+      sources: [
+        createShellEnvSource({ getEnv: (k) => shellEnv[k] }, { priority: 100 }),
+        await createDotEnvSource({ fileReader }, { path: '.env.local', priority: 50 }),
+        await createDotEnvSource({ fileReader }, { path: '.env', priority: 40 }),
+      ],
+    });
+
+    // Shell wins (CI)
+    expect(env.get('ANTHROPIC_API_KEY')).toBe('sk-ci-key');
+
+    // .env.local provides DEBUG (not in shell)
+    expect(env.get('DEBUG')).toBe('true');
+
+    // .env provides LOG_LEVEL (not in shell or .env.local)
+    expect(env.get('LOG_LEVEL')).toBe('info');
+  });
+
+  it('should work with missing .env.local file', async () => {
+    const fileReader = createMockFileReader({
+      '.env': 'FOO=from-env',
+    });
+
+    const env = createEnv({
+      sources: [
+        await createDotEnvSource({ fileReader }, { path: '.env.local', priority: 50 }),
+        await createDotEnvSource({ fileReader }, { path: '.env', priority: 40 }),
+      ],
+    });
+
+    // Falls through to .env
+    expect(env.get('FOO')).toBe('from-env');
   });
 });
