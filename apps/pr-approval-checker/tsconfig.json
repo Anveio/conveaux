@@ -1,0 +1,7 @@
+{
+  "extends": "@conveaux/tsconfig/workspace-app-config.json",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"]
+}
