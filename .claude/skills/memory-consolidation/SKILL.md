@@ -1,6 +1,6 @@
 ---
 name: memory-consolidation
-description: Parse memory.yaml and consolidate recurring patterns into skills. Use when memory.yaml grows large, when patterns recur 3+ times, or during RSID Loop 1 idea generation. Automates the memory-to-skill pipeline.
+description: Parse memory.yaml and consolidate recurring patterns into skills. Use when memory.yaml grows large, when patterns recur 3+ times, or during RSID Ideate stage. Automates the memory-to-skill pipeline.
 ---
 
 # Memory Consolidation
@@ -9,7 +9,7 @@ description: Parse memory.yaml and consolidate recurring patterns into skills. U
 
 ## When to Invoke
 
-- During **RSID Loop 1** (Idea Generation)
+- During **RSID Ideate** stage
 - When `memory.yaml` exceeds ~10 tasks
 - When you notice repeated learnings across tasks
 - Periodically after several merge cycles
@@ -334,25 +334,22 @@ archived:
 
 ## Integration with RSID
 
-This skill is invoked during **RSID Loop 1 (Idea Generation)**:
+This skill is invoked during the **Ideate** stage of RSID:
 
 ```
-Loop 0: Post-Merge Reflection
-    ↓ (memories recorded)
-Loop 1: Idea Generation ← INVOKE memory-consolidation HERE
-    ↓ (patterns consolidated, skills updated)
-Loop 2: Execution
-    ↓
-(back to Loop 0)
+USER-DRIVEN:    Listen → Execute → Reflect
+                                      ↓ (memories recorded)
+AUTONOMOUS:     Ideate ← INVOKE memory-consolidation HERE → Execute → Reflect
+                (patterns consolidated, skills updated)
 ```
 
-**When Loop 1 finds consolidation candidates:**
+**When Ideate finds consolidation candidates:**
 
 1. Invoke this skill
 2. Follow the consolidation pipeline
 3. Create PR with skill updates + archive updates
 4. Merge PR
-5. Continue to Loop 2 with next task
+5. Continue to Execute with next task
 
 ## Quick Reference
 
