@@ -16,6 +16,7 @@ import { createOutChannel } from '@conveaux/port-outchannel';
 import { createRandom } from '@conveaux/port-random';
 import { createWallClock } from '@conveaux/port-wall-clock';
 
+import { type HumanInputStore, createHumanInputStore } from './human-input-store/index.js';
 import { createNodeSqliteStorage } from './storage/node-sqlite-adapter.js';
 
 /**
@@ -28,8 +29,10 @@ export interface RuntimeDeps {
   readonly instrumenter: Instrumenter;
   /** Project root directory */
   readonly projectRoot: string;
-  /** Durable storage for learnings (optional until learning store is implemented) */
+  /** Durable storage for learnings (optional) */
   readonly storage?: DurableStorage;
+  /** Human input store for capturing human messages (optional) */
+  readonly humanInputStore?: HumanInputStore;
 }
 
 /**
@@ -113,10 +116,14 @@ export function createRuntimeDeps(options: CompositionOptions): RuntimeDeps {
     ? undefined
     : createNodeSqliteStorage(options.storagePath ?? `${projectRoot}/.claude/learnings.db`);
 
+  // Create human input store if storage is available
+  const humanInputStore = storage ? createHumanInputStore({ storage }) : undefined;
+
   return {
     logger,
     instrumenter,
     projectRoot,
     storage,
+    humanInputStore,
   };
 }
