@@ -6,7 +6,16 @@ import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { WallClock } from '@conveaux/contract-wall-clock';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  ANSI_BG_COLORS,
+  ANSI_COLORS,
+  ANSI_RESET,
+  ANSI_STYLES,
+  DEFAULT_THEME,
+  HIGH_CONTRAST_THEME,
   LOG_LEVEL_PRIORITY,
+  MINIMAL_THEME,
+  PRESET_THEMES,
+  createColorEnvironment,
   createJsonFormatter,
   createLogger,
   createPrettyFormatter,
@@ -852,5 +861,516 @@ describe('logger with custom formatter', () => {
     expect(output).toContain('Server started');
     expect(output).toContain('port');
     expect(output).toContain('3000');
+  });
+});
+
+// =============================================================================
+// Color Configuration Tests
+// =============================================================================
+
+describe('createColorEnvironment', () => {
+  it('should detect NO_COLOR when set', () => {
+    const env = createColorEnvironment({
+      getEnv: (name) => (name === 'NO_COLOR' ? '1' : undefined),
+    });
+
+    expect(env.isNoColorSet()).toBe(true);
+    expect(env.isForceColorSet()).toBe(false);
+  });
+
+  it('should detect NO_COLOR when set to empty string', () => {
+    const env = createColorEnvironment({
+      getEnv: (name) => (name === 'NO_COLOR' ? '' : undefined),
+    });
+
+    // NO_COLOR should be detected even with empty string (per spec)
+    expect(env.isNoColorSet()).toBe(true);
+  });
+
+  it('should detect FORCE_COLOR when set', () => {
+    const env = createColorEnvironment({
+      getEnv: (name) => (name === 'FORCE_COLOR' ? '1' : undefined),
+    });
+
+    expect(env.isNoColorSet()).toBe(false);
+    expect(env.isForceColorSet()).toBe(true);
+  });
+
+  it('should not detect FORCE_COLOR when set to 0', () => {
+    const env = createColorEnvironment({
+      getEnv: (name) => (name === 'FORCE_COLOR' ? '0' : undefined),
+    });
+
+    expect(env.isForceColorSet()).toBe(false);
+  });
+
+  it('should not detect FORCE_COLOR when set to empty string', () => {
+    const env = createColorEnvironment({
+      getEnv: (name) => (name === 'FORCE_COLOR' ? '' : undefined),
+    });
+
+    expect(env.isForceColorSet()).toBe(false);
+  });
+
+  it('should detect TTY support', () => {
+    const env = createColorEnvironment({
+      getEnv: () => undefined,
+      isTTY: () => true,
+    });
+
+    expect(env.supportsColor()).toBe(true);
+  });
+
+  it('should default to no TTY support', () => {
+    const env = createColorEnvironment({
+      getEnv: () => undefined,
+    });
+
+    expect(env.supportsColor()).toBe(false);
+  });
+});
+
+describe('createPrettyFormatter with ColorConfig', () => {
+  const testEntry = {
+    timestamp: '2024-12-15T10:30:00.000Z',
+    level: 'info' as const,
+    message: 'Test message',
+  };
+
+  describe('backward compatibility', () => {
+    it('should work with colors: true (legacy)', () => {
+      const formatter = createPrettyFormatter({ colors: true });
+      const output = formatter.format(testEntry);
+
+      expect(output).toContain('\x1b[');
+    });
+
+    it('should work with colors: false (legacy)', () => {
+      const formatter = createPrettyFormatter({ colors: false });
+      const output = formatter.format(testEntry);
+
+      expect(output).not.toContain('\x1b[');
+    });
+
+    it('should work with no options', () => {
+      const formatter = createPrettyFormatter();
+      const output = formatter.format(testEntry);
+
+      expect(output).toContain('\x1b[');
+    });
+  });
+
+  describe('colorConfig.enabled', () => {
+    it('should disable colors when enabled: false', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: { enabled: false },
+      });
+      const output = formatter.format(testEntry);
+
+      expect(output).not.toContain('\x1b[');
+    });
+
+    it('should enable colors when enabled: true', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: { enabled: true },
+      });
+      const output = formatter.format(testEntry);
+
+      expect(output).toContain('\x1b[');
+    });
+
+    it('should prefer colorConfig over legacy colors option', () => {
+      const formatter = createPrettyFormatter({
+        colors: true,
+        colorConfig: { enabled: false },
+      });
+      const output = formatter.format(testEntry);
+
+      expect(output).not.toContain('\x1b[');
+    });
+  });
+
+  describe('NO_COLOR support', () => {
+    it('should disable colors when NO_COLOR is set', () => {
+      const colorEnv = createColorEnvironment({
+        getEnv: (name) => (name === 'NO_COLOR' ? '1' : undefined),
+      });
+
+      const formatter = createPrettyFormatter({ colorEnv });
+      const output = formatter.format(testEntry);
+
+      expect(output).not.toContain('\x1b[');
+    });
+
+    it('should allow disabling NO_COLOR respect', () => {
+      const colorEnv = createColorEnvironment({
+        getEnv: (name) => (name === 'NO_COLOR' ? '1' : undefined),
+      });
+
+      const formatter = createPrettyFormatter({
+        colorConfig: { respectNoColor: false },
+        colorEnv,
+      });
+      const output = formatter.format(testEntry);
+
+      expect(output).toContain('\x1b[');
+    });
+
+    it('should override NO_COLOR when forceColor is true', () => {
+      const colorEnv = createColorEnvironment({
+        getEnv: (name) => (name === 'NO_COLOR' ? '1' : undefined),
+      });
+
+      const formatter = createPrettyFormatter({
+        colorConfig: { forceColor: true },
+        colorEnv,
+      });
+      const output = formatter.format(testEntry);
+
+      expect(output).toContain('\x1b[');
+    });
+
+    it('should override NO_COLOR when FORCE_COLOR env is set', () => {
+      const colorEnv = createColorEnvironment({
+        getEnv: (name) => {
+          if (name === 'NO_COLOR') return '1';
+          if (name === 'FORCE_COLOR') return '1';
+          return undefined;
+        },
+      });
+
+      const formatter = createPrettyFormatter({ colorEnv });
+      const output = formatter.format(testEntry);
+
+      expect(output).toContain('\x1b[');
+    });
+  });
+
+  describe('preset themes', () => {
+    it('should use default theme', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: { theme: 'default' },
+      });
+      const output = formatter.format(testEntry);
+
+      // Default info is green (\x1b[32m)
+      expect(output).toContain('\x1b[32m');
+    });
+
+    it('should use high-contrast theme', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: { theme: 'high-contrast' },
+      });
+      const output = formatter.format(testEntry);
+
+      // High-contrast info is brightGreen + bold (\x1b[92m and \x1b[1m)
+      expect(output).toContain('\x1b[92m');
+      expect(output).toContain('\x1b[1m');
+    });
+
+    it('should use minimal theme', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: { theme: 'minimal' },
+      });
+      const entry = {
+        timestamp: '2024-12-15T10:30:00.000Z',
+        level: 'info' as const,
+        message: 'Test',
+        fields: { key: 'value' },
+      };
+      const output = formatter.format(entry);
+
+      // Minimal theme should not apply dim to fields
+      // Fields should still have color for the level
+      expect(output).toContain('\x1b[32m'); // info green
+      // But should not have dim for fields (no \x1b[2m on the fields part)
+    });
+  });
+
+  describe('custom themes', () => {
+    it('should apply custom level colors', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: 'brightMagenta' },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // brightMagenta is \x1b[95m
+      expect(output).toContain('\x1b[95m');
+    });
+
+    it('should apply custom styles', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: 'green', styles: ['bold', 'underline'] },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      expect(output).toContain('\x1b[32m'); // green
+      expect(output).toContain('\x1b[1m'); // bold
+      expect(output).toContain('\x1b[4m'); // underline
+    });
+
+    it('should apply background colors', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: 'white', background: 'blue' },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      expect(output).toContain('\x1b[37m'); // white foreground
+      expect(output).toContain('\x1b[44m'); // blue background
+    });
+  });
+
+  describe('level overrides', () => {
+    it('should override specific levels on top of theme', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: 'default',
+          levels: {
+            fatal: { color: 'brightWhite', background: 'red', styles: ['bold'] },
+          },
+        },
+      });
+      const fatalEntry = {
+        timestamp: '2024-12-15T10:30:00.000Z',
+        level: 'fatal' as const,
+        message: 'System crash',
+      };
+      const output = formatter.format(fatalEntry);
+
+      expect(output).toContain('\x1b[97m'); // brightWhite
+      expect(output).toContain('\x1b[41m'); // red background
+      expect(output).toContain('\x1b[1m'); // bold
+    });
+  });
+
+  describe('256-color support', () => {
+    it('should render 256-color foreground', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: { type: '256', index: 196 } },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // 256 color format: \x1b[38;5;{index}m
+      expect(output).toContain('\x1b[38;5;196m');
+    });
+
+    it('should render 256-color background', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { background: { type: '256', index: 21 } },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // 256 color background: \x1b[48;5;{index}m
+      expect(output).toContain('\x1b[48;5;21m');
+    });
+
+    it('should clamp invalid 256-color index', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: { type: '256', index: 300 } },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // Should clamp to 255
+      expect(output).toContain('\x1b[38;5;255m');
+    });
+  });
+
+  describe('RGB color support', () => {
+    it('should render RGB foreground', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: { type: 'rgb', r: 255, g: 100, b: 50 } },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // RGB format: \x1b[38;2;{r};{g};{b}m
+      expect(output).toContain('\x1b[38;2;255;100;50m');
+    });
+
+    it('should render RGB background', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { background: { type: 'rgb', r: 0, g: 50, b: 100 } },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // RGB background: \x1b[48;2;{r};{g};{b}m
+      expect(output).toContain('\x1b[48;2;0;50;100m');
+    });
+
+    it('should clamp invalid RGB values', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: { type: 'rgb', r: 300, g: -10, b: 128.7 } },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // Should clamp to valid range and floor
+      expect(output).toContain('\x1b[38;2;255;0;128m');
+    });
+  });
+
+  describe('hex color support', () => {
+    it('should render hex color with hash', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: { type: 'hex', value: '#FF5733' } },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // Hex converts to RGB: FF=255, 57=87, 33=51
+      expect(output).toContain('\x1b[38;2;255;87;51m');
+    });
+
+    it('should render hex color without hash', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: { type: 'hex', value: 'aabbcc' } },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // Hex converts to RGB: aa=170, bb=187, cc=204
+      expect(output).toContain('\x1b[38;2;170;187;204m');
+    });
+
+    it('should handle invalid hex gracefully', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            info: { color: { type: 'hex', value: 'invalid' } },
+          },
+        },
+      });
+      const output = formatter.format(testEntry);
+
+      // Should not crash, just no color applied for that spec
+      expect(output).toContain('INFO');
+    });
+  });
+
+  describe('error formatting with themes', () => {
+    it('should apply errorText style to error messages', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            errorText: { color: 'brightRed', styles: ['bold'] },
+          },
+        },
+      });
+      const entry = {
+        timestamp: '2024-12-15T10:30:00.000Z',
+        level: 'error' as const,
+        message: 'Failed',
+        error: {
+          name: 'Error',
+          message: 'Something went wrong',
+        },
+      };
+      const output = formatter.format(entry);
+
+      expect(output).toContain('\x1b[91m'); // brightRed
+      expect(output).toContain('\x1b[1m'); // bold
+    });
+
+    it('should apply stackTrace style to stack frames', () => {
+      const formatter = createPrettyFormatter({
+        colorConfig: {
+          theme: {
+            stackTrace: { color: 'gray' },
+          },
+        },
+      });
+      const entry = {
+        timestamp: '2024-12-15T10:30:00.000Z',
+        level: 'error' as const,
+        message: 'Failed',
+        error: {
+          name: 'Error',
+          message: 'Oops',
+          stack: 'Error: Oops\n    at test.ts:10:5\n    at run.ts:20:3',
+        },
+      };
+      const output = formatter.format(entry);
+
+      expect(output).toContain('\x1b[90m'); // gray for stack
+    });
+  });
+});
+
+describe('exported theme constants', () => {
+  it('should export DEFAULT_THEME', () => {
+    expect(DEFAULT_THEME).toBeDefined();
+    expect(DEFAULT_THEME.info).toEqual({ color: 'green' });
+    expect(DEFAULT_THEME.error).toEqual({ color: 'red' });
+    expect(DEFAULT_THEME.fatal).toEqual({ color: 'magenta', styles: ['bold'] });
+  });
+
+  it('should export HIGH_CONTRAST_THEME', () => {
+    expect(HIGH_CONTRAST_THEME).toBeDefined();
+    expect(HIGH_CONTRAST_THEME.info).toEqual({ color: 'brightGreen', styles: ['bold'] });
+    expect(HIGH_CONTRAST_THEME.fatal).toEqual({
+      color: 'brightWhite',
+      background: 'red',
+      styles: ['bold'],
+    });
+  });
+
+  it('should export MINIMAL_THEME', () => {
+    expect(MINIMAL_THEME).toBeDefined();
+    expect(MINIMAL_THEME.timestamp).toEqual({});
+    expect(MINIMAL_THEME.fields).toEqual({});
+  });
+
+  it('should export PRESET_THEMES', () => {
+    expect(PRESET_THEMES).toBeDefined();
+    expect(PRESET_THEMES.default).toBe(DEFAULT_THEME);
+    expect(PRESET_THEMES['high-contrast']).toBe(HIGH_CONTRAST_THEME);
+    expect(PRESET_THEMES.minimal).toBe(MINIMAL_THEME);
+  });
+
+  it('should export ANSI constants', () => {
+    expect(ANSI_RESET).toBe('\x1b[0m');
+    expect(ANSI_COLORS.red).toBe('\x1b[31m');
+    expect(ANSI_BG_COLORS.blue).toBe('\x1b[44m');
+    expect(ANSI_STYLES.bold).toBe('\x1b[1m');
   });
 });
