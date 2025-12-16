@@ -227,3 +227,62 @@ memories:
 
           Verdict was APPROVED with no blockers. This demonstrates the subagent
           can handle rigorous PR review autonomously as required by coding-loop skill.
+
+  - task: "feat/consolidate-error-into-control-flow"
+    date: "2025-12-15"
+    context: |
+      Consolidated @conveaux/contract-error package into @conveaux/port-control-flow.
+      The port-control-flow package already had enhanced versions of all error classes
+      with intrinsic exit codes and retry metadata, making contract-error redundant.
+    learnings:
+      - type: "pattern"
+        summary: "When consolidating, check for API signature differences"
+        detail: |
+          The FetchError constructor changed from positional to options object:
+
+          OLD (contract-error): new FetchError(message, statusCode)
+          NEW (port-control-flow): new FetchError(message, { statusCode: number })
+
+          All call sites must be updated when migrating to a new API. Search for
+          all usages before starting the migration.
+
+      - type: "insight"
+        summary: "Abstract base classes still work for instanceof checks"
+        detail: |
+          ConveauxError changed from a concrete class to an abstract class in
+          port-control-flow. The CLI uses `instanceof ConveauxError` to catch
+          all domain errors. This still works because:
+          1. All concrete error subclasses extend ConveauxError
+          2. The prototype chain is properly set with Object.setPrototypeOf
+
+          Abstract classes can serve as instanceof targets for their subclasses.
+
+      - type: "q-and-a"
+        summary: "When to consolidate vs keep separate packages"
+        detail: |
+          Q: When should packages be consolidated?
+          A: Consolidate when:
+          - One package is a strict superset of another (port-control-flow had
+            enhanced versions of all contract-error classes)
+          - The separate package adds no unique value
+          - Consolidation simplifies the dependency graph
+
+          Keep separate when:
+          - Packages serve different purposes (contract vs port)
+          - Different consumers need different subsets
+          - Circular dependency risk exists
+
+      - type: "insight"
+        summary: "Exit codes could improve CLI error handling"
+        detail: |
+          The tsc-reviewer noted that the CLI could leverage ConveauxError.exitCode
+          instead of always using process.exit(1):
+
+          ```typescript
+          if (error instanceof ConveauxError) {
+            logger.error(error.message, { error });
+            process.exit(error.exitCode); // 1=system, 2=user, 3=retryable
+          }
+          ```
+
+          This is a follow-up improvement opportunity - not part of this refactor.
