@@ -132,6 +132,30 @@ Claude Code's sandbox is designed for running on bare metal; devcontainers are t
    - Run verification inside the container.
    - Confirm file writes stay within the workspace.
 
+## Automated verification
+
+This repo includes a **devcontainer verification stage** in the validation pipeline that automatically checks security properties on every run:
+
+```bash
+# Run just the devcontainer security audit
+./verify.sh --stage=devcontainer --ui=false
+
+# Or run full pipeline (devcontainer runs in parallel with docs/install)
+./verify.sh --ui=false
+```
+
+### What gets checked automatically
+
+| Check | Severity | What it catches |
+|-------|----------|-----------------|
+| `non-root-user` | error/warning | Running as root or no user specified |
+| `no-privileged` | error | `--privileged` flag or `privileged: true` |
+| `no-docker-socket` | error | Docker socket mounts (root-equivalent access) |
+| `security-hardening` | warning | Missing `--cap-drop=ALL` or `no-new-privileges` |
+| `no-sensitive-caps` | error | Dangerous capabilities like `SYS_ADMIN` |
+
+The stage is implemented in `apps/validation-pipeline/src/stages/devcontainer.ts` with unit tests in `apps/validation-pipeline/src/stages/devcontainer/security-checks.test.ts`.
+
 ## Security audit checklist (quick)
 
 - [ ] `remoteUser` is non-root (or `containerUser` is non-root)
@@ -140,12 +164,50 @@ Claude Code's sandbox is designed for running on bare metal; devcontainers are t
 - [ ] Minimal ports exposed
 - [ ] Secrets not baked into the image
 - [ ] Workspace is the only writable host mount
-- [ ] Clear docs: “how to open container” + “how to run verify”
+- [ ] Clear docs: "how to open container" + "how to run verify"
+
+## Running multiple Claude Code instances in a VM
+
+For running many parallel Claude Code agents (e.g., 20 instances), use a dedicated VM with devcontainer isolation:
+
+### VM resource sizing
+
+| Instances | RAM | CPU | Disk |
+|-----------|-----|-----|------|
+| 5 | 8 GB | 4 cores | 50 GB |
+| 10 | 16 GB | 8 cores | 75 GB |
+| 20 | 32-64 GB | 16+ cores | 100 GB |
+
+### Quick start
+
+```bash
+# 1. Bootstrap VM (Ubuntu 24.04)
+sudo bash .devcontainer/vm-bootstrap.sh
+
+# 2. Set API key
+echo 'export ANTHROPIC_API_KEY="sk-..."' >> ~/.bashrc && source ~/.bashrc
+
+# 3. Build and enter devcontainer
+devcontainer up --workspace-folder .
+devcontainer exec --workspace-folder . bash
+
+# 4. Run parallel agents (inside container)
+./.devcontainer/run-parallel-agents.sh 20 prompts.txt
+```
+
+### Why VM + devcontainer?
+
+- **VM isolation**: Limits blast radius to the VM, not your host
+- **Devcontainer hardening**: Non-root, capability drops, no docker socket
+- **Skip permission prompts**: Safe to use `--dangerously-skip-permissions` inside isolated environment
+- **Resource limits**: Per-container CPU/memory caps prevent runaway processes
 
 ## Optional resources
 
 If you need concrete starting points, read:
 
-- `factory-md/claude-skills/devcontainer-sandboxing/devcontainer.json.example`
-- `factory-md/claude-skills/devcontainer-sandboxing/SECURITY-FOOTGUNS.md`
+- `.devcontainer/devcontainer.json` - This repo's actual devcontainer config
+- `.devcontainer/vm-bootstrap.sh` - Script to set up an Ubuntu VM for parallel agents
+- `.devcontainer/run-parallel-agents.sh` - Script to launch N parallel Claude Code instances
+- `.claude/skills/devcontainer-sandboxing/SECURITY-FOOTGUNS.md` - Common security mistakes
 

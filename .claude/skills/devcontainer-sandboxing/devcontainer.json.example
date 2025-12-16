@@ -1,27 +1,48 @@
 {
-  "name": "Dev Sandbox",
+  "name": "secure-dev-sandbox",
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "remoteUser": "vscode",
-  "updateRemoteUserUID": true,
-  "overrideCommand": false,
+
+  // Security: non-root user
+  "remoteUser": "developer",
+  "containerUser": "developer",
+
+  // Security: minimal privileges, resource limits
+  "runArgs": [
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges:true",
+    "--memory=2g",
+    "--cpus=2"
+  ],
+
+  // Only mount workspace - nothing else writable on host
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
+
+  // Required tools (pin versions for reproducibility)
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // Secrets via runtime injection (never bake into image)
+  "containerEnv": {
+    "ANTHROPIC_API_KEY": "${localEnv:ANTHROPIC_API_KEY}"
+  },
+
+  // Post-create setup
+  "postCreateCommand": "npm install && npm run build",
+
+  // VS Code extensions (optional)
   "customizations": {
     "vscode": {
-      "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash"
-      }
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
     }
-  },
-  "runArgs": [
-    "--init",
-    "--cap-drop=ALL",
-    "--security-opt=no-new-privileges:true"
-  ],
-  "mounts": [
-    "type=volume,source=devcontainer-cache,target=/home/vscode/.cache"
-  ],
-  "features": {},
-  "postCreateCommand": "echo 'Ready. Run your repo verification command (e.g., ./verify.sh --ui=false).'"
+  }
 }
-
