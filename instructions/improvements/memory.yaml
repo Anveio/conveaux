@@ -160,3 +160,70 @@ memories:
             }
           }
           ```
+
+  - task: "feat/control-flow-package"
+    date: "2025-12-15"
+    context: |
+      Implemented control flow primitives as two packages: contract-control-flow (pure types)
+      and port-control-flow (runtime implementations). Initial implementation had runtime code
+      in the contract package, which violated coding-patterns skill guidance. Restructured to
+      properly separate concerns.
+    learnings:
+      - type: "misconception"
+        summary: "Contract packages must have NO runtime code - not even error classes"
+        detail: |
+          WRONG: Putting error classes, helper functions, constants in contract packages
+          RIGHT: Contracts contain ONLY TypeScript types, interfaces, type aliases
+
+          The initial contract-control-flow had:
+          - Classes (ConveauxError, FetchError, etc.)
+          - Functions (ok, err, map, computeRetryDelay, etc.)
+          - Constants (DEFAULT_RETRY_METADATA, EXIT_SUCCESS, etc.)
+
+          All of these emit JavaScript and belong in the PORT package, not the contract.
+
+          The rule from coding-patterns: "If it emits JavaScript, it doesn't belong in a contract."
+
+      - type: "pattern"
+        summary: "Use 'declare const' for symbols in contracts to define type without value"
+        detail: |
+          When a contract needs to reference a symbol (like EXIT_CODE), use TypeScript's
+          ambient declaration syntax:
+
+          ```typescript
+          // In contract (no runtime value)
+          export declare const EXIT_CODE: unique symbol;
+
+          // In port (actual runtime value)
+          export const EXIT_CODE: typeof import('@conveaux/contract-control-flow').EXIT_CODE =
+            Symbol.for('conveaux.exitCode') as typeof import('@conveaux/contract-control-flow').EXIT_CODE;
+          ```
+
+          This allows the contract to define the type while the port provides the implementation.
+
+      - type: "pattern"
+        summary: "Use timestamps (number) instead of Date objects in contracts"
+        detail: |
+          WRONG: `retryAfter?: Date` - requires Date constructor, not hermetic
+          RIGHT: `retryAfterMs?: number` - pure data, no runtime dependencies
+
+          For FetchError.rateLimited(), accept the timestamp directly:
+          ```typescript
+          static rateLimited(retryAfterMs?: number): FetchError
+          ```
+
+          Callers with access to a clock port compute: `nowMs + delaySeconds * 1000`
+          This keeps the contract hermetic (no global Date usage).
+
+      - type: "insight"
+        summary: "tsc-reviewer subagent provides thorough automated review"
+        detail: |
+          The tsc-reviewer subagent performed a comprehensive review covering:
+          - Architecture (contract/port separation)
+          - Security (no secrets, injection risks)
+          - Correctness (logic verification, edge cases)
+          - Maintainability (readability, test coverage)
+          - Type safety (no any types)
+
+          Verdict was APPROVED with no blockers. This demonstrates the subagent
+          can handle rigorous PR review autonomously as required by coding-loop skill.
