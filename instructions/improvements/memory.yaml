@@ -286,3 +286,107 @@ memories:
           ```
 
           This is a follow-up improvement opportunity - not part of this refactor.
+
+  - task: "feat/logger-color-config"
+    date: "2025-12-15"
+    context: |
+      Replaced the simple `colors: true/false` API in createPrettyFormatter with a
+      flexible color configuration system supporting themes, per-level customization,
+      and NO_COLOR/FORCE_COLOR environment variables. Followed contract-port separation.
+    learnings:
+      - type: "pattern"
+        summary: "FORCE_COLOR must be checked before NO_COLOR in resolution order"
+        detail: |
+          The color resolution order matters. Initial implementation checked NO_COLOR
+          before FORCE_COLOR, which meant forceColor couldn't override NO_COLOR.
+
+          WRONG order:
+          1. Check NO_COLOR → disable
+          2. Check FORCE_COLOR → enable (never reached if NO_COLOR set)
+
+          RIGHT order:
+          1. enabled: false → disable
+          2. FORCE_COLOR → enable (overrides NO_COLOR)
+          3. NO_COLOR → disable
+          4. enabled: true → enable
+          5. Default → enable
+
+          The key insight: FORCE_COLOR is meant to OVERRIDE NO_COLOR, so it must be
+          checked first in the resolution chain.
+
+      - type: "pattern"
+        summary: "Injectable ColorEnvironment for testable NO_COLOR detection"
+        detail: |
+          Instead of reading process.env directly, inject an environment detector:
+
+          ```typescript
+          interface ColorEnvironment {
+            isNoColorSet: () => boolean;
+            isForceColorSet: () => boolean;
+            supportsColor: () => boolean;
+          }
+
+          function createColorEnvironment(deps: {
+            getEnv: (name: string) => string | undefined;
+            isTTY?: () => boolean;
+          }): ColorEnvironment
+          ```
+
+          This allows tests to inject mock environments without touching process.env:
+          ```typescript
+          const env = createColorEnvironment({
+            getEnv: (name) => name === 'NO_COLOR' ? '1' : undefined,
+          });
+          ```
+
+      - type: "pattern"
+        summary: "Use discriminated unions for color specifications"
+        detail: |
+          For a ColorSpec that can be named colors, 256-color, RGB, or hex:
+
+          ```typescript
+          type Ansi256Color = { readonly type: '256'; readonly index: number };
+          type RgbColor = { readonly type: 'rgb'; readonly r: number; readonly g: number; readonly b: number };
+          type HexColor = { readonly type: 'hex'; readonly value: string };
+          type ColorSpec = AnsiColorName | Ansi256Color | RgbColor | HexColor;
+          ```
+
+          The `type` discriminant allows type-safe handling:
+          ```typescript
+          if (typeof spec === 'string') { /* named color */ }
+          else if (spec.type === '256') { /* 256-color */ }
+          else if (spec.type === 'rgb') { /* RGB */ }
+          else if (spec.type === 'hex') { /* hex */ }
+          ```
+
+      - type: "insight"
+        summary: "plan-writing skill produces thorough API designs"
+        detail: |
+          Invoking the plan-writing skill before implementation led to:
+          - Clear type hierarchy (ColorSpec, StyleDefinition, LoggerTheme, ColorConfig)
+          - Proper backward compatibility design (colors: boolean still works)
+          - Well-defined resolution order for color enablement
+          - Comprehensive test coverage plan
+
+          The "distinguished engineers reviewing" framing helps catch API design
+          issues before implementation.
+
+      - type: "pattern"
+        summary: "Export ANSI constants for app-level color consistency"
+        detail: |
+          Export ANSI constants from port-logger so apps don't duplicate them:
+
+          ```typescript
+          export const ANSI_COLORS: Record<AnsiColorName, string> = { ... };
+          export const ANSI_BG_COLORS: Record<AnsiColorName, string> = { ... };
+          export const ANSI_STYLES: Record<AnsiStyle, string> = { ... };
+          export const ANSI_RESET = '\x1b[0m';
+          ```
+
+          Apps can then import and use consistent color codes:
+          ```typescript
+          import { ANSI_COLORS, ANSI_RESET } from '@conveaux/port-logger';
+          console.log(`${ANSI_COLORS.blue}message${ANSI_RESET}`);
+          ```
+
+          This eliminates duplicate ANSI code definitions across the codebase.
