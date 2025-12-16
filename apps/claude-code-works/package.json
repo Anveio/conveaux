@@ -20,15 +20,13 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.1.0",
-    "@conveaux/contract-durable-storage": "*",
+    "@conveaux/contract-env": "*",
+    "@conveaux/contract-file-reader": "*",
     "@conveaux/contract-logger": "*",
-    "@conveaux/contract-instrumentation": "*",
-    "@conveaux/port-id": "*",
-    "@conveaux/port-instrumentation": "*",
+    "@conveaux/port-env": "*",
+    "@conveaux/port-file-reader": "*",
     "@conveaux/port-logger": "*",
     "@conveaux/port-outchannel": "*",
-    "@conveaux/port-random": "*",
-    "@conveaux/port-wall-clock": "*",
     "commander": "^12.1.0"
   },
   "devDependencies": {

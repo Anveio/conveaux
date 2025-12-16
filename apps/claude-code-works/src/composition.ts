@@ -1,23 +1,22 @@
 /**
- * Composition Root
+ * Composition Root (Simplified)
  *
- * Wires up all dependencies for the harness.
- * This is the only place where platform globals (Date, process, crypto) are accessed.
+ * Minimal dependency wiring for the harness.
+ * Loads environment variables from .env files before Agent SDK runs.
  */
 
-import * as crypto from 'node:crypto';
-import type { DurableStorage } from '@conveaux/contract-durable-storage';
-import type { Instrumenter } from '@conveaux/contract-instrumentation';
+import { join } from 'node:path';
+import type { Env } from '@conveaux/contract-env';
 import type { Logger } from '@conveaux/contract-logger';
-import { createTraceIdGenerator } from '@conveaux/port-id';
-import { createInstrumenter } from '@conveaux/port-instrumentation';
+import {
+  createDotEnvSource,
+  createEnv,
+  createShellEnvSource,
+  createStaticEnvSource,
+} from '@conveaux/port-env';
+import { createNodeFileReader } from '@conveaux/port-file-reader';
 import { createColorEnvironment, createLogger, createPrettyFormatter } from '@conveaux/port-logger';
 import { createOutChannel } from '@conveaux/port-outchannel';
-import { createRandom } from '@conveaux/port-random';
-import { createWallClock } from '@conveaux/port-wall-clock';
-
-import { type HumanInputStore, createHumanInputStore } from './human-input-store/index.js';
-import { createNodeSqliteStorage } from './storage/node-sqlite-adapter.js';
 
 /**
  * Runtime dependencies wired at composition time.
@@ -25,14 +24,10 @@ import { createNodeSqliteStorage } from './storage/node-sqlite-adapter.js';
 export interface RuntimeDeps {
   /** Structured logger for all output */
   readonly logger: Logger;
-  /** Instrumenter for tracing and timing */
-  readonly instrumenter: Instrumenter;
   /** Project root directory */
   readonly projectRoot: string;
-  /** Durable storage for learnings (optional) */
-  readonly storage?: DurableStorage;
-  /** Human input store for capturing human messages (optional) */
-  readonly humanInputStore?: HumanInputStore;
+  /** Environment variable resolver */
+  readonly env: Env;
 }
 
 /**
@@ -45,85 +40,97 @@ export interface CompositionOptions {
   readonly logLevel?: 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
   /** Enable colors in output (default: auto-detect) */
   readonly colors?: boolean;
-  /** Path to SQLite storage file (default: projectRoot/.claude/learnings.db) */
-  readonly storagePath?: string;
-  /** Disable storage (for testing or when not needed) */
-  readonly disableStorage?: boolean;
 }
 
 /**
- * Create all runtime dependencies.
+ * Load environment from .env files and merge into process.env.
  *
- * This is the composition root - the only place where platform primitives
- * (Date, process, crypto) are accessed directly.
- *
- * @param options - Configuration options
- * @returns Fully wired runtime dependencies
+ * Priority (highest wins):
+ * 1. Shell environment (process.env)
+ * 2. .env.local (local overrides, git-ignored)
+ * 3. .env (shared defaults)
  */
-export function createRuntimeDeps(options: CompositionOptions): RuntimeDeps {
-  const { projectRoot, logLevel = 'info', colors } = options;
+async function loadEnv(projectRoot: string): Promise<Env> {
+  const fileReader = createNodeFileReader();
 
-  // Create platform primitives
-  const clock = createWallClock({ Date });
-  const channel = createOutChannel(process.stderr);
-  const random = createRandom({
-    randomBytes: (size) => {
-      const buffer = crypto.randomBytes(size);
-      return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  // Create sources with appropriate priorities
+  const shellSource = createShellEnvSource(
+    { getEnv: (name) => process.env[name] },
+    { name: 'shell', priority: 100 }
+  );
+
+  // .env.local takes priority over .env (like Next.js/Vite)
+  const dotEnvLocalSource = await createDotEnvSource(
+    { fileReader },
+    { path: join(projectRoot, '.env.local'), name: 'dotenv:local', priority: 50 }
+  );
+
+  const dotEnvSource = await createDotEnvSource(
+    { fileReader },
+    { path: join(projectRoot, '.env'), name: 'dotenv', priority: 40 }
+  );
+
+  // Defaults for required vars
+  const defaultsSource = createStaticEnvSource(
+    {
+      LOG_LEVEL: 'info',
     },
+    { name: 'defaults', priority: 0 }
+  );
+
+  const env = createEnv({
+    sources: [shellSource, dotEnvLocalSource, dotEnvSource, defaultsSource],
   });
 
-  // Create color environment for NO_COLOR/FORCE_COLOR support
+  // Merge .env values into process.env so Agent SDK can see them
+  // (Agent SDK reads ANTHROPIC_API_KEY directly from process.env)
+  const apiKey = env.get('ANTHROPIC_API_KEY');
+  if (apiKey && !process.env.ANTHROPIC_API_KEY) {
+    process.env.ANTHROPIC_API_KEY = apiKey;
+  }
+
+  return env;
+}
+
+/**
+ * Create runtime dependencies.
+ *
+ * @param options - Configuration options
+ * @returns Runtime dependencies (logger + projectRoot + env)
+ */
+export async function createRuntimeDeps(options: CompositionOptions): Promise<RuntimeDeps> {
+  const { projectRoot, logLevel = 'info', colors } = options;
+
+  // Load environment first (merges .env files into process.env)
+  const env = await loadEnv(projectRoot);
+
+  // Validate required environment variables
+  const apiKey = env.get('ANTHROPIC_API_KEY');
+  if (!apiKey) {
+    throw new Error(
+      'ANTHROPIC_API_KEY not found.\n\n' +
+        'Set it via:\n' +
+        '  1. Shell: export ANTHROPIC_API_KEY=sk-ant-...\n' +
+        '  2. .env.local file: ANTHROPIC_API_KEY=sk-ant-...\n' +
+        '  3. .env file: ANTHROPIC_API_KEY=sk-ant-...'
+    );
+  }
+
+  const channel = createOutChannel(process.stderr);
   const colorEnv = createColorEnvironment({
     getEnv: (name) => process.env[name],
     isTTY: () => process.stderr.isTTY ?? false,
   });
 
-  // Create logger with pretty formatter
   const logger = createLogger({
     Date,
     channel,
-    clock,
+    clock: { nowMs: () => Date.now() },
     options: {
       minLevel: logLevel,
-      formatter: createPrettyFormatter({
-        colors,
-        colorEnv,
-      }),
+      formatter: createPrettyFormatter({ colors, colorEnv }),
     },
   });
 
-  // Create trace ID generator for instrumentation
-  const ids = createTraceIdGenerator({ random });
-
-  // Create instrumenter
-  const instrumenter = createInstrumenter(
-    {
-      Date,
-      logger,
-      clock,
-      ids,
-    },
-    {
-      baseContext: {
-        component: 'claude-code-works',
-      },
-    }
-  );
-
-  // Create durable storage (optional)
-  const storage = options.disableStorage
-    ? undefined
-    : createNodeSqliteStorage(options.storagePath ?? `${projectRoot}/.claude/learnings.db`);
-
-  // Create human input store if storage is available
-  const humanInputStore = storage ? createHumanInputStore({ storage }) : undefined;
-
-  return {
-    logger,
-    instrumenter,
-    projectRoot,
-    storage,
-    humanInputStore,
-  };
+  return { logger, projectRoot, env };
 }

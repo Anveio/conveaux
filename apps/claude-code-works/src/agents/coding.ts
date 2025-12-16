@@ -33,12 +33,18 @@ git log --oneline -10
 \`\`\`
 
 ### Step 2: Pick Next Feature
-Read feature-list.json and find the first feature with status "pending":
+Read feature-list.json and find the first feature with:
+- status "pending"
+- retryCount < 3 (skip features that have been attempted 3+ times)
+
 \`\`\`bash
 cat feature-list.json
 \`\`\`
 
-If no pending features, output FEATURE_BLOCKED and stop.
+If no eligible features (all are completed, blocked, or retry exhausted), output:
+\`\`\`
+FEATURE_BLOCKED:id=none:reason=No eligible features remaining
+\`\`\`
 
 ### Step 3: Run Health Check
 Execute the init script if it exists:
@@ -88,15 +94,17 @@ Update feature-list.json to mark the feature as "completed".
 
 ## Output Signals
 
-**On success:**
+**On success (include impact for gatekeeper routing):**
 \`\`\`
-FEATURE_READY:id=<feature_id>
+FEATURE_READY:id=<feature_id>:impact=<high|medium|low>
 \`\`\`
 
 **If blocked after 3 attempts:**
 \`\`\`
 FEATURE_BLOCKED:id=<feature_id>:reason=<explanation>
 \`\`\`
+
+Note: LOW impact features skip the Reviewer agent and are auto-approved.
 
 ## Constraints
 - Work on ONE feature only
