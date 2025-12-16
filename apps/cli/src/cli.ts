@@ -9,6 +9,7 @@ import {
 } from '@conveaux/chatgpt-share';
 import { ConveauxError } from '@conveaux/port-control-flow';
 import { createEphemeralScheduler } from '@conveaux/port-ephemeral-scheduler';
+import { createHtmlParser } from '@conveaux/port-html-parser';
 import { createLogger, createPrettyFormatter } from '@conveaux/port-logger';
 import { createOutChannel } from '@conveaux/port-outchannel';
 import { createWallClock } from '@conveaux/port-wall-clock';
@@ -32,8 +33,9 @@ const scheduler = createEphemeralScheduler({
   setInterval: globalThis.setInterval,
   clearInterval: globalThis.clearInterval,
 });
+const htmlParser = createHtmlParser();
 const fetchDeps = { AbortController, scheduler };
-const parseDeps = { Date };
+const parseDeps = { Date, htmlParser };
 
 const program = new Command();
 
