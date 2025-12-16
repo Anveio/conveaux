@@ -5,6 +5,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { getAppEnv } from './env';
 import { output } from './output';
 import { executeTool, getToolDefinitions } from './tools';
 import { getErrorMessage, isRecord } from './type-guards';
@@ -37,7 +38,8 @@ export interface AgentResult {
  * Run the agent with a given task.
  */
 export async function runAgent(task: string, config: AgentConfig): Promise<AgentResult> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const env = await getAppEnv();
+  const apiKey = env.get('ANTHROPIC_API_KEY');
   if (!apiKey) {
     return {
       success: false,

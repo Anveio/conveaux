@@ -6,6 +6,7 @@ import { exec } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import { getAppEnv } from '../env';
 import { output } from '../output';
 
 const execAsync = promisify(exec);
@@ -31,7 +32,7 @@ export async function runStatus(): Promise<void> {
   await showVerificationStatus(projectRoot);
 
   // Config status
-  showConfigStatus(projectRoot);
+  await showConfigStatus(projectRoot);
 }
 
 async function showGitStatus(projectRoot: string): Promise<void> {
@@ -150,7 +151,7 @@ async function showVerificationStatus(projectRoot: string): Promise<void> {
   output.dim('  Run ./verify.sh --ui=false to check status');
 }
 
-function showConfigStatus(projectRoot: string): void {
+async function showConfigStatus(projectRoot: string): Promise<void> {
   output.info('\nConfiguration:');
 
   const configPath = join(projectRoot, '.claude-code-works.json');
@@ -168,6 +169,7 @@ function showConfigStatus(projectRoot: string): void {
     output.dim('  Config file: not found (using defaults)');
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const env = await getAppEnv();
+  const apiKey = env.get('ANTHROPIC_API_KEY');
   output.dim(`  ANTHROPIC_API_KEY: ${apiKey ? 'set' : 'NOT SET'}`);
 }

@@ -20,6 +20,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.0",
+    "@conveaux/port-env": "*",
+    "@conveaux/port-file-reader": "*",
     "@conveaux/port-logger": "*",
     "@conveaux/port-outchannel": "*",
     "@conveaux/port-wall-clock": "*",
