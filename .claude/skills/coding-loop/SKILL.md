@@ -9,19 +9,14 @@ Trust is earned, not assumed.
 
 ## Context: Where Coding-Loop Fits
 
-This skill operates within **RSID Loop 2 (Execution)**:
+This skill operates within the **Execute** stage of RSID:
 
 ```
-RSID Loop 0: Post-Merge Reflection
-    ↓
-RSID Loop 1: Idea Generation
-    ↓
-RSID Loop 2: Execution ← YOU ARE HERE (coding-loop)
-    ↓
-(back to Loop 0 after merge)
+USER-DRIVEN:    Listen → Execute ← YOU ARE HERE → Reflect
+AUTONOMOUS:     Ideate → Execute ← YOU ARE HERE → Reflect
 ```
 
-After completing this loop (PR merged), invoke **rsid** skill to record learnings before starting the next task.
+After completing Execute (PR merged), invoke **rsid** skill to Reflect and record learnings.
 
 ## The Principle
 

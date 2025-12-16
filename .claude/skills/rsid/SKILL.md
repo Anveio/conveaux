@@ -1,60 +1,96 @@
 ---
 name: rsid
-description: Recursive Self-Improvement Design pattern with concentric loops. Use after merging code to reflect, record memories, and generate next improvement. Invoke automatically post-merge or when consolidating learnings into skills.
+description: Recursive Self-Improvement Design pattern. Two modes - user-driven (Listen→Execute→Reflect) and autonomous (Ideate→Execute→Reflect). Invoke after merging to reflect, or when consolidating learnings into skills.
 ---
 
 # RSID: Recursive Self-Improvement Design
 
 **Each iteration leaves the system better than before.**
 
-## The Concentric Loop Model
+## The Two-Mode Cycle
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│ LOOP 0: POST-MERGE REFLECTION (automatic, after every merge)            │
-│                                                                         │
-│   Inputs: Session history, errors encountered, corrections made         │
-│   Process:                                                              │
-│     1. Review what was learned during the task                          │
-│     2. Write memories to memory.yaml (task, context, learnings)         │
-│     3. Identify improvement candidates for next iteration               │
-│   Outputs: Updated memory.yaml + improvement candidates                 │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    ↓
-┌─────────────────────────────────────────────────────────────────────────┐
-│ LOOP 1: IDEA GENERATION (autonomous, fed by reflection)                 │
-│                                                                         │
-│   Inputs: memory.yaml, existing skills, patterns that recur             │
-│   Process:                                                              │
-│     1. Scan memory.yaml for patterns (3+ similar learnings)             │
-│     2. Prioritize improvement candidates by impact                      │
-│     3. If skill update needed: Consolidate memories → update skill      │
-│     4. If code change needed: Define implementation scope               │
-│   Outputs: Next task definition OR skill update                         │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    ↓
-┌─────────────────────────────────────────────────────────────────────────┐
-│ LOOP 2: EXECUTION (plan-writing + coding-patterns apply here)           │
-│                                                                         │
-│   PLAN → IMPLEMENT → VERIFY → DECIDE → MERGE                            │
-│                                                                         │
-│   Skills that apply:                                                    │
-│   - plan-writing: Rigorous plans for distinguished engineer audience    │
-│   - coding-patterns: Hexagonal architecture, contracts, ports           │
-│   - verification-pipeline: ./verify.sh gates                            │
-│   - effective-git: Atomic commits, PR discipline                        │
-│   - tsc-reviewer (agent): Review before merge                           │
-│                                                                         │
-└─────────────────────────────────────────────────────────────────────────┘
-                                    ↓
-                          (back to LOOP 0 after merge)
+USER-DRIVEN MODE:
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│   LISTEN ──────► EXECUTE ──────► REFLECT                             │
+│   (receive        (plan,          (capture                           │
+│    task)          implement,       learnings)                        │
+│                   verify,                                            │
+│                   merge)                                             │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼ (patterns accumulate)
+AUTONOMOUS MODE:
+┌──────────────────────────────────────────────────────────────────────┐
+│                                                                      │
+│   ┌──► IDEATE ──────► EXECUTE ──────► REFLECT ───┐                   │
+│   │    (generate       (implement      (capture   │                   │
+│   │     next task       improvement)    learnings)│                   │
+│   │     from patterns)                            │                   │
+│   └───────────────────────────────────────────────┘                   │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-## Loop 0: Post-Merge Reflection
+## The Four Stages
 
-**Trigger**: Automatic after every successful merge to main.
+| Stage | Trigger | Purpose |
+|-------|---------|---------|
+| **Listen** | User provides task | Receive and understand instructions |
+| **Execute** | Task defined | Plan, implement, verify, merge |
+| **Reflect** | After merge | Capture learnings to memory.yaml |
+| **Ideate** | Patterns recur 3+ times | Generate next improvement task |
+
+---
+
+## Listen
+
+**Trigger**: User provides a task.
+
+**Purpose**: Understand what needs to be done before acting.
+
+This is the entry point for user-driven work. Skills that apply:
+- Read the task carefully
+- Ask clarifying questions if needed
+- Invoke **plan-writing** if non-trivial
+
+---
+
+## Execute
+
+**Trigger**: Task is defined (from Listen or Ideate).
+
+**Purpose**: Implement with full rigor.
+
+### Skills That Apply
+
+| Skill | When It Applies |
+|-------|-----------------|
+| **plan-writing** | Always—rigorous plans for distinguished engineers |
+| **coding-patterns** | When writing TypeScript, contracts, ports |
+| **verification-pipeline** | Always—./verify.sh must pass |
+| **effective-git** | Always—atomic commits, PR discipline |
+| **tsc-reviewer** (agent) | Always—review before merge |
+
+### Execution Flow
+
+```
+1. Plan the implementation (invoke plan-writing)
+2. Implement with patterns (invoke coding-patterns if applicable)
+3. Verify (./verify.sh --ui=false)
+4. Create PR with atomic commits (invoke effective-git)
+5. Review (spawn tsc-reviewer agent)
+6. Merge to main
+7. → Reflect
+```
+
+---
+
+## Reflect
+
+**Trigger**: After every successful merge to main.
 
 **Purpose**: Capture what was learned before context is lost.
 
@@ -110,13 +146,13 @@ The agent will:
 4. Archive all processed memories (clearing memory.yaml)
 5. Only merge after TSC approval
 
-**Important:** Do NOT manually commit memory.yaml if spawning the agent. Let the agent
-handle the full commit including archival. The agent ensures all processed memories
-are moved to memory-archive.yaml.
+**Important:** Do NOT manually commit memory.yaml if spawning the agent. Let the agent handle the full commit including archival.
 
-## Loop 1: Idea Generation
+---
 
-**Trigger**: After Loop 0 completes, or explicitly when reviewing memory.yaml.
+## Ideate
+
+**Trigger**: After Reflect, when patterns accumulate (3+ similar learnings).
 
 **Purpose**: Turn accumulated learnings into actionable improvements.
 
@@ -158,33 +194,14 @@ archived:
         # ... original memory entry
 ```
 
-## Loop 2: Execution
+### Output
 
-**Trigger**: When Loop 1 produces a task definition.
+Ideate produces one of:
+- **Skill update** → Execute the update, then Reflect
+- **Code change** → Execute the implementation, then Reflect
+- **Nothing** → Wait for more patterns to accumulate
 
-**Purpose**: Implement the improvement with full rigor.
-
-### Skills That Apply
-
-| Skill | When It Applies |
-|-------|-----------------|
-| **plan-writing** | Always—rigorous plans for distinguished engineers |
-| **coding-patterns** | When writing TypeScript, contracts, ports |
-| **verification-pipeline** | Always—./verify.sh must pass |
-| **effective-git** | Always—atomic commits, PR discipline |
-| **tsc-reviewer** (agent) | Always—review before merge |
-
-### Execution Flow
-
-```
-1. Plan the implementation (invoke plan-writing)
-2. Implement with patterns (invoke coding-patterns if applicable)
-3. Verify (./verify.sh --ui=false)
-4. Create PR with atomic commits (invoke effective-git)
-5. Review (spawn tsc-reviewer agent)
-6. Merge to main
-7. → Loop 0 (reflection)
-```
+---
 
 ## Memory Schema
 
@@ -209,15 +226,7 @@ memories:
         detail: string    # Required: Full explanation with examples
 ```
 
-### Memory Types
-
-| Type | Description | Example Summary |
-|------|-------------|-----------------|
-| `command-correction` | Command failed, found fix | "Heredocs fail in sandbox" |
-| `q-and-a` | Question answered durably | "Where skills are stored" |
-| `misconception` | Belief corrected | "PR creation ≠ completion" |
-| `pattern` | Reusable pattern | "Data contracts have no methods" |
-| `insight` | Non-obvious realization | "Sandbox restricts /tmp writes" |
+---
 
 ## Integration with Other Skills
 
@@ -225,8 +234,8 @@ memories:
 
 ```
 RSID (this skill)
-├── memory-consolidation (Loop 1: pattern detection and skill updates)
-└── plan-writing (Loop 2: rigorous plans)
+├── memory-consolidation (Ideate: pattern detection and skill updates)
+└── plan-writing (Execute: rigorous plans)
     └── coding-loop (execution coordination)
         └── coding-patterns (architectural guidance)
             └── effective-git (commit discipline)
@@ -237,43 +246,47 @@ RSID (this skill)
 
 | Situation | Invoke |
 |-----------|--------|
-| After merge to main | **rsid** (this skill) for reflection |
-| Patterns recurring 3+ times | **memory-consolidation** for skill updates |
-| Starting new implementation | **plan-writing** for rigorous planning |
-| During execution | **coding-loop** for gates and verification |
+| After merge to main | **rsid** (this skill) for Reflect |
+| Patterns recurring 3+ times | **memory-consolidation** for Ideate |
+| Starting new implementation | **plan-writing** for Execute planning |
+| During implementation | **coding-loop** for gates and verification |
 | Writing TypeScript code | **coding-patterns** for architecture |
 | Before committing | **effective-git** for commit discipline |
 | Before merging PR | **tsc-reviewer** (agent) for verification |
 
+---
+
 ## Anti-Patterns
 
-### Skipping Reflection
+### Skipping Reflect
 
 **Wrong:** Merge and move on without recording learnings.
 
-**Right:** Every merge triggers Loop 0. Memories are the fuel for improvement.
+**Right:** Every merge triggers Reflect. Memories fuel improvement.
 
-### Memory Without Consolidation
+### Memory Without Ideate
 
-**Wrong:** memory.yaml grows indefinitely without updating skills.
+**Wrong:** memory.yaml grows indefinitely without generating tasks.
 
-**Right:** When patterns recur 3+ times, consolidate into skills.
+**Right:** When patterns recur 3+ times, Ideate generates the next improvement.
 
-### Reflection Without Action
+### Reflect Without Action
 
-**Wrong:** Record memories but never generate tasks from them.
+**Wrong:** Record memories but never Ideate from them.
 
-**Right:** Loop 1 scans memory and produces actionable improvements.
+**Right:** Ideate scans memory and produces actionable improvements.
 
-### Breaking the Loop
+### Breaking the Cycle
 
-**Wrong:** Do Loop 2 (execution) without Loop 0 (reflection) afterward.
+**Wrong:** Execute without Reflect afterward.
 
-**Right:** Every merge feeds back into reflection. The loop is continuous.
+**Right:** Every merge feeds back into Reflect. The cycle is continuous.
+
+---
 
 ## Quick Reference
 
-### Post-Merge Checklist
+### Post-Merge Checklist (Reflect)
 
 ```
 [ ] Review session for learnings
@@ -298,6 +311,8 @@ RSID (this skill)
         Evidence: How I discovered this
 ```
 
+---
+
 ## The Invariant
 
 **Every session should leave the system better than it found it.**
@@ -308,4 +323,4 @@ This means:
 - Patterns consolidated into skills when threshold reached
 - Next improvement identified
 
-The loop never stops. Each iteration compounds.
+The cycle never stops. Each iteration compounds.
