@@ -1,0 +1,424 @@
+archived:
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: single occurrence, task-specific vitest config pattern"
+    sections_added: []
+    memories:
+      - task: "vitest-configs-coverage"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Port packages with tests need vitest.config.ts with 100% coverage"
+        detail: |
+          Every port package that has tests (*.test.ts files) should have its own
+          vitest.config.ts that enforces 100% coverage thresholds:
+          - lines: 100
+          - functions: 100
+          - branches: 100
+          - statements: 100
+
+      - task: "vitest-configs-coverage"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "Find test files first, then check for missing vitest configs"
+        detail: |
+          When auditing test coverage configs:
+          1. Find all test files: find packages -name "*.test.ts"
+          2. Find all vitest configs: packages/*/vitest.config.ts
+          3. Diff to find packages with tests but no config
+
+      - task: "vitest-configs-coverage"
+        date: "2025-12-15"
+        type: "command-correction"
+        summary: "git reset --hard origin/main to resolve divergent branches"
+        detail: |
+          When local main diverges from origin/main after a PR merge, use:
+          git reset --hard origin/main
+          This discards local unpushed commits and aligns with the merged state.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: single occurrence, npm cache workaround"
+    sections_added: []
+    memories:
+      - task: "vitest-4.0.15-upgrade"
+        date: "2025-12-15"
+        type: "command-correction"
+        summary: "Use npm registry curl when npm view fails with permission errors"
+        detail: |
+          When npm view fails due to cache permission errors, use curl directly:
+          curl -s https://registry.npmjs.org/vitest/latest | grep -o '"version":"[^"]*"'
+
+      - task: "vitest-4.0.15-upgrade"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Keep @vitest/coverage-v8 version in sync with vitest"
+        detail: |
+          When updating vitest, ensure @vitest/coverage-v8 is updated to the same
+          version. These packages are released together and should match.
+
+      - task: "vitest-4.0.15-upgrade"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "Major vitest upgrades (2-4) work smoothly for basic test setups"
+        detail: |
+          Vitest major version upgrades from v2/v3 to v4 required no changes to test
+          code. The 242 tests across 8 packages all passed without modification.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: task-specific knip and package-lock patterns"
+    sections_added: []
+    memories:
+      - task: "feat/doctor-stage"
+        date: "2025-12-15"
+        type: "command-correction"
+        summary: "Use knip --dependencies to avoid removing exports"
+        detail: |
+          WRONG: knip --fix - removes all unused exports, breaking the codebase
+          RIGHT: knip --fix --dependencies - only handles dependency issues
+
+      - task: "feat/doctor-stage"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Keep knip as a devDependency of validation-pipeline, not root"
+        detail: |
+          knip is a validation concern, not a project-wide tooling concern.
+          Placing it in apps/validation-pipeline/package.json keeps responsibilities clear.
+
+      - task: "feat/doctor-stage"
+        date: "2025-12-15"
+        type: "command-correction"
+        summary: "Use main's package-lock.json when npm install breaks types"
+        detail: |
+          When vitest types break, the issue is often a package-lock.json mismatch. Fix by:
+          rm -rf node_modules package-lock.json
+          git checkout main -- package-lock.json
+          npm install
+
+      - task: "feat/doctor-stage"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Add shell-script-only dependencies to knip ignoreDependencies"
+        detail: |
+          Dependencies used only in shell scripts won't be detected by knip's
+          TypeScript analysis. Add them to knip.json ignoreDependencies.
+
+      - task: "feat/doctor-stage"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "Headless reporter should output errors for failed stages"
+        detail: |
+          The headless reporter was only outputting PASS/FAIL without error details.
+          Added error output to reportStageResult to show what actually failed.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: already documented in coding-patterns skill"
+    sections_added: []
+    memories:
+      - task: "feat/control-flow-package"
+        date: "2025-12-15"
+        type: "misconception"
+        summary: "Contract packages must have NO runtime code - not even error classes"
+        detail: |
+          WRONG: Putting error classes, helper functions, constants in contract packages
+          RIGHT: Contracts contain ONLY TypeScript types, interfaces, type aliases
+          The rule from coding-patterns: "If it emits JavaScript, it doesn't belong in a contract."
+
+      - task: "feat/control-flow-package"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Use 'declare const' for symbols in contracts to define type without value"
+        detail: |
+          When a contract needs to reference a symbol, use TypeScript's ambient declaration.
+          This allows the contract to define the type while the port provides the implementation.
+
+      - task: "feat/control-flow-package"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Use timestamps (number) instead of Date objects in contracts"
+        detail: |
+          For FetchError.rateLimited(), accept the timestamp directly as a number.
+          Callers with access to a clock port compute: nowMs + delaySeconds * 1000.
+          This keeps the contract hermetic (no global Date usage).
+
+      - task: "feat/control-flow-package"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "tsc-reviewer subagent provides thorough automated review"
+        detail: |
+          The tsc-reviewer subagent performed a comprehensive review covering architecture,
+          security, correctness, maintainability, and type safety.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: single occurrence, package consolidation guidance"
+    sections_added: []
+    memories:
+      - task: "feat/consolidate-error-into-control-flow"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "When consolidating, check for API signature differences"
+        detail: |
+          The FetchError constructor changed from positional to options object.
+          All call sites must be updated when migrating to a new API.
+
+      - task: "feat/consolidate-error-into-control-flow"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "Abstract base classes still work for instanceof checks"
+        detail: |
+          ConveauxError changed from a concrete class to an abstract class.
+          Abstract classes can serve as instanceof targets for their subclasses.
+
+      - task: "feat/consolidate-error-into-control-flow"
+        date: "2025-12-15"
+        type: "q-and-a"
+        summary: "When to consolidate vs keep separate packages"
+        detail: |
+          Consolidate when one package is a strict superset of another,
+          the separate package adds no unique value, or consolidation simplifies
+          the dependency graph.
+
+      - task: "feat/consolidate-error-into-control-flow"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "Exit codes could improve CLI error handling"
+        detail: |
+          The CLI could leverage ConveauxError.exitCode instead of always using
+          process.exit(1). This is a follow-up improvement opportunity.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: single task, color configuration patterns"
+    sections_added: []
+    memories:
+      - task: "feat/logger-color-config"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "FORCE_COLOR must be checked before NO_COLOR in resolution order"
+        detail: |
+          FORCE_COLOR is meant to OVERRIDE NO_COLOR, so it must be checked first.
+
+      - task: "feat/logger-color-config"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Injectable ColorEnvironment for testable NO_COLOR detection"
+        detail: |
+          Instead of reading process.env directly, inject an environment detector.
+          This allows tests to inject mock environments without touching process.env.
+
+      - task: "feat/logger-color-config"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Use discriminated unions for color specifications"
+        detail: |
+          For ColorSpec supporting named colors, 256-color, RGB, or hex,
+          use a type discriminant for type-safe handling.
+
+      - task: "feat/logger-color-config"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "plan-writing skill produces thorough API designs"
+        detail: |
+          Invoking the plan-writing skill before implementation led to clear type
+          hierarchy, proper backward compatibility, and comprehensive test coverage.
+
+      - task: "feat/logger-color-config"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Export ANSI constants for app-level color consistency"
+        detail: |
+          Export ANSI constants from port-logger so apps don't duplicate them.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: single task, env package patterns"
+    sections_added: []
+    memories:
+      - task: "feat/env-package"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Three-state override semantics are reusable for env var sources"
+        detail: |
+          undefined: Key not present in source, fall through to lower priority
+          null: Explicitly unset, shadow lower sources (return empty string)
+          string: Override value
+          Use Object.hasOwn() to distinguish "key not present" from "key set to undefined".
+
+      - task: "feat/env-package"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Priority-based resolution with immutable source composition"
+        detail: |
+          Sources are registered at factory creation time (immutable composition).
+          The factory sorts sources by priority (descending) at creation time.
+          First source to return a defined value wins.
+
+      - task: "feat/env-package"
+        date: "2025-12-15"
+        type: "command-correction"
+        summary: "Heredocs in git commit fail in sandbox - use dangerouslyDisableSandbox"
+        detail: |
+          Git commits using heredoc syntax fail in sandbox because heredocs require
+          creating temp files. Use dangerouslyDisableSandbox: true.
+
+      - task: "feat/env-package"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "Explore agents provide comprehensive pattern analysis for planning"
+        detail: |
+          Launching parallel Explore agents before planning produced complete inventory
+          of all contract/port packages and existing patterns.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: already documented in coding-patterns skill (vitest fake timers)"
+    sections_added: []
+    memories:
+      - task: "feat/ephemeral-scheduler"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Use vi.useFakeTimers() instead of inline fake timer implementations"
+        detail: |
+          Vitest's fake timers work perfectly with real globalThis functions.
+          Simpler tests, vitest handles edge cases, consistent with other tests.
+
+      - task: "feat/ephemeral-scheduler"
+        date: "2025-12-15"
+        type: "command-correction"
+        summary: "Biome errors go to stderr - combine stdout+stderr for lint output"
+        detail: |
+          When lint stage fails, combine both stdout and stderr when capturing output.
+          Biome outputs error details to stderr while summary goes to stdout.
+
+      - task: "feat/ephemeral-scheduler"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Use Record<string, never> for empty object types"
+        detail: |
+          Biome's noBannedTypes rule flags empty object types.
+          Record<string, never> explicitly states "an object with no properties".
+
+      - task: "feat/ephemeral-scheduler"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "Keep AbortController and Scheduler as separate concerns"
+        detail: |
+          EphemeralScheduler handles time-based scheduling (when to execute).
+          AbortController handles cancellation signaling (how to abort).
+          Composition of simple abstractions is better than one complex one.
+
+      - task: "feat/ephemeral-scheduler"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Extract Biome error patterns for structured lint output"
+        detail: |
+          Biome outputs errors in format: ./path/to/file.ts:line:col rule_name message
+          Extract these with regex for structured reporting.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: task-specific HTML parser patterns"
+    sections_added: []
+    memories:
+      - task: "feat/zero-dep-html-parser"
+        date: "2025-12-15"
+        type: "command-correction"
+        summary: "ID selector regex must allow underscore at start for HTML5 IDs"
+        detail: |
+          HTML5 IDs like __NEXT_DATA__ start with underscores.
+          CSS selectors allow IDs to start with letters, underscores, or hyphens.
+
+      - task: "feat/zero-dep-html-parser"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Use charAt() instead of bracket access for string indexing in strict TS"
+        detail: |
+          charAt() returns empty string for out-of-bounds (not undefined).
+          This avoids the need for explicit null checks on every character access.
+
+      - task: "feat/zero-dep-html-parser"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "Raw content tags need special tokenizer handling"
+        detail: |
+          Tags like script, style, textarea, and title contain raw text that
+          should NOT be tokenized as HTML.
+
+      - task: "feat/zero-dep-html-parser"
+        date: "2025-12-15"
+        type: "insight"
+        summary: "Zero-dependency HTML parsers are feasible for targeted use cases"
+        detail: |
+          For chatgpt-share, only getElementById and innerHTML were needed.
+          A custom parser (~500 lines) replaced Cheerio entirely.
+
+      - task: "feat/zero-dep-html-parser"
+        date: "2025-12-15"
+        type: "pattern"
+        summary: "HTML entity decoding only needs basics for JSON-in-script scenarios"
+        detail: |
+          HTML5 defines 2,231 named entities, but JSON content only uses basics.
+          The implementation can grow to support more entities when needed.
+
+      - task: "feat/zero-dep-html-parser"
+        date: "2025-12-15"
+        type: "misconception"
+        summary: "Cheerio wrappers are not the path to zero dependencies"
+        detail: |
+          WRONG: Create a CheerioBackend adapter to abstract over Cheerio
+          RIGHT: Build custom tokenizer and DOM builder from scratch
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: single task, autonomous agent operation patterns"
+    sections_added: []
+    memories:
+      - task: "feat/ccw-autonomous-operation"
+        date: "2025-12-16"
+        type: "pattern"
+        summary: "Agent SDK reads ANTHROPIC_API_KEY from process.env - merge .env values early"
+        detail: |
+          The Claude Agent SDK reads ANTHROPIC_API_KEY directly from process.env.
+          To support .env files, load them early and merge into process.env.
+          Priority order: shell > .env.local > .env > defaults
+
+      - task: "feat/ccw-autonomous-operation"
+        date: "2025-12-16"
+        type: "command-correction"
+        summary: "WallClock interface uses nowMs() not now()"
+        detail: |
+          The @conveaux/contract-wall-clock interface defines nowMs(), not now().
+
+      - task: "feat/ccw-autonomous-operation"
+        date: "2025-12-16"
+        type: "command-correction"
+        summary: "Logger LogContext expects Error objects, not strings"
+        detail: |
+          The LogContext type expects error to be an Error instance for proper
+          serialization. Passing a string causes type errors.
+
+      - task: "feat/ccw-autonomous-operation"
+        date: "2025-12-16"
+        type: "pattern"
+        summary: "Gatekeeper pattern: skip Reviewer for LOW impact features"
+        detail: |
+          Not all features need human/agent review. Use impact levels as a gate.
+          LOW impact features can be auto-approved to reduce latency and API costs.
+
+      - task: "feat/ccw-autonomous-operation"
+        date: "2025-12-16"
+        type: "pattern"
+        summary: "Consecutive blocks as session termination signal"
+        detail: |
+          Track consecutive failures separately from total failures.
+          3 consecutive blocks likely means systemic issue.
+
+      - task: "feat/ccw-autonomous-operation"
+        date: "2025-12-16"
+        type: "insight"
+        summary: "Stripping complexity is high-value refactoring"
+        detail: |
+          Removed ~1040 LOC while maintaining all necessary functionality.
+          Key question when stripping: "Does this actively enable the core use case?"
