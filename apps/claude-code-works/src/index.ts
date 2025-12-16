@@ -22,7 +22,7 @@ export { allTools, executeTool, getToolDefinitions } from './tools';
 export type { Tool, ToolDefinition } from './tools';
 
 // Output
-export { output } from './output';
+export { output, logger } from './output';
 
 // Config
 export { loadConfig, resolveConfig, DEFAULT_CONFIG, CONFIG_FILE_NAME } from './config';
