@@ -101,6 +101,18 @@ export interface RetryMetadata {
 export declare const EXIT_CODE: unique symbol;
 
 /**
+ * Type alias for EXIT_CODE symbol type.
+ * Use this in ports to avoid `typeof import()` syntax.
+ *
+ * @example
+ * ```typescript
+ * import type { ExitCodeSymbol } from '@conveaux/contract-control-flow';
+ * export const EXIT_CODE: ExitCodeSymbol = Symbol.for('conveaux.exitCode') as ExitCodeSymbol;
+ * ```
+ */
+export type ExitCodeSymbol = typeof EXIT_CODE;
+
+/**
  * Interface for errors with intrinsic exit codes.
  * Used for type narrowing and CLI boundary handling.
  */

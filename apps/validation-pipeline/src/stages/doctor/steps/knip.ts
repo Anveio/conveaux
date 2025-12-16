@@ -62,7 +62,7 @@ export const knipStep: DoctorStep = {
   description: 'Detect and remove unused exports and dependencies',
 
   async run(context: DoctorContext): Promise<DoctorStepResult> {
-    const startTime = Date.now();
+    const startTime = context.clock.nowMs();
 
     // Choose command based on fix mode
     // knip is a devDependency of validation-pipeline, use npx to invoke
@@ -70,7 +70,7 @@ export const knipStep: DoctorStep = {
     const command = context.shouldFix ? 'npx knip --fix --dependencies' : 'npx knip --dependencies';
 
     const result = await execCommand(command, context.projectRoot);
-    const durationMs = Date.now() - startTime;
+    const durationMs = context.clock.nowMs() - startTime;
 
     // Combine stdout and stderr for parsing
     const output = result.stdout + result.stderr;

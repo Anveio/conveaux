@@ -7,13 +7,21 @@
 
 import type { DateConstructor } from '@conveaux/contract-date';
 import type {
+  AnsiColorName,
+  AnsiStyle,
+  ColorConfig,
+  ColorEnvironment,
+  ColorSpec,
   Formatter,
   LogContext,
   LogEntry,
   LogLevel,
   Logger,
   LoggerOptions,
+  LoggerTheme,
   SerializedError,
+  StyleDefinition,
+  ThemeName,
 } from '@conveaux/contract-logger';
 import type { OutChannel } from '@conveaux/contract-outchannel';
 import type { WallClock } from '@conveaux/contract-wall-clock';
@@ -94,7 +102,7 @@ export const ANSI_RESET = '\x1b[0m';
 /**
  * ANSI escape code mappings for named foreground colors.
  */
-export const ANSI_COLORS: Record<import('@conveaux/contract-logger').AnsiColorName, string> = {
+export const ANSI_COLORS: Record<AnsiColorName, string> = {
   black: '\x1b[30m',
   red: '\x1b[31m',
   green: '\x1b[32m',
@@ -117,7 +125,7 @@ export const ANSI_COLORS: Record<import('@conveaux/contract-logger').AnsiColorNa
 /**
  * ANSI escape code mappings for background colors.
  */
-export const ANSI_BG_COLORS: Record<import('@conveaux/contract-logger').AnsiColorName, string> = {
+export const ANSI_BG_COLORS: Record<AnsiColorName, string> = {
   black: '\x1b[40m',
   red: '\x1b[41m',
   green: '\x1b[42m',
@@ -140,7 +148,7 @@ export const ANSI_BG_COLORS: Record<import('@conveaux/contract-logger').AnsiColo
 /**
  * ANSI escape codes for text styles.
  */
-export const ANSI_STYLES: Record<import('@conveaux/contract-logger').AnsiStyle, string> = {
+export const ANSI_STYLES: Record<AnsiStyle, string> = {
   bold: '\x1b[1m',
   dim: '\x1b[2m',
   italic: '\x1b[3m',
@@ -152,7 +160,7 @@ export const ANSI_STYLES: Record<import('@conveaux/contract-logger').AnsiStyle, 
 // Theme Definitions
 // =============================================================================
 
-type RequiredLoggerTheme = Required<import('@conveaux/contract-logger').LoggerTheme>;
+type RequiredLoggerTheme = Required<LoggerTheme>;
 
 /**
  * Default theme - matches original hardcoded behavior for backward compatibility.
@@ -208,10 +216,7 @@ export const MINIMAL_THEME: RequiredLoggerTheme = {
 /**
  * All preset themes mapped by name.
  */
-export const PRESET_THEMES: Record<
-  import('@conveaux/contract-logger').ThemeName,
-  RequiredLoggerTheme
-> = {
+export const PRESET_THEMES: Record<ThemeName, RequiredLoggerTheme> = {
   default: DEFAULT_THEME,
   'high-contrast': HIGH_CONTRAST_THEME,
   minimal: MINIMAL_THEME,
@@ -253,9 +258,7 @@ export interface ColorEnvironmentDeps {
  * });
  * ```
  */
-export function createColorEnvironment(
-  deps: ColorEnvironmentDeps
-): import('@conveaux/contract-logger').ColorEnvironment {
+export function createColorEnvironment(deps: ColorEnvironmentDeps): ColorEnvironment {
   return {
     isNoColorSet: () => deps.getEnv('NO_COLOR') !== undefined,
     isForceColorSet: () => {
@@ -273,10 +276,7 @@ export function createColorEnvironment(
 /**
  * Convert a ColorSpec to ANSI escape sequence.
  */
-function colorSpecToAnsi(
-  spec: import('@conveaux/contract-logger').ColorSpec,
-  isBackground: boolean
-): string {
+function colorSpecToAnsi(spec: ColorSpec, isBackground: boolean): string {
   if (typeof spec === 'string') {
     return isBackground ? ANSI_BG_COLORS[spec] : ANSI_COLORS[spec];
   }
@@ -322,10 +322,7 @@ function parseHexColor(hex: string): { r: number; g: number; b: number } | null 
 /**
  * Apply a StyleDefinition to text.
  */
-function applyStyle(
-  text: string,
-  style: import('@conveaux/contract-logger').StyleDefinition
-): string {
+function applyStyle(text: string, style: StyleDefinition): string {
   if (!(style.color || style.background || style.styles?.length)) {
     return text;
   }
@@ -408,7 +405,7 @@ export interface PrettyFormatterOptions {
    * Full color configuration.
    * Takes precedence over `colors` if both are specified.
    */
-  readonly colorConfig?: import('@conveaux/contract-logger').ColorConfig;
+  readonly colorConfig?: ColorConfig;
 
   /**
    * Color environment for NO_COLOR/FORCE_COLOR detection.
@@ -425,7 +422,7 @@ export interface PrettyFormatterOptions {
    * })
    * ```
    */
-  readonly colorEnv?: import('@conveaux/contract-logger').ColorEnvironment;
+  readonly colorEnv?: ColorEnvironment;
 }
 
 /**
@@ -456,9 +453,7 @@ function resolveColorEnabled(options?: PrettyFormatterOptions): boolean {
 /**
  * Resolve the effective theme from config.
  */
-function resolveTheme(
-  config?: import('@conveaux/contract-logger').ColorConfig
-): RequiredLoggerTheme {
+function resolveTheme(config?: ColorConfig): RequiredLoggerTheme {
   let base = PRESET_THEMES.default;
 
   if (config?.theme) {

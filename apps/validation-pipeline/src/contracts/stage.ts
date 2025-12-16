@@ -2,6 +2,8 @@
  * Stage contract - defines the interface for validation pipeline stages.
  */
 
+import type { WallClock } from '@conveaux/contract-wall-clock';
+
 /**
  * Available stage names in the validation pipeline.
  * Note: 'build' was removed - we use source-first development with tsx.
@@ -30,6 +32,8 @@ export interface StageContext {
   ui: boolean;
   /** Whether benchmarking is enabled */
   benchmark?: boolean;
+  /** Clock for timing measurements */
+  clock: WallClock;
 }
 
 /**

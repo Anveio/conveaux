@@ -17,6 +17,7 @@
  *                     [test]
  */
 
+import type { WallClock } from '@conveaux/contract-wall-clock';
 import {
   type Dag,
   type DagNode,
@@ -44,6 +45,8 @@ export interface PipelineOptions {
   autofix: boolean;
   /** Whether to show interactive UI */
   ui: boolean;
+  /** Clock for timing measurements */
+  clock: WallClock;
   /** Specific stages to run (defaults to all) */
   stages?: StageName[];
   /** Force sequential execution (disable parallel) */
@@ -96,7 +99,8 @@ function buildStageDag(stagesToRun: StageName[]): Dag<Stage> {
  * Falls back to sequential execution if --sequential is specified.
  */
 export async function runPipeline(options: PipelineOptions): Promise<PipelineResult> {
-  const startTime = Date.now();
+  const { clock } = options;
+  const startTime = clock.nowMs();
   const stagesToRun = options.stages ?? DEFAULT_STAGE_ORDER;
 
   // Use sequential mode if explicitly requested
@@ -109,6 +113,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
     ci: options.ci,
     autofix: options.autofix,
     ui: options.ui,
+    clock,
   };
 
   // Build and validate the DAG
@@ -120,7 +125,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
 
   // Execute stages using DAG
   const results: StageExecutionResult[] = [];
-  const deps: ExecuteDagDeps = { clock: { nowMs: Date.now } };
+  const deps: ExecuteDagDeps = { clock };
 
   const dagResult = await executeDag<Stage, StageResult>(
     deps,
@@ -155,7 +160,7 @@ export async function runPipeline(options: PipelineOptions): Promise<PipelineRes
   return {
     success: dagResult.success,
     stages: orderedResults,
-    totalDurationMs: Date.now() - startTime,
+    totalDurationMs: clock.nowMs() - startTime,
     failedStage: dagResult.failedNode as StageName | undefined,
   };
 }
@@ -170,6 +175,7 @@ async function runPipelineSequential(
   stagesToRun: StageName[],
   startTime: number
 ): Promise<PipelineResult> {
+  const { clock } = options;
   const results: StageExecutionResult[] = [];
 
   const context: StageContext = {
@@ -177,6 +183,7 @@ async function runPipelineSequential(
     ci: options.ci,
     autofix: options.autofix,
     ui: options.ui,
+    clock,
   };
 
   for (const stageName of stagesToRun) {
@@ -197,7 +204,7 @@ async function runPipelineSequential(
       return {
         success: false,
         stages: results,
-        totalDurationMs: Date.now() - startTime,
+        totalDurationMs: clock.nowMs() - startTime,
         failedStage: stageName,
       };
     }
@@ -206,6 +213,6 @@ async function runPipelineSequential(
   return {
     success: true,
     stages: results,
-    totalDurationMs: Date.now() - startTime,
+    totalDurationMs: clock.nowMs() - startTime,
   };
 }

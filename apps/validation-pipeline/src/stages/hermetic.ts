@@ -54,7 +54,7 @@ export const hermeticStage: Stage = {
   description: 'Detect disallowed global references in packages',
 
   async run(context: StageContext): Promise<StageResult> {
-    const startTime = Date.now();
+    const startTime = context.clock.nowMs();
 
     // Find all TypeScript files in packages/*/src
     const packagesDir = path.join(context.projectRoot, 'packages');
@@ -71,7 +71,7 @@ export const hermeticStage: Stage = {
       })
     );
 
-    const durationMs = Date.now() - startTime;
+    const durationMs = context.clock.nowMs() - startTime;
 
     if (violations.length > 0) {
       const errors = violations.map((v) => formatViolation(v, context.projectRoot));

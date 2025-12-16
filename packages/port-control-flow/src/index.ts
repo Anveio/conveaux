@@ -14,13 +14,23 @@ import type {
   Err,
   ExitCode,
   ExitCodeError,
+  ExitCodeSymbol,
   Ok,
   Result,
   RetryMetadata,
 } from '@conveaux/contract-control-flow';
 
 // Re-export types from contract
-export type { ExitCode, ExitCodeError, Result, Ok, Err, RetryMetadata, BackoffStrategy };
+export type {
+  BackoffStrategy,
+  Err,
+  ExitCode,
+  ExitCodeError,
+  ExitCodeSymbol,
+  Ok,
+  Result,
+  RetryMetadata,
+};
 
 // =============================================================================
 // Exit Code Constants
@@ -45,9 +55,7 @@ export const EXIT_RETRYABLE = 3 as const;
 /**
  * Symbol for exit code - prevents accidental property collision.
  */
-export const EXIT_CODE: typeof import('@conveaux/contract-control-flow').EXIT_CODE = Symbol.for(
-  'conveaux.exitCode'
-) as typeof import('@conveaux/contract-control-flow').EXIT_CODE;
+export const EXIT_CODE: ExitCodeSymbol = Symbol.for('conveaux.exitCode') as ExitCodeSymbol;
 
 // =============================================================================
 // Result Constructors
