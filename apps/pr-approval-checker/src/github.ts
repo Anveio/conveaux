@@ -7,6 +7,7 @@ import type { GitHubComment, GitHubReaction } from './types.js';
 // ============================================================================
 
 export interface GitHubClient {
+  getPrReactions(owner: string, repo: string, prNumber: number): GitHubReaction[];
   getIssueComments(owner: string, repo: string, prNumber: number): GitHubComment[];
   getReviewComments(owner: string, repo: string, prNumber: number): GitHubComment[];
   getIssueCommentReactions(owner: string, repo: string, commentId: number): GitHubReaction[];
@@ -79,6 +80,9 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
   }
 
   return {
+    getPrReactions: (owner, repo, prNumber) =>
+      ghApiAllPages<GitHubReaction>(`repos/${owner}/${repo}/issues/${prNumber}/reactions`),
+
     getIssueComments: (owner, repo, prNumber) =>
       ghApiAllPages<GitHubComment>(`repos/${owner}/${repo}/issues/${prNumber}/comments`),
 
@@ -91,9 +95,7 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
       ),
 
     getReviewCommentReactions: (owner, repo, commentId) =>
-      ghApiAllPages<GitHubReaction>(
-        `repos/${owner}/${repo}/pulls/comments/${commentId}/reactions`
-      ),
+      ghApiAllPages<GitHubReaction>(`repos/${owner}/${repo}/pulls/comments/${commentId}/reactions`),
   };
 }
 

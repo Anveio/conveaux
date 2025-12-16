@@ -76,7 +76,7 @@ export function createRuntimeDeps(options: RuntimeOptions = {}): RuntimeDeps {
       // Defaults have lowest priority
       createStaticEnvSource(
         {
-          PR_CHECKER_BOT: 'chatgpt-codex-connector',
+          PR_CHECKER_BOT: 'chatgpt-codex-connector[bot]',
           PR_CHECKER_TIMEOUT: '10',
           PR_CHECKER_INTERVAL: '30',
         },

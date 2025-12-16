@@ -81,7 +81,7 @@ Exit codes:
         owner: parsed.owner,
         repo: parsed.repo,
         prNumber: parsed.prNumber,
-        botUsername: options.bot ?? env.get('PR_CHECKER_BOT') ?? 'chatgpt-codex-connector',
+        botUsername: options.bot ?? env.get('PR_CHECKER_BOT') ?? 'chatgpt-codex-connector[bot]',
         timeoutMs:
           Number.parseInt(options.timeout ?? env.get('PR_CHECKER_TIMEOUT') ?? '10', 10) * 60 * 1000,
         intervalMs:

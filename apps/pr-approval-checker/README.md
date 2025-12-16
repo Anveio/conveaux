@@ -1,6 +1,6 @@
 # @conveaux/pr-approval-checker
 
-Poll for PR approval from a bot reviewer (e.g., `chatgpt-codex-connector`).
+Poll for PR approval from a bot reviewer (e.g., `chatgpt-codex-connector[bot]`).
 
 ## Usage
 
@@ -28,7 +28,7 @@ node --import tsx apps/pr-approval-checker/src/cli.ts https://github.com/owner/r
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--bot <username>` | Bot username to check for | `chatgpt-codex-connector` |
+| `--bot <username>` | Bot username to check for | `chatgpt-codex-connector[bot]` |
 | `--timeout <minutes>` | Timeout in minutes | `10` |
 | `--interval <seconds>` | Poll interval in seconds | `30` |
 | `--once` | Check once and exit (no polling) | `false` |
@@ -41,7 +41,7 @@ Options can also be set via environment variables:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `PR_CHECKER_BOT` | Bot username to check for | `chatgpt-codex-connector` |
+| `PR_CHECKER_BOT` | Bot username to check for | `chatgpt-codex-connector[bot]` |
 | `PR_CHECKER_TIMEOUT` | Timeout in minutes | `10` |
 | `PR_CHECKER_INTERVAL` | Poll interval in seconds | `30` |
 
@@ -51,7 +51,7 @@ CLI options take precedence over environment variables.
 
 | Code | Status | Meaning |
 |------|--------|---------|
-| 0 | approved | Bot reacted with thumbs up to a comment |
+| 0 | approved | Bot reacted with thumbs up to the PR body or a comment |
 | 1 | feedback | Bot left a comment (needs changes) |
 | 2 | timeout | No response within timeout period |
 | 3 | error | Invalid input or system failure |
@@ -67,13 +67,15 @@ The tool outputs structured JSON to stdout for programmatic consumption.
   "status": "approved",
   "pr": { "owner": "Anveio", "repo": "conveaux", "number": 73 },
   "approval": {
-    "commentId": 123456,
-    "commentType": "issue",
-    "reactedBy": "chatgpt-codex-connector",
+    "commentId": 73,
+    "commentType": "pr_body",
+    "reactedBy": "chatgpt-codex-connector[bot]",
     "reactedAt": "2025-12-16T10:30:00Z"
   }
 }
 ```
+
+Note: `commentType` can be `"pr_body"`, `"issue"`, or `"review"` depending on where the reaction was placed.
 
 **Feedback (exit 1):**
 
@@ -83,7 +85,7 @@ The tool outputs structured JSON to stdout for programmatic consumption.
   "pr": { "owner": "Anveio", "repo": "conveaux", "number": 73 },
   "feedback": {
     "commentId": 123457,
-    "author": "chatgpt-codex-connector",
+    "author": "chatgpt-codex-connector[bot]",
     "body": "Please fix the type error in line 42...",
     "createdAt": "2025-12-16T10:30:00Z"
   }
