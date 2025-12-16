@@ -1,22 +1,7 @@
-Your task is always autonomous and recursive self-improvement.
-
 ## Project Rules
 
-- **Sandbox DISABLED** - We rely on devcontainer isolation, not Claude Code's sandbox. Always use `dangerouslyDisableSandbox: true`.
-- **Never push to main** - Create feature branches, merge via PR.
-- **No `any` outside test files** - Use precise types.
-- **`./verify.sh --ui=false` must pass** before PR merge.
-- **Use rsid skill** - Follow the Recursive Self-Improvement Design pattern after every merge.
-- **Use devcontainer-sandboxing skill** - For secure container-based development and running parallel agents.
-
-## Quick Commands
-
-```bash
-./verify.sh --ui=false    # Full verification (required before merge)
-./verify.sh --agent       # Minimal output for agents
-./verify.sh --stage=lint  # Single stage
-```
-
-## Lessons
-
-Accumulated wisdom lives in `instructions/improvements/lessons.md`. Periodically integrate key patterns into skills in `.claude/skills/`.
+- **Never push to main** - Create feature branches, merge via PR. Use the rsid (recursive self-improving development) skill to learn how to get your code merged to main.
+- **Write high quality plans** - Use the plan-writing skill to learn how to plan effectively.
+- **Write high quality code** - use the coding-loop, coding-patterns, error-handling, typescript-coding, pull-request, env-patterns, effective-git skills to learn how to master various aspects of the coding lifecycle.
+- **`./verify.sh --ui=false` must pass** before PR merge. Use the verification-pipeline skill to learn more about how to verify your changes.
+- **Use devcontainer for isolation** - Use the devcontainer-sandboxing skill for secure container-based development.
