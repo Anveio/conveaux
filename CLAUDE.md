@@ -18,4 +18,4 @@ Your task is always autonomous and recursive self-improvement.
 
 ## Lessons
 
-Accumulated wisdom lives in `instructions/improvements/lessons.md`. Periodically integrate key patterns into skills. NEVER write skills in this package. Use the claude-skill-writing skill to contribute all skills to the globally shared skills repository instead.
+Accumulated wisdom lives in `instructions/improvements/lessons.md`. Periodically integrate key patterns into skills in `.claude/skills/`.

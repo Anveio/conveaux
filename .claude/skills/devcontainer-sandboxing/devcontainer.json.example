@@ -1,0 +1,27 @@
+{
+  "name": "Dev Sandbox",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "overrideCommand": false,
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "runArgs": [
+    "--init",
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges:true"
+  ],
+  "mounts": [
+    "type=volume,source=devcontainer-cache,target=/home/vscode/.cache"
+  ],
+  "features": {},
+  "postCreateCommand": "echo 'Ready. Run your repo verification command (e.g., ./verify.sh --ui=false).'"
+}
+
