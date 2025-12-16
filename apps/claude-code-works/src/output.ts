@@ -6,22 +6,16 @@
  * - `logger`: Structured logging to stderr (JSON or pretty format)
  */
 
-import { type Logger, createLogger, createPrettyFormatter } from '@conveaux/port-logger';
+import {
+  ANSI_COLORS,
+  ANSI_RESET,
+  ANSI_STYLES,
+  type Logger,
+  createLogger,
+  createPrettyFormatter,
+} from '@conveaux/port-logger';
 import { createOutChannel } from '@conveaux/port-outchannel';
 import { createWallClock } from '@conveaux/port-wall-clock';
-
-// ANSI color codes for terminal output
-const colors = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-} as const;
 
 // Composition root: inject platform globals
 const clock = createWallClock({ Date });
@@ -52,48 +46,48 @@ export const output = {
    * Print an info message (blue).
    */
   info: (msg: string): void => {
-    console.log(`${colors.blue}${msg}${colors.reset}`);
+    console.log(`${ANSI_COLORS.blue}${msg}${ANSI_RESET}`);
   },
 
   /**
    * Print a success message (green).
    */
   success: (msg: string): void => {
-    console.log(`${colors.green}${msg}${colors.reset}`);
+    console.log(`${ANSI_COLORS.green}${msg}${ANSI_RESET}`);
   },
 
   /**
    * Print a warning message (yellow).
    */
   warn: (msg: string): void => {
-    console.log(`${colors.yellow}${msg}${colors.reset}`);
+    console.log(`${ANSI_COLORS.yellow}${msg}${ANSI_RESET}`);
   },
 
   /**
    * Print an error message (red) to stderr.
    */
   error: (msg: string): void => {
-    console.error(`${colors.red}${msg}${colors.reset}`);
+    console.error(`${ANSI_COLORS.red}${msg}${ANSI_RESET}`);
   },
 
   /**
    * Print a dim message (for less important info).
    */
   dim: (msg: string): void => {
-    console.log(`${colors.dim}${msg}${colors.reset}`);
+    console.log(`${ANSI_STYLES.dim}${msg}${ANSI_RESET}`);
   },
 
   /**
    * Print a step message (cyan, indented).
    */
   step: (msg: string): void => {
-    console.log(`${colors.cyan}  > ${msg}${colors.reset}`);
+    console.log(`${ANSI_COLORS.cyan}  > ${msg}${ANSI_RESET}`);
   },
 
   /**
    * Print a header message (bold magenta with decoration).
    */
   header: (msg: string): void => {
-    console.log(`\n${colors.bold}${colors.magenta}=== ${msg} ===${colors.reset}\n`);
+    console.log(`\n${ANSI_STYLES.bold}${ANSI_COLORS.magenta}=== ${msg} ===${ANSI_RESET}\n`);
   },
 };

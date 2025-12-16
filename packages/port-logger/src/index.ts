@@ -35,6 +35,18 @@ export type {
   Transport,
   Redactor,
   Sampler,
+  // Color configuration types
+  AnsiColorName,
+  AnsiStyle,
+  Ansi256Color,
+  RgbColor,
+  HexColor,
+  ColorSpec,
+  StyleDefinition,
+  LoggerTheme,
+  ThemeName,
+  ColorConfig,
+  ColorEnvironment,
 } from '@conveaux/contract-logger';
 
 /**
@@ -72,61 +84,464 @@ export function createJsonFormatter(): Formatter {
   };
 }
 
+// =============================================================================
+// ANSI Color Constants
+// =============================================================================
+
+/** ANSI reset code */
+export const ANSI_RESET = '\x1b[0m';
+
 /**
- * ANSI color codes for terminal output.
+ * ANSI escape code mappings for named foreground colors.
  */
-const COLORS = {
-  reset: '\x1b[0m',
-  dim: '\x1b[2m',
+export const ANSI_COLORS: Record<import('@conveaux/contract-logger').AnsiColorName, string> = {
+  black: '\x1b[30m',
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  magenta: '\x1b[35m',
+  cyan: '\x1b[36m',
+  white: '\x1b[37m',
+  gray: '\x1b[90m',
+  brightBlack: '\x1b[90m',
+  brightRed: '\x1b[91m',
+  brightGreen: '\x1b[92m',
+  brightYellow: '\x1b[93m',
+  brightBlue: '\x1b[94m',
+  brightMagenta: '\x1b[95m',
+  brightCyan: '\x1b[96m',
+  brightWhite: '\x1b[97m',
+};
+
+/**
+ * ANSI escape code mappings for background colors.
+ */
+export const ANSI_BG_COLORS: Record<import('@conveaux/contract-logger').AnsiColorName, string> = {
+  black: '\x1b[40m',
+  red: '\x1b[41m',
+  green: '\x1b[42m',
+  yellow: '\x1b[43m',
+  blue: '\x1b[44m',
+  magenta: '\x1b[45m',
+  cyan: '\x1b[46m',
+  white: '\x1b[47m',
+  gray: '\x1b[100m',
+  brightBlack: '\x1b[100m',
+  brightRed: '\x1b[101m',
+  brightGreen: '\x1b[102m',
+  brightYellow: '\x1b[103m',
+  brightBlue: '\x1b[104m',
+  brightMagenta: '\x1b[105m',
+  brightCyan: '\x1b[106m',
+  brightWhite: '\x1b[107m',
+};
+
+/**
+ * ANSI escape codes for text styles.
+ */
+export const ANSI_STYLES: Record<import('@conveaux/contract-logger').AnsiStyle, string> = {
   bold: '\x1b[1m',
-  // Level colors
-  trace: '\x1b[90m', // gray
-  debug: '\x1b[36m', // cyan
-  info: '\x1b[32m', // green
-  warn: '\x1b[33m', // yellow
-  error: '\x1b[31m', // red
-  fatal: '\x1b[35m', // magenta (bold applied separately)
-} as const;
+  dim: '\x1b[2m',
+  italic: '\x1b[3m',
+  underline: '\x1b[4m',
+  inverse: '\x1b[7m',
+};
+
+// =============================================================================
+// Theme Definitions
+// =============================================================================
+
+type RequiredLoggerTheme = Required<import('@conveaux/contract-logger').LoggerTheme>;
+
+/**
+ * Default theme - matches original hardcoded behavior for backward compatibility.
+ */
+export const DEFAULT_THEME: RequiredLoggerTheme = {
+  trace: { color: 'gray' },
+  debug: { color: 'cyan' },
+  info: { color: 'green' },
+  warn: { color: 'yellow' },
+  error: { color: 'red' },
+  fatal: { color: 'magenta', styles: ['bold'] },
+  timestamp: { styles: ['dim'] },
+  message: {},
+  fields: { styles: ['dim'] },
+  errorText: { color: 'red' },
+  stackTrace: { styles: ['dim'] },
+};
+
+/**
+ * High contrast theme for accessibility.
+ */
+export const HIGH_CONTRAST_THEME: RequiredLoggerTheme = {
+  trace: { color: 'white', styles: ['dim'] },
+  debug: { color: 'brightCyan' },
+  info: { color: 'brightGreen', styles: ['bold'] },
+  warn: { color: 'brightYellow', styles: ['bold'] },
+  error: { color: 'brightRed', styles: ['bold'] },
+  fatal: { color: 'brightWhite', background: 'red', styles: ['bold'] },
+  timestamp: { color: 'brightWhite' },
+  message: { color: 'brightWhite' },
+  fields: { color: 'brightCyan' },
+  errorText: { color: 'brightRed', styles: ['bold'] },
+  stackTrace: { color: 'brightRed' },
+};
+
+/**
+ * Minimal theme - only level colors, nothing else styled.
+ */
+export const MINIMAL_THEME: RequiredLoggerTheme = {
+  trace: { color: 'gray' },
+  debug: { color: 'cyan' },
+  info: { color: 'green' },
+  warn: { color: 'yellow' },
+  error: { color: 'red' },
+  fatal: { color: 'magenta' },
+  timestamp: {},
+  message: {},
+  fields: {},
+  errorText: {},
+  stackTrace: {},
+};
+
+/**
+ * All preset themes mapped by name.
+ */
+export const PRESET_THEMES: Record<
+  import('@conveaux/contract-logger').ThemeName,
+  RequiredLoggerTheme
+> = {
+  default: DEFAULT_THEME,
+  'high-contrast': HIGH_CONTRAST_THEME,
+  minimal: MINIMAL_THEME,
+};
+
+// =============================================================================
+// Color Environment
+// =============================================================================
+
+/**
+ * Dependencies for creating a color environment detector.
+ */
+export interface ColorEnvironmentDeps {
+  /** Function to get environment variable value */
+  readonly getEnv: (name: string) => string | undefined;
+  /** Check if output is a TTY (optional, defaults to false) */
+  readonly isTTY?: () => boolean;
+}
+
+/**
+ * Creates a ColorEnvironment from platform dependencies.
+ *
+ * @param deps - Platform-specific dependencies
+ * @returns A ColorEnvironment implementation
+ *
+ * @example Node.js usage
+ * ```typescript
+ * const colorEnv = createColorEnvironment({
+ *   getEnv: (name) => process.env[name],
+ *   isTTY: () => process.stderr.isTTY ?? false,
+ * });
+ * ```
+ *
+ * @example Testing
+ * ```typescript
+ * const colorEnv = createColorEnvironment({
+ *   getEnv: () => undefined,
+ *   isTTY: () => true,
+ * });
+ * ```
+ */
+export function createColorEnvironment(
+  deps: ColorEnvironmentDeps
+): import('@conveaux/contract-logger').ColorEnvironment {
+  return {
+    isNoColorSet: () => deps.getEnv('NO_COLOR') !== undefined,
+    isForceColorSet: () => {
+      const value = deps.getEnv('FORCE_COLOR');
+      return value !== undefined && value !== '0' && value !== '';
+    },
+    supportsColor: () => deps.isTTY?.() ?? false,
+  };
+}
+
+// =============================================================================
+// Color Rendering Utilities
+// =============================================================================
+
+/**
+ * Convert a ColorSpec to ANSI escape sequence.
+ */
+function colorSpecToAnsi(
+  spec: import('@conveaux/contract-logger').ColorSpec,
+  isBackground: boolean
+): string {
+  if (typeof spec === 'string') {
+    return isBackground ? ANSI_BG_COLORS[spec] : ANSI_COLORS[spec];
+  }
+
+  if (spec.type === '256') {
+    const code = isBackground ? 48 : 38;
+    const index = Math.max(0, Math.min(255, Math.floor(spec.index)));
+    return `\x1b[${code};5;${index}m`;
+  }
+
+  if (spec.type === 'rgb') {
+    const code = isBackground ? 48 : 38;
+    const r = Math.max(0, Math.min(255, Math.floor(spec.r)));
+    const g = Math.max(0, Math.min(255, Math.floor(spec.g)));
+    const b = Math.max(0, Math.min(255, Math.floor(spec.b)));
+    return `\x1b[${code};2;${r};${g};${b}m`;
+  }
+
+  if (spec.type === 'hex') {
+    const rgb = parseHexColor(spec.value);
+    if (!rgb) return '';
+    const code = isBackground ? 48 : 38;
+    return `\x1b[${code};2;${rgb.r};${rgb.g};${rgb.b}m`;
+  }
+
+  return '';
+}
+
+/**
+ * Parse a hex color string to RGB values.
+ */
+function parseHexColor(hex: string): { r: number; g: number; b: number } | null {
+  const cleaned = hex.replace(/^#/, '');
+  if (!/^[0-9a-fA-F]{6}$/.test(cleaned)) return null;
+
+  return {
+    r: Number.parseInt(cleaned.slice(0, 2), 16),
+    g: Number.parseInt(cleaned.slice(2, 4), 16),
+    b: Number.parseInt(cleaned.slice(4, 6), 16),
+  };
+}
+
+/**
+ * Apply a StyleDefinition to text.
+ */
+function applyStyle(
+  text: string,
+  style: import('@conveaux/contract-logger').StyleDefinition
+): string {
+  if (!(style.color || style.background || style.styles?.length)) {
+    return text;
+  }
+
+  const codes: string[] = [];
+
+  if (style.color) {
+    codes.push(colorSpecToAnsi(style.color, false));
+  }
+
+  if (style.background) {
+    codes.push(colorSpecToAnsi(style.background, true));
+  }
+
+  if (style.styles) {
+    for (const s of style.styles) {
+      codes.push(ANSI_STYLES[s]);
+    }
+  }
+
+  return `${codes.join('')}${text}${ANSI_RESET}`;
+}
+
+/**
+ * Colorizer functions for different log elements.
+ */
+interface Colorizer {
+  level: (level: LogLevel, text: string) => string;
+  timestamp: (text: string) => string;
+  message: (text: string) => string;
+  fields: (text: string) => string;
+  errorText: (text: string) => string;
+  stackTrace: (text: string) => string;
+}
+
+/**
+ * Create a colorizer from a theme.
+ * Returns a no-op colorizer if theme is null (colors disabled).
+ */
+function createColorizer(theme: RequiredLoggerTheme | null): Colorizer {
+  if (!theme) {
+    return {
+      level: (_level, text) => text,
+      timestamp: (text) => text,
+      message: (text) => text,
+      fields: (text) => text,
+      errorText: (text) => text,
+      stackTrace: (text) => text,
+    };
+  }
+
+  return {
+    level: (level, text) => applyStyle(text, theme[level]),
+    timestamp: (text) => applyStyle(text, theme.timestamp),
+    message: (text) => applyStyle(text, theme.message),
+    fields: (text) => applyStyle(text, theme.fields),
+    errorText: (text) => applyStyle(text, theme.errorText),
+    stackTrace: (text) => applyStyle(text, theme.stackTrace),
+  };
+}
+
+// =============================================================================
+// Pretty Formatter Options
+// =============================================================================
+
+/**
+ * Options for the pretty formatter.
+ * Backward compatible with the old `{ colors?: boolean }` signature.
+ */
+export interface PrettyFormatterOptions {
+  /**
+   * Simple color toggle (backward compatible).
+   * Equivalent to `{ enabled: colors }` in ColorConfig.
+   * Ignored if `colorConfig` is provided.
+   * @default true
+   */
+  readonly colors?: boolean;
+
+  /**
+   * Full color configuration.
+   * Takes precedence over `colors` if both are specified.
+   */
+  readonly colorConfig?: import('@conveaux/contract-logger').ColorConfig;
+
+  /**
+   * Color environment for NO_COLOR/FORCE_COLOR detection.
+   * If not provided, colors are always enabled unless explicitly disabled.
+   *
+   * For proper NO_COLOR support, inject this from your composition root:
+   * @example
+   * ```typescript
+   * createPrettyFormatter({
+   *   colorEnv: createColorEnvironment({
+   *     getEnv: (name) => process.env[name],
+   *     isTTY: () => process.stderr.isTTY ?? false,
+   *   }),
+   * })
+   * ```
+   */
+  readonly colorEnv?: import('@conveaux/contract-logger').ColorEnvironment;
+}
+
+/**
+ * Resolve whether colors should be enabled based on all inputs.
+ */
+function resolveColorEnabled(options?: PrettyFormatterOptions): boolean {
+  const config = options?.colorConfig;
+  const env = options?.colorEnv;
+
+  // Explicit disable always wins
+  if (config?.enabled === false) return false;
+  if (options?.colors === false && !config) return false;
+
+  // FORCE_COLOR takes precedence over NO_COLOR
+  if (config?.forceColor || env?.isForceColorSet()) return true;
+
+  // Check NO_COLOR (default: respect it)
+  const respectNoColor = config?.respectNoColor ?? true;
+  if (respectNoColor && env?.isNoColorSet()) return false;
+
+  // Explicit enable
+  if (config?.enabled === true || options?.colors === true) return true;
+
+  // Default: enabled
+  return true;
+}
+
+/**
+ * Resolve the effective theme from config.
+ */
+function resolveTheme(
+  config?: import('@conveaux/contract-logger').ColorConfig
+): RequiredLoggerTheme {
+  let base = PRESET_THEMES.default;
+
+  if (config?.theme) {
+    if (typeof config.theme === 'string') {
+      base = PRESET_THEMES[config.theme] ?? PRESET_THEMES.default;
+    } else {
+      base = { ...base, ...config.theme };
+    }
+  }
+
+  if (config?.levels) {
+    return {
+      ...base,
+      ...config.levels,
+    };
+  }
+
+  return base;
+}
+
+// =============================================================================
+// Formatters
+// =============================================================================
 
 /**
  * Creates a pretty formatter for human-readable output.
  * Useful for development and debugging.
  *
- * @param options - Formatter options
- * @param options.colors - Enable ANSI colors (default: true)
+ * @param options - Formatter options (optional)
+ * @returns A Formatter instance
  *
- * @example
+ * @example Basic usage (colors enabled by default)
  * ```typescript
  * const formatter = createPrettyFormatter();
- * // Output: 10:30:00.000 INFO  Hello { userId: "123" }
+ * ```
  *
- * const noColorFormatter = createPrettyFormatter({ colors: false });
- * // Output: 10:30:00.000 INFO  Hello { userId: "123" }
+ * @example Disable colors (backward compatible)
+ * ```typescript
+ * const formatter = createPrettyFormatter({ colors: false });
+ * ```
+ *
+ * @example Custom theme
+ * ```typescript
+ * const formatter = createPrettyFormatter({
+ *   colorConfig: {
+ *     theme: {
+ *       info: { color: 'brightGreen', styles: ['bold'] },
+ *       error: { color: { type: 'rgb', r: 255, g: 80, b: 80 } },
+ *     },
+ *   },
+ * });
+ * ```
+ *
+ * @example Preset theme with NO_COLOR support
+ * ```typescript
+ * const formatter = createPrettyFormatter({
+ *   colorConfig: { theme: 'high-contrast' },
+ *   colorEnv: createColorEnvironment({
+ *     getEnv: (name) => process.env[name],
+ *     isTTY: () => process.stderr.isTTY ?? false,
+ *   }),
+ * });
  * ```
  */
-export function createPrettyFormatter(options?: { colors?: boolean }): Formatter {
-  const useColors = options?.colors ?? true;
+export function createPrettyFormatter(options?: PrettyFormatterOptions): Formatter {
+  // Resolve whether colors should be used
+  const useColors = resolveColorEnabled(options);
 
-  const colorize = (text: string, color: string): string => {
-    if (!useColors) return text;
-    return `${color}${text}${COLORS.reset}`;
-  };
+  // Resolve the effective theme
+  const theme = useColors ? resolveTheme(options?.colorConfig) : null;
+
+  // Build the colorizer
+  const colorizer = createColorizer(theme);
 
   const formatLevel = (level: LogLevel): string => {
     const padded = level.toUpperCase().padEnd(5);
-    if (!useColors) return padded;
-
-    const color = COLORS[level];
-    if (level === 'fatal') {
-      return `${COLORS.bold}${color}${padded}${COLORS.reset}`;
-    }
-    return colorize(padded, color);
+    return colorizer.level(level, padded);
   };
 
   const formatTimestamp = (timestamp: string): string => {
     // Extract time portion (HH:MM:SS.mmm) for concise output
     const time = timestamp.split('T')[1]?.replace('Z', '') ?? timestamp;
-    return colorize(time, COLORS.dim);
+    return colorizer.timestamp(time);
   };
 
   const formatFields = (entry: LogEntry): string => {
@@ -143,27 +558,27 @@ export function createPrettyFormatter(options?: { colors?: boolean }): Formatter
     }
 
     const formatted = JSON.stringify(allFields);
-    return colorize(` ${formatted}`, COLORS.dim);
+    return colorizer.fields(` ${formatted}`);
   };
 
   const formatError = (error: SerializedError): string => {
     const lines: string[] = [];
-    lines.push(colorize(`  ${error.name}: ${error.message}`, COLORS.error));
+    lines.push(colorizer.errorText(`  ${error.name}: ${error.message}`));
 
     if (error.code) {
-      lines.push(colorize(`  Code: ${error.code}`, COLORS.dim));
+      lines.push(colorizer.stackTrace(`  Code: ${error.code}`));
     }
 
     if (error.stack) {
       // Show first 3 stack frames
       const frames = error.stack.split('\n').slice(1, 4);
       for (const frame of frames) {
-        lines.push(colorize(`  ${frame.trim()}`, COLORS.dim));
+        lines.push(colorizer.stackTrace(`  ${frame.trim()}`));
       }
     }
 
     if (error.cause) {
-      lines.push(colorize('  Caused by:', COLORS.dim));
+      lines.push(colorizer.stackTrace('  Caused by:'));
       lines.push(formatError(error.cause));
     }
 
@@ -175,7 +590,7 @@ export function createPrettyFormatter(options?: { colors?: boolean }): Formatter
       const parts = [
         formatTimestamp(entry.timestamp),
         formatLevel(entry.level),
-        entry.message,
+        colorizer.message(entry.message),
         formatFields(entry),
       ];
 
