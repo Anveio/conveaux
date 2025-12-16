@@ -1,5 +1,24 @@
 {
   "permissions": {
-    "allow": ["Skill(claude-code-works)", "Read(./.claude/skills/**)"]
+    "allow": [
+      "Read(./.claude/skills/**)",
+      "Skill(app-architecture)",
+      "Skill(claude-agent-sdk)",
+      "Skill(claude-typescript-sdk)",
+      "Skill(coding-loop)",
+      "Skill(coding-patterns)",
+      "Skill(devcontainer-sandboxing)",
+      "Skill(effective-git)",
+      "Skill(env-patterns)",
+      "Skill(error-handling)",
+      "Skill(handoff-writing)",
+      "Skill(memory-consolidation)",
+      "Skill(plan-writing)",
+      "Skill(pull-request)",
+      "Skill(rsid)",
+      "Skill(typescript-coding)",
+      "Skill(verification-pipeline)",
+      "Skill(writing-claude-skills)"
+    ]
   }
 }
