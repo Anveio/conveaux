@@ -1,7 +1,7 @@
 {
-  "name": "@conveaux/contract-timers",
+  "name": "@conveaux/contract-ephemeral-scheduler",
   "version": "0.1.0",
-  "description": "Timers contract - injectable setTimeout/clearTimeout for async scheduling",
+  "description": "Ephemeral scheduler contract - interface for in-memory task scheduling",
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
