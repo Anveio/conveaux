@@ -422,3 +422,88 @@ archived:
         detail: |
           Removed ~1040 LOC while maintaining all necessary functionality.
           Key question when stripping: "Does this actively enable the core use case?"
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: already documented in app-architecture skill"
+    sections_added: []
+    memories:
+      - task: "pr-approval-checker"
+        date: "2025-12-16"
+        type: "lesson"
+        summary: "Use port-ephemeral-scheduler.delay() for delays instead of raw setTimeout"
+        detail: |
+          Always use port-ephemeral-scheduler.delay() for delays instead of raw setTimeout.
+          The scheduler provides lifecycle management (dispose cancels pending), injectable
+          dependencies for testing, and consistent patterns across the codebase.
+          Already documented in app-architecture skill's "Common Deps by Use Case" table:
+          "Delays/timers | contract-ephemeral-scheduler | port-ephemeral-scheduler"
+
+      - task: "pr-approval-checker"
+        date: "2025-12-16"
+        type: "pattern"
+        summary: "CLI tool file structure for apps/"
+        detail: |
+          For new CLI tools in apps/, follow this structure:
+          - cli.ts: thin entry point, arg parsing with commander
+          - composition.ts: composition root, inject all platform globals
+          - types.ts: shared type definitions
+          - errors.ts: error classes extending ConveauxError
+          - [domain].ts: core business logic with injected deps
+          Already documented in app-architecture skill's "File Structure" section.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: already documented in devcontainer-sandboxing skill"
+    sections_added: []
+    memories:
+      - task: "coordinator-packages"
+        date: "2025-12-16"
+        type: "lesson"
+        summary: "Sandbox vs direct test execution (tests pass directly, fail in verify.sh sandbox)"
+        detail: |
+          Tests passed when run directly (npm run test -w @conveaux/port-coordinator)
+          but failed through ./verify.sh with EPERM errors about temp file creation.
+          The verify script runs in sandbox mode which restricts /tmp writes.
+          Solution: Run with dangerouslyDisableSandbox: true per CLAUDE.md which says
+          we rely on devcontainer isolation, not Claude Code's sandbox.
+          Already documented in devcontainer-sandboxing skill section 7:
+          "Disable Claude Code's built-in sandbox when using devcontainers"
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: already documented in coding-loop and effective-git skills"
+    sections_added: []
+    memories:
+      - task: "coordinator-packages"
+        date: "2025-12-16"
+        type: "pattern"
+        summary: "Commit size management (1315 lines split into 3 commits)"
+        detail: |
+          Initial implementation was 1315 lines across 2 packages. The coding-loop skill
+          specifies >500 lines requires splitting. Split into 3 atomic commits:
+          1. Contract types (234 lines)
+          2. Task router + tests (592 lines)
+          3. Execution planner + config (489 lines)
+          Already documented in coding-loop skill's "Commit Atomicity Gate" and
+          effective-git skill's "The Atomic Commit Standard" section.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: single occurrence, speculative pattern"
+    sections_added: []
+    memories:
+      - task: "coordinator-packages"
+        date: "2025-12-16"
+        type: "pattern"
+        summary: "Breadcrumbs for future decomposition (TODO comments for extraction)"
+        detail: |
+          When creating packages that combine related concerns, add TODO breadcrumbs:
+          /**
+           * FUTURE DECOMPOSITION CANDIDATES:
+           * - TODO: Extract WorktreeConfig -> contract-worktree
+           * - TODO: Extract ProcessConfig -> contract-process-runner
+           */
+          This signals intent without premature abstraction.
+          Rejected: single occurrence, speculative value. If pattern recurs 3+ times,
+          reconsider for consolidation.
