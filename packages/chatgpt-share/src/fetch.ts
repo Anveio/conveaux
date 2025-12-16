@@ -3,9 +3,9 @@
  */
 
 import type { AbortControllerConstructor } from '@conveaux/contract-abort';
-import { FetchError, InvalidURLError } from '@conveaux/contract-error';
 import type { HttpFetch } from '@conveaux/contract-http';
 import type { ClearTimeoutFn, SetTimeoutFn, TimerId } from '@conveaux/contract-timers';
+import { FetchError, InvalidURLError } from '@conveaux/port-control-flow';
 
 import type { FetchShareOptions } from './types.js';
 
@@ -93,11 +93,15 @@ export async function fetchSharePage(
     clearTimeoutFn(timeoutId);
 
     if (response.status === 404) {
-      throw new FetchError('Conversation not found (may be private or deleted)', 404);
+      throw new FetchError('Conversation not found (may be private or deleted)', {
+        statusCode: 404,
+      });
     }
 
     if (!response.ok) {
-      throw new FetchError(`HTTP error: ${response.status}`, response.status);
+      throw new FetchError(`HTTP error: ${response.status}`, {
+        statusCode: response.status,
+      });
     }
 
     return await response.text();
