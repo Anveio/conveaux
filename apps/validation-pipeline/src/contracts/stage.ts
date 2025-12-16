@@ -10,6 +10,7 @@ import type { WallClock } from '@conveaux/contract-wall-clock';
  */
 export type StageName =
   | 'check'
+  | 'devcontainer'
   | 'docs'
   | 'install'
   | 'doctor'
