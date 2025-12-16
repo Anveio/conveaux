@@ -9,7 +9,7 @@
 import { Command } from 'commander';
 import { runCreate, runDoctor, runImprove, runStatus } from './commands/index';
 import { resolveConfig } from './config';
-import { output } from './output';
+import { logger, output } from './output';
 
 const program = new Command();
 
@@ -107,7 +107,9 @@ program
   });
 
 // Parse arguments
-program.parseAsync(process.argv).catch((error) => {
-  output.error(`Fatal error: ${error.message}`);
+program.parseAsync(process.argv).catch((error: unknown) => {
+  const err = error instanceof Error ? error : new Error(String(error));
+  logger.error('CLI command failed', { error: err });
+  output.error(`Fatal error: ${err.message}`);
   process.exit(1);
 });

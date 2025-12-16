@@ -20,6 +20,9 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.33.0",
+    "@conveaux/port-logger": "*",
+    "@conveaux/port-outchannel": "*",
+    "@conveaux/port-wall-clock": "*",
     "commander": "^12.1.0"
   },
   "devDependencies": {
