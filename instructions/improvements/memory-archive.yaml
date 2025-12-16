@@ -507,3 +507,63 @@ archived:
           This signals intent without premature abstraction.
           Rejected: single occurrence, speculative value. If pattern recurs 3+ times,
           reconsider for consolidation.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: single occurrence, devcontainer-verification-stage learnings"
+    sections_added: []
+    memories:
+      - task: "devcontainer-verification-stage"
+        date: "2024-12-16"
+        type: "pattern"
+        summary: "Adding pipeline stages requires updating 4 locations"
+        detail: |
+          When adding a new stage to the validation pipeline, update:
+          1. StageName type in contracts/stage.ts (add to union)
+          2. STAGE_DEPENDENCIES in pipeline.ts (define dependencies)
+          3. stageRegistry in stages/index.ts (add stage implementation)
+          4. DEFAULT_STAGE_ORDER in stages/index.ts (add to array)
+          Missing any of these causes runtime errors.
+          Rejected: single occurrence, codebase-specific mechanics. This describes
+          how this particular pipeline works, not a generalizable pattern.
+
+      - task: "devcontainer-verification-stage"
+        date: "2024-12-16"
+        type: "command-correction"
+        summary: "CLAUDE.md changes must preserve all existing rules"
+        detail: |
+          WRONG: Simplify CLAUDE.md by removing rules you think are redundant
+          RIGHT: Always preserve existing rules, only ADD new ones
+          The TSC reviewer caught that removing "No `any` outside test files",
+          "Quick Commands", and "Lessons" sections broke project conventions.
+          These were unintentional side effects of accepting user-modified content.
+          Rejected: single occurrence, obvious corrective note. The lesson "don't
+          delete things you didn't mean to delete" is too generic to warrant
+          skill documentation.
+
+      - task: "devcontainer-verification-stage"
+        date: "2024-12-16"
+        type: "pattern"
+        summary: "Security trade-offs need explicit documentation"
+        detail: |
+          When making security trade-offs (like passwordless sudo in containers
+          or curl|sh installation patterns), document them explicitly:
+          1. What the trade-off is
+          2. Why it's acceptable in this context
+          3. What the alternative would be for stricter security
+          This helps reviewers and future maintainers understand the reasoning.
+          Rejected: single occurrence, generic best practice. Standard engineering
+          advice that doesn't meet the 3+ occurrence threshold for skill inclusion.
+
+      - task: "devcontainer-verification-stage"
+        date: "2024-12-16"
+        type: "insight"
+        summary: "JSONC parsing requires stripping // comments AND trailing commas"
+        detail: |
+          devcontainer.json uses JSONC format (JSON with Comments). When parsing:
+          1. Strip single-line comments: text.replace(/^\s*\/\/.*$/gm, '')
+          2. Strip multi-line comments: text.replace(/\/\*[\s\S]*?\*\//g, '')
+          3. Strip trailing commas: text.replace(/,(\s*[}\]])/g, '$1')
+          Without all three, JSON.parse() will fail on valid JSONC files.
+          Rejected: single occurrence, implementation-specific detail. Useful for
+          JSONC parsing but not a generalizable pattern until it recurs.
