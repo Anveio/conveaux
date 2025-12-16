@@ -11,18 +11,43 @@ You are running inside an isolated devcontainer. This container IS your sandbox 
 
 1. **The container is your sandbox** - You have full permissions inside the container, but the container itself is isolated from the host
 2. **Sandbox is disabled** - Claude Code's built-in sandbox causes conflicts with devcontainer isolation. Use `--dangerously-skip-permissions` or the permissive settings are already applied
+
+**In multi-agent mode only** (when `$AGENT_ID` is set):
+
 3. **You may be one of many agents** - Up to 20 agents can run in parallel, each in their own container, sharing the same repository
 4. **You own specific packages** - Check your `AGENT_ID` and assigned packages. Only modify files in your owned directories
 5. **Use your branch prefix** - All branches must start with `agent-{N}/` to avoid conflicts
 
-## Environment Variables
+## Detecting Your Environment
 
-Check these to understand your assignment:
+First, determine if you're in a devcontainer:
 
+```bash
+# If this file exists, you're in a container
+[ -f /.dockerenv ] && echo "In devcontainer" || echo "On host"
+```
+
+### Single-Agent vs Multi-Agent Mode
+
+**Multi-agent mode** (environment variables set):
 ```bash
 echo $AGENT_ID        # Your agent number (1-20)
 echo $BRANCH_PREFIX   # Your branch prefix (e.g., "agent-3")
 echo $OWNED_PACKAGES  # Directories you may modify
+```
+
+**Single-agent mode** (environment variables NOT set):
+- You are the only agent - you can modify any package
+- Use any branch name (no prefix required)
+- No coordination needed with other agents
+
+Check which mode you're in:
+```bash
+if [ -n "$AGENT_ID" ]; then
+  echo "Multi-agent mode: Agent $AGENT_ID"
+else
+  echo "Single-agent mode: Full repo access"
+fi
 ```
 
 ## What You Can Do
