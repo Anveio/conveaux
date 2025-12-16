@@ -8,6 +8,7 @@ import {
   parseHTML,
 } from '@conveaux/chatgpt-share';
 import { ConveauxError } from '@conveaux/port-control-flow';
+import { createEphemeralScheduler } from '@conveaux/port-ephemeral-scheduler';
 import { createLogger, createPrettyFormatter } from '@conveaux/port-logger';
 import { createOutChannel } from '@conveaux/port-outchannel';
 import { createWallClock } from '@conveaux/port-wall-clock';
@@ -25,7 +26,13 @@ const logger = createLogger({
 });
 
 // Dependencies for chatgpt-share functions
-const fetchDeps = { AbortController, setTimeout, clearTimeout };
+const scheduler = createEphemeralScheduler({
+  setTimeout: globalThis.setTimeout,
+  clearTimeout: globalThis.clearTimeout,
+  setInterval: globalThis.setInterval,
+  clearInterval: globalThis.clearInterval,
+});
+const fetchDeps = { AbortController, scheduler };
 const parseDeps = { Date };
 
 const program = new Command();

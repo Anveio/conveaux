@@ -13,6 +13,7 @@
   "dependencies": {
     "@conveaux/chatgpt-share": "*",
     "@conveaux/port-control-flow": "*",
+    "@conveaux/port-ephemeral-scheduler": "*",
     "@conveaux/port-logger": "*",
     "@conveaux/port-outchannel": "*",
     "@conveaux/port-wall-clock": "*",

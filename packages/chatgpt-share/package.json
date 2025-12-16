@@ -19,7 +19,7 @@
     "@conveaux/contract-abort": "*",
     "@conveaux/contract-date": "*",
     "@conveaux/contract-http": "*",
-    "@conveaux/contract-timers": "*",
+    "@conveaux/contract-ephemeral-scheduler": "*",
     "@conveaux/port-control-flow": "*",
     "cheerio": "^1.0.0"
   },
