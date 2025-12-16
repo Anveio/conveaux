@@ -3,8 +3,8 @@
  */
 
 import type { DateConstructor } from '@conveaux/contract-date';
+import type { HtmlParser } from '@conveaux/contract-html-parser';
 import { ParseError } from '@conveaux/port-control-flow';
-import * as cheerio from 'cheerio';
 
 import type {
   ChatGPTConversation,
@@ -19,6 +19,7 @@ import type {
  */
 export interface ParseHTMLDependencies {
   readonly Date: DateConstructor;
+  readonly htmlParser: HtmlParser;
 }
 
 interface NextDataProps {
@@ -114,20 +115,20 @@ function walkConversationTree(
 /**
  * Parses HTML from a ChatGPT share page into a structured conversation.
  *
- * @param deps - Required dependencies (Date)
+ * @param deps - Required dependencies (Date, htmlParser)
  * @param html - The HTML content of the share page
  * @returns The parsed conversation
  */
 export function parseHTML(deps: ParseHTMLDependencies, html: string): ParsedConversation {
-  const { Date: DateCtor } = deps;
-  const $ = cheerio.load(html);
-  const scriptTag = $('script#__NEXT_DATA__');
+  const { Date: DateCtor, htmlParser } = deps;
+  const { document } = htmlParser.parse(html);
+  const scriptTag = document.getElementById('__NEXT_DATA__');
 
-  if (!scriptTag.length) {
+  if (!scriptTag) {
     throw new ParseError('Could not find conversation data (page format may have changed)');
   }
 
-  const jsonContent = scriptTag.html();
+  const jsonContent = scriptTag.innerHTML;
   if (!jsonContent) {
     throw new ParseError('Could not parse conversation data');
   }

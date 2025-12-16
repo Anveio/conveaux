@@ -18,10 +18,10 @@
   "dependencies": {
     "@conveaux/contract-abort": "*",
     "@conveaux/contract-date": "*",
+    "@conveaux/contract-html-parser": "*",
     "@conveaux/contract-http": "*",
     "@conveaux/contract-ephemeral-scheduler": "*",
-    "@conveaux/port-control-flow": "*",
-    "cheerio": "^1.0.0"
+    "@conveaux/port-control-flow": "*"
   },
   "devDependencies": {
     "@conveaux/tsconfig": "*",

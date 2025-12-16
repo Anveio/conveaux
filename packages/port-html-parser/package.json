@@ -1,0 +1,27 @@
+{
+  "name": "@conveaux/port-html-parser",
+  "version": "0.1.0",
+  "description": "HTML parser port - platform-agnostic HTML parsing with zero dependencies",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["src"],
+  "dependencies": {
+    "@conveaux/contract-html-parser": "*"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.15"
+  }
+}
