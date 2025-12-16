@@ -11,8 +11,6 @@
  * - IdGenerator: Unified generator combining all categories
  */
 
-import * as nodeCrypto from 'node:crypto';
-
 import type {
   IdGenerator,
   RandomId,
@@ -27,6 +25,7 @@ import type {
   TraceId,
   TraceIdGenerator,
 } from '@conveaux/contract-id';
+import type { Random } from '@conveaux/contract-random';
 import type { WallClock } from '@conveaux/contract-wall-clock';
 
 // Re-export all contract types for convenience
@@ -44,6 +43,8 @@ export type {
   TraceId,
   TraceIdGenerator,
 } from '@conveaux/contract-id';
+
+export type { Random } from '@conveaux/contract-random';
 
 import {
   bytesToHex,
@@ -65,84 +66,8 @@ const DEFAULT_RANDOM_ID_BYTES = 16; // 128 bits
 const DEFAULT_TIME_ORDERED_SUFFIX_BYTES = 10; // 80 bits
 
 // =============================================================================
-// Duck-Typed Platform Interfaces
-// =============================================================================
-
-/**
- * Duck-typed random bytes function.
- * Matches Node.js crypto.randomBytes signature.
- */
-type RandomBytesLike = (size: number) => Uint8Array;
-
-/**
- * Duck-typed crypto interface for random byte generation.
- */
-type CryptoLike = {
-  randomBytes: RandomBytesLike;
-};
-
-// =============================================================================
-// Environment Types
-// =============================================================================
-
-/**
- * Resolved ID environment with concrete values (no undefined).
- */
-type IdEnvironment = {
-  readonly crypto: CryptoLike | null;
-};
-
-/**
- * Environment overrides for crypto sources.
- *
- * Semantics:
- * - `undefined`: Use host default (Node.js crypto.randomBytes)
- * - `null`: Explicitly disable (will throw on use)
- * - `value`: Use override instead of host
- */
-export type IdEnvironmentOverrides = {
-  readonly crypto?: CryptoLike | null;
-};
-
-// =============================================================================
 // Internal Helpers
 // =============================================================================
-
-type OverrideKey = keyof IdEnvironmentOverrides;
-
-/**
- * Reads an override value, distinguishing between "not provided" and "provided as undefined/null".
- */
-const readOverride = <Key extends OverrideKey>(
-  overrides: IdEnvironmentOverrides | undefined,
-  key: Key
-): IdEnvironmentOverrides[Key] | undefined => {
-  if (!overrides) {
-    return undefined;
-  }
-  return Object.hasOwn(overrides, key) ? overrides[key] : undefined;
-};
-
-/**
- * Returns the Node.js crypto module as a CryptoLike.
- */
-const getNodeCrypto = (): CryptoLike => {
-  return {
-    randomBytes: (size: number): Uint8Array => {
-      const buffer = nodeCrypto.randomBytes(size);
-      return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-    },
-  };
-};
-
-/**
- * Resolves the crypto environment from overrides.
- */
-const resolveEnvironment = (overrides?: IdEnvironmentOverrides): IdEnvironment => {
-  const overrideCrypto = readOverride(overrides, 'crypto');
-  const crypto = overrideCrypto !== undefined ? (overrideCrypto ?? null) : getNodeCrypto();
-  return { crypto };
-};
 
 /**
  * Check if bytes are all zeros (invalid per W3C).
@@ -179,6 +104,16 @@ const encodeBytes = (
 // =============================================================================
 
 /**
+ * Dependencies for creating a random ID generator.
+ */
+export type RandomIdGeneratorDependencies = {
+  /**
+   * Random byte source for ID generation.
+   */
+  readonly random: Random;
+};
+
+/**
  * Options for creating a random ID generator.
  */
 export type RandomIdGeneratorOptions = {
@@ -193,46 +128,51 @@ export type RandomIdGeneratorOptions = {
    * Configuration for the default implementation.
    */
   readonly config?: RandomIdConfig;
-
-  /**
-   * Environment overrides for platform dependencies.
-   */
-  readonly environment?: IdEnvironmentOverrides;
 };
 
 /**
  * Creates a random ID generator.
  *
- * Default: hex-encoded crypto.randomBytes (16 bytes = 32 chars).
+ * Default: hex-encoded random bytes (16 bytes = 32 chars).
  * Override with: uuid.v4, nanoid, custom entropy source.
  *
+ * @param deps - Required dependencies (random)
  * @param options - Optional configuration
  * @returns A RandomIdGenerator instance
  *
  * @example
  * ```typescript
+ * import { createRandom } from '@conveaux/port-random';
+ *
  * // Default: 16 bytes hex (32 chars)
- * const gen = createRandomIdGenerator();
+ * const gen = createRandomIdGenerator({ random: createRandom() });
  * const id = gen.randomId();
  *
  * // Custom size and encoding
- * const gen21 = createRandomIdGenerator({
- *   config: { sizeBytes: 21, encoding: 'base64url' }
- * });
+ * const gen21 = createRandomIdGenerator(
+ *   { random: createRandom() },
+ *   { config: { sizeBytes: 21, encoding: 'base64url' } }
+ * );
  *
  * // Inject uuid.v4
- * const genUuid = createRandomIdGenerator({
- *   generate: () => uuid.v4().replace(/-/g, '')
- * });
+ * const genUuid = createRandomIdGenerator(
+ *   { random: createRandom() },
+ *   { generate: () => uuid.v4().replace(/-/g, '') }
+ * );
  *
  * // Inject nanoid
- * const genNano = createRandomIdGenerator({
- *   generate: () => nanoid()
- * });
+ * const genNano = createRandomIdGenerator(
+ *   { random: createRandom() },
+ *   { generate: () => nanoid() }
+ * );
  * ```
  */
-export function createRandomIdGenerator(options: RandomIdGeneratorOptions = {}): RandomIdGenerator {
-  const { generate, config = {}, environment } = options;
+export function createRandomIdGenerator(
+  deps: RandomIdGeneratorDependencies,
+  options: RandomIdGeneratorOptions = {}
+): RandomIdGenerator {
+  const { random } = deps;
+  const { generate, config = {} } = options;
   const { sizeBytes = DEFAULT_RANDOM_ID_BYTES, encoding = 'hex' } = config;
 
   // If generate is provided, use it directly
@@ -242,17 +182,9 @@ export function createRandomIdGenerator(options: RandomIdGeneratorOptions = {}):
     };
   }
 
-  // Otherwise, use default implementation with crypto.randomBytes
-  const env = resolveEnvironment(environment);
-
   return {
     randomId(): RandomId {
-      if (!env.crypto) {
-        throw new Error(
-          'No crypto implementation available. Provide a generate override or run in Node.js.'
-        );
-      }
-      const bytes = env.crypto.randomBytes(sizeBytes);
+      const bytes = random.bytes(sizeBytes);
       return encodeBytes(bytes, encoding) as RandomId;
     },
   };
@@ -270,6 +202,11 @@ export type TimeOrderedIdGeneratorDependencies = {
    * Wall clock for timestamps.
    */
   readonly clock: WallClock;
+
+  /**
+   * Random byte source for ID suffix.
+   */
+  readonly random: Random;
 };
 
 /**
@@ -293,11 +230,6 @@ export type TimeOrderedIdGeneratorOptions = {
    * Configuration for the default implementation.
    */
   readonly config?: TimeOrderedIdConfig;
-
-  /**
-   * Environment overrides for platform dependencies.
-   */
-  readonly environment?: IdEnvironmentOverrides;
 };
 
 /**
@@ -308,17 +240,19 @@ export type TimeOrderedIdGeneratorOptions = {
  *
  * Override with: ULID, UUIDv7, KSUID, Snowflake.
  *
- * @param deps - Required dependencies (clock)
+ * @param deps - Required dependencies (clock, random)
  * @param options - Optional configuration
  * @returns A TimeOrderedIdGenerator instance
  *
  * @example
  * ```typescript
  * import { createWallClock } from '@conveaux/port-wall-clock';
+ * import { createRandom } from '@conveaux/port-random';
  *
  * // Default implementation
  * const gen = createTimeOrderedIdGenerator({
- *   clock: createWallClock()
+ *   clock: createWallClock({ Date }),
+ *   random: createRandom(),
  * });
  * const id = gen.timeOrderedId();
  * const ts = gen.extractTimestamp(id);
@@ -326,7 +260,7 @@ export type TimeOrderedIdGeneratorOptions = {
  * // Inject ULID
  * import { ulid, decodeTime } from 'ulid';
  * const genUlid = createTimeOrderedIdGenerator(
- *   { clock: createWallClock() },
+ *   { clock: createWallClock({ Date }), random: createRandom() },
  *   {
  *     generate: (ts) => ulid(ts),
  *     extractTimestamp: (id) => decodeTime(id)
@@ -338,8 +272,8 @@ export function createTimeOrderedIdGenerator(
   deps: TimeOrderedIdGeneratorDependencies,
   options: TimeOrderedIdGeneratorOptions = {}
 ): TimeOrderedIdGenerator {
-  const { clock } = deps;
-  const { generate, extractTimestamp: extractFn, config = {}, environment } = options;
+  const { clock, random } = deps;
+  const { generate, extractTimestamp: extractFn, config = {} } = options;
   const { randomSuffixBytes = DEFAULT_TIME_ORDERED_SUFFIX_BYTES, encoding = 'base32' } = config;
 
   // If generate is provided, use it
@@ -355,20 +289,11 @@ export function createTimeOrderedIdGenerator(
     };
   }
 
-  // Default implementation
-  const env = resolveEnvironment(environment);
-
   return {
     timeOrderedId(): TimeOrderedId {
-      if (!env.crypto) {
-        throw new Error(
-          'No crypto implementation available. Provide a generate override or run in Node.js.'
-        );
-      }
-
       const ts = clock.nowMs();
       const tsBytes = encodeTimestamp48(ts);
-      const randomBytes = env.crypto.randomBytes(randomSuffixBytes);
+      const randomBytes = random.bytes(randomSuffixBytes);
 
       // Combine timestamp + random bytes
       const combined = new Uint8Array(6 + randomSuffixBytes);
@@ -404,68 +329,60 @@ export function createTimeOrderedIdGenerator(
 // =============================================================================
 
 /**
- * Options for creating a trace ID generator.
+ * Dependencies for creating a trace ID generator.
  */
-export type TraceIdGeneratorOptions = {
+export type TraceIdGeneratorDependencies = {
   /**
-   * Direct override for random bytes generation.
-   * Useful for deterministic testing.
+   * Random byte source for ID generation.
    */
-  readonly randomBytesFn?: RandomBytesLike;
-
-  /**
-   * Environment overrides for platform dependencies.
-   */
-  readonly environment?: IdEnvironmentOverrides;
+  readonly random: Random;
 };
+
+/**
+ * Options for creating a trace ID generator.
+ * Currently empty as the W3C format is fixed, reserved for future use.
+ */
+export type TraceIdGeneratorOptions = Record<string, never>;
 
 /**
  * Creates a W3C Trace Context compliant ID generator.
  *
  * NOTE: This is NOT injectable. The format is fixed by the W3C spec.
- * Only the entropy source can be overridden (for testing).
+ * Only the entropy source can be overridden (via the random dependency).
  *
- * @param options - Optional configuration
+ * @param deps - Required dependencies (random)
+ * @param _options - Optional configuration (reserved for future use)
  * @returns A TraceIdGenerator instance
  *
  * @example
  * ```typescript
- * const gen = createTraceIdGenerator();
+ * import { createRandom } from '@conveaux/port-random';
+ *
+ * const gen = createTraceIdGenerator({ random: createRandom() });
  * const traceId = gen.traceId(); // 32 hex chars
  * const spanId = gen.spanId();   // 16 hex chars
  *
  * // For testing with deterministic values
- * const testGen = createTraceIdGenerator({
- *   randomBytesFn: (size) => new Uint8Array(size).fill(0x42)
+ * const mockRandom = createRandom({
+ *   bytesFn: (size) => new Uint8Array(size).fill(0x42)
  * });
+ * const testGen = createTraceIdGenerator({ random: mockRandom });
  * ```
  */
-export function createTraceIdGenerator(options: TraceIdGeneratorOptions = {}): TraceIdGenerator {
-  const { randomBytesFn, environment } = options;
-  const env = resolveEnvironment(environment);
-
-  const getRandomBytes = (size: number): Uint8Array => {
-    if (randomBytesFn) {
-      return randomBytesFn(size);
-    }
-
-    if (!env.crypto) {
-      throw new Error(
-        'No crypto implementation available. Provide a randomBytesFn override or run in Node.js.'
-      );
-    }
-
-    return env.crypto.randomBytes(size);
-  };
+export function createTraceIdGenerator(
+  deps: TraceIdGeneratorDependencies,
+  _options: TraceIdGeneratorOptions = {}
+): TraceIdGenerator {
+  const { random } = deps;
 
   /**
    * Generate random bytes, retrying if all zeros (extremely rare).
    * W3C spec: all-zero IDs are invalid.
    */
   const generateNonZeroBytes = (size: number): Uint8Array => {
-    let bytes = getRandomBytes(size);
+    let bytes = random.bytes(size);
     while (isAllZeros(bytes)) {
-      bytes = getRandomBytes(size);
+      bytes = random.bytes(size);
     }
     return bytes;
   };
@@ -495,6 +412,11 @@ export type IdGeneratorDependencies = {
    * Wall clock for time-ordered IDs.
    */
   readonly clock: WallClock;
+
+  /**
+   * Random byte source for ID generation.
+   */
+  readonly random: Random;
 };
 
 /**
@@ -504,37 +426,34 @@ export type IdGeneratorOptions = {
   /**
    * Options for random ID generation.
    */
-  readonly random?: Omit<RandomIdGeneratorOptions, 'environment'>;
+  readonly random?: RandomIdGeneratorOptions;
 
   /**
    * Options for time-ordered ID generation.
    */
-  readonly timeOrdered?: Omit<TimeOrderedIdGeneratorOptions, 'environment'>;
+  readonly timeOrdered?: TimeOrderedIdGeneratorOptions;
 
   /**
    * Options for trace ID generation.
    */
-  readonly trace?: Omit<TraceIdGeneratorOptions, 'environment'>;
-
-  /**
-   * Shared environment overrides for all generators.
-   */
-  readonly environment?: IdEnvironmentOverrides;
+  readonly trace?: TraceIdGeneratorOptions;
 };
 
 /**
  * Creates a unified ID generator with all categories.
  *
- * @param deps - Required dependencies (clock)
+ * @param deps - Required dependencies (clock, random)
  * @param options - Optional configuration for each category
  * @returns An IdGenerator instance
  *
  * @example
  * ```typescript
  * import { createWallClock } from '@conveaux/port-wall-clock';
+ * import { createRandom } from '@conveaux/port-random';
  *
  * const ids = createIdGenerator({
- *   clock: createWallClock()
+ *   clock: createWallClock({ Date }),
+ *   random: createRandom(),
  * });
  *
  * ids.randomId();      // Session tokens
@@ -544,7 +463,7 @@ export type IdGeneratorOptions = {
  *
  * // With custom implementations
  * const customIds = createIdGenerator(
- *   { clock: createWallClock() },
+ *   { clock: createWallClock({ Date }), random: createRandom() },
  *   {
  *     random: { generate: () => nanoid() },
  *     timeOrdered: {
@@ -559,26 +478,14 @@ export function createIdGenerator(
   deps: IdGeneratorDependencies,
   options: IdGeneratorOptions = {}
 ): IdGenerator {
-  const { clock } = deps;
-  const { random = {}, timeOrdered = {}, trace = {}, environment } = options;
+  const { clock, random } = deps;
+  const { random: randomOptions = {}, timeOrdered = {}, trace = {} } = options;
 
-  const randomGen = createRandomIdGenerator({
-    ...random,
-    environment,
-  });
+  const randomGen = createRandomIdGenerator({ random }, randomOptions);
 
-  const timeOrderedGen = createTimeOrderedIdGenerator(
-    { clock },
-    {
-      ...timeOrdered,
-      environment,
-    }
-  );
+  const timeOrderedGen = createTimeOrderedIdGenerator({ clock, random }, timeOrdered);
 
-  const traceGen = createTraceIdGenerator({
-    ...trace,
-    environment,
-  });
+  const traceGen = createTraceIdGenerator({ random }, trace);
 
   return {
     randomId: randomGen.randomId.bind(randomGen),

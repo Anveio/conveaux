@@ -18,6 +18,7 @@
   "files": ["src"],
   "dependencies": {
     "@conveaux/contract-id": "*",
+    "@conveaux/contract-random": "*",
     "@conveaux/contract-wall-clock": "*"
   },
   "devDependencies": {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { Random } from '@conveaux/contract-random';
 import type { WallClock } from '@conveaux/contract-wall-clock';
 
 import type { RandomId, SpanId, TimeOrderedId, TraceId } from './index.js';
@@ -30,34 +31,62 @@ function createMockClock(
 }
 
 /**
- * Create deterministic mock that returns incrementing byte values.
+ * Create a mock Random that uses a custom bytes function.
  */
-function createIncrementingMock(): (size: number) => Uint8Array {
-  let counter = 0;
-  return (size: number) => {
-    return new Uint8Array(size).map(() => ++counter % 256);
+function createMockRandom(bytesFn: (size: number) => Uint8Array): Random {
+  return {
+    bytes: bytesFn,
   };
 }
 
 /**
- * Create mock that returns specific bytes.
+ * Create a mock Random that returns incrementing byte values.
  */
-function createFixedMock(bytes: number[]): (size: number) => Uint8Array {
-  return (size: number) => new Uint8Array(bytes.slice(0, size));
+function createIncrementingRandom(): Random {
+  let counter = 0;
+  return createMockRandom((size: number) => {
+    return new Uint8Array(size).map(() => ++counter % 256);
+  });
 }
 
 /**
- * Create mock that tracks calls.
+ * Create a mock Random that returns fixed bytes.
  */
-function createCapturingMock(): { fn: (size: number) => Uint8Array; calls: number[] } {
+function createFixedRandom(bytes: number[]): Random {
+  return createMockRandom((size: number) => new Uint8Array(bytes.slice(0, size)));
+}
+
+/**
+ * Create a mock Random that fills with a specific value.
+ */
+function createFilledRandom(fillValue: number): Random {
+  return createMockRandom((size: number) => new Uint8Array(size).fill(fillValue));
+}
+
+/**
+ * Create a mock Random that tracks calls.
+ */
+function createCapturingRandom(): { random: Random; calls: number[] } {
   const calls: number[] = [];
   return {
-    fn: (size: number): Uint8Array => {
+    random: createMockRandom((size: number) => {
       calls.push(size);
       return new Uint8Array(size).fill(1);
-    },
+    }),
     calls,
   };
+}
+
+/**
+ * Create a production-like Random using Node.js crypto.
+ */
+function createNodeRandom(): Random {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const crypto = require('node:crypto');
+  return createMockRandom((size: number) => {
+    const buffer = crypto.randomBytes(size);
+    return new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  });
 }
 
 // =============================================================================
@@ -67,14 +96,16 @@ function createCapturingMock(): { fn: (size: number) => Uint8Array; calls: numbe
 describe('createRandomIdGenerator', () => {
   describe('default implementation', () => {
     it('should generate hex string of default length (32 chars)', () => {
-      const gen = createRandomIdGenerator();
+      const random = createNodeRandom();
+      const gen = createRandomIdGenerator({ random });
       const id = gen.randomId();
       expect(id).toHaveLength(32);
       expect(id).toMatch(/^[0-9a-f]{32}$/);
     });
 
     it('should generate unique IDs', () => {
-      const gen = createRandomIdGenerator();
+      const random = createNodeRandom();
+      const gen = createRandomIdGenerator({ random });
       const ids = new Set<string>();
       for (let i = 0; i < 100; i++) {
         ids.add(gen.randomId());
@@ -82,11 +113,9 @@ describe('createRandomIdGenerator', () => {
       expect(ids.size).toBe(100);
     });
 
-    it('should request default 16 bytes from crypto', () => {
-      const { fn, calls } = createCapturingMock();
-      const gen = createRandomIdGenerator({
-        environment: { crypto: { randomBytes: fn } },
-      });
+    it('should request default 16 bytes from random', () => {
+      const { random, calls } = createCapturingRandom();
+      const gen = createRandomIdGenerator({ random });
       gen.randomId();
       expect(calls[0]).toBe(16);
     });
@@ -94,28 +123,29 @@ describe('createRandomIdGenerator', () => {
 
   describe('custom configuration', () => {
     it('should respect sizeBytes option', () => {
-      const { fn, calls } = createCapturingMock();
-      const gen = createRandomIdGenerator({
-        config: { sizeBytes: 8 },
-        environment: { crypto: { randomBytes: fn } },
-      });
+      const { random, calls } = createCapturingRandom();
+      const gen = createRandomIdGenerator({ random }, { config: { sizeBytes: 8 } });
       gen.randomId();
       expect(calls[0]).toBe(8);
     });
 
     it('should support base64 encoding', () => {
-      const gen = createRandomIdGenerator({
-        config: { sizeBytes: 12, encoding: 'base64' },
-      });
+      const random = createNodeRandom();
+      const gen = createRandomIdGenerator(
+        { random },
+        { config: { sizeBytes: 12, encoding: 'base64' } }
+      );
       const id = gen.randomId();
       // 12 bytes = 16 base64 chars
       expect(id).toMatch(/^[A-Za-z0-9+/]{16}$/);
     });
 
     it('should support base64url encoding', () => {
-      const gen = createRandomIdGenerator({
-        config: { sizeBytes: 12, encoding: 'base64url' },
-      });
+      const random = createNodeRandom();
+      const gen = createRandomIdGenerator(
+        { random },
+        { config: { sizeBytes: 12, encoding: 'base64url' } }
+      );
       const id = gen.randomId();
       // base64url: no +, /, or = padding
       expect(id).toMatch(/^[A-Za-z0-9_-]+$/);
@@ -127,49 +157,45 @@ describe('createRandomIdGenerator', () => {
 
   describe('custom generate function', () => {
     it('should use injected generate function', () => {
+      const random = createNodeRandom();
       let callCount = 0;
-      const gen = createRandomIdGenerator({
-        generate: () => {
-          callCount++;
-          return `custom-id-${callCount}`;
-        },
-      });
+      const gen = createRandomIdGenerator(
+        { random },
+        {
+          generate: () => {
+            callCount++;
+            return `custom-id-${callCount}`;
+          },
+        }
+      );
       expect(gen.randomId()).toBe('custom-id-1');
       expect(gen.randomId()).toBe('custom-id-2');
       expect(callCount).toBe(2);
     });
 
     it('should work with uuid-like injection', () => {
-      const gen = createRandomIdGenerator({
-        generate: () => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'.replace(/-/g, ''),
-      });
+      const random = createNodeRandom();
+      const gen = createRandomIdGenerator(
+        { random },
+        { generate: () => 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'.replace(/-/g, '') }
+      );
       const id = gen.randomId();
       expect(id).toBe('a1b2c3d4e5f67890abcdef1234567890');
     });
   });
 
-  describe('environment override', () => {
-    it('should throw when crypto is null and no generate', () => {
-      const gen = createRandomIdGenerator({
-        environment: { crypto: null },
-      });
-      expect(() => gen.randomId()).toThrow('No crypto implementation available');
-    });
-
-    it('should use custom crypto implementation', () => {
-      const customCrypto = {
-        randomBytes: (size: number) => new Uint8Array(size).fill(0xab),
-      };
-      const gen = createRandomIdGenerator({
-        environment: { crypto: customCrypto },
-      });
+  describe('deterministic testing', () => {
+    it('should use mock random for deterministic output', () => {
+      const random = createFilledRandom(0xab);
+      const gen = createRandomIdGenerator({ random });
       expect(gen.randomId()).toBe('ab'.repeat(16));
     });
   });
 
   describe('type branding', () => {
     it('should return RandomId type', () => {
-      const gen = createRandomIdGenerator();
+      const random = createNodeRandom();
+      const gen = createRandomIdGenerator({ random });
       const id: RandomId = gen.randomId();
       expect(typeof id).toBe('string');
     });
@@ -184,7 +210,8 @@ describe('createTimeOrderedIdGenerator', () => {
   describe('default implementation', () => {
     it('should generate Crockford Base32 string', () => {
       const clock = createMockClock(1700000000000);
-      const gen = createTimeOrderedIdGenerator({ clock });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random });
       const id = gen.timeOrderedId();
       // 16 bytes = 26 base32 chars
       expect(id).toHaveLength(26);
@@ -193,7 +220,8 @@ describe('createTimeOrderedIdGenerator', () => {
 
     it('should generate sortable IDs', () => {
       const clock = createMockClock(1000);
-      const gen = createTimeOrderedIdGenerator({ clock });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random });
 
       clock.setTime(1000);
       const id1 = gen.timeOrderedId();
@@ -211,7 +239,8 @@ describe('createTimeOrderedIdGenerator', () => {
 
     it('should extract timestamp correctly', () => {
       const clock = createMockClock(1700000000000);
-      const gen = createTimeOrderedIdGenerator({ clock });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random });
       const id = gen.timeOrderedId();
       const extracted = gen.extractTimestamp(id);
       expect(extracted).toBe(1700000000000);
@@ -219,7 +248,8 @@ describe('createTimeOrderedIdGenerator', () => {
 
     it('should generate unique IDs within same millisecond', () => {
       const clock = createMockClock(1700000000000);
-      const gen = createTimeOrderedIdGenerator({ clock });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random });
       const ids = new Set<string>();
       for (let i = 0; i < 100; i++) {
         ids.add(gen.timeOrderedId());
@@ -230,14 +260,11 @@ describe('createTimeOrderedIdGenerator', () => {
 
   describe('custom configuration', () => {
     it('should respect randomSuffixBytes option', () => {
-      const { fn, calls } = createCapturingMock();
+      const { random, calls } = createCapturingRandom();
       const clock = createMockClock();
       const gen = createTimeOrderedIdGenerator(
-        { clock },
-        {
-          config: { randomSuffixBytes: 5 },
-          environment: { crypto: { randomBytes: fn } },
-        }
+        { clock, random },
+        { config: { randomSuffixBytes: 5 } }
       );
       gen.timeOrderedId();
       expect(calls[0]).toBe(5);
@@ -245,7 +272,8 @@ describe('createTimeOrderedIdGenerator', () => {
 
     it('should support hex encoding', () => {
       const clock = createMockClock(1700000000000);
-      const gen = createTimeOrderedIdGenerator({ clock }, { config: { encoding: 'hex' } });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random }, { config: { encoding: 'hex' } });
       const id = gen.timeOrderedId();
       // 6 bytes timestamp + 10 bytes random = 16 bytes = 32 hex chars
       expect(id).toHaveLength(32);
@@ -256,9 +284,10 @@ describe('createTimeOrderedIdGenerator', () => {
   describe('custom generate function', () => {
     it('should pass timestamp to generate function', () => {
       const clock = createMockClock(1700000000000);
+      const random = createNodeRandom();
       let capturedTs: number | undefined;
       const gen = createTimeOrderedIdGenerator(
-        { clock },
+        { clock, random },
         {
           generate: (ts) => {
             capturedTs = ts;
@@ -272,8 +301,9 @@ describe('createTimeOrderedIdGenerator', () => {
 
     it('should use custom extractTimestamp', () => {
       const clock = createMockClock(1700000000000);
+      const random = createNodeRandom();
       const gen = createTimeOrderedIdGenerator(
-        { clock },
+        { clock, random },
         {
           generate: (ts) => `custom-${ts}`,
           extractTimestamp: (id) => {
@@ -288,7 +318,8 @@ describe('createTimeOrderedIdGenerator', () => {
 
     it('should return undefined when no extractTimestamp provided', () => {
       const clock = createMockClock();
-      const gen = createTimeOrderedIdGenerator({ clock }, { generate: () => 'fixed-id' });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random }, { generate: () => 'fixed-id' });
       expect(gen.extractTimestamp('fixed-id' as TimeOrderedId)).toBeUndefined();
     });
   });
@@ -296,7 +327,8 @@ describe('createTimeOrderedIdGenerator', () => {
   describe('B-tree friendliness', () => {
     it('should produce monotonically increasing prefixes for increasing timestamps', () => {
       const clock = createMockClock();
-      const gen = createTimeOrderedIdGenerator({ clock });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random });
 
       const timestamps = [1000, 2000, 5000, 10000, 100000];
       const ids: string[] = [];
@@ -313,18 +345,11 @@ describe('createTimeOrderedIdGenerator', () => {
     });
   });
 
-  describe('environment override', () => {
-    it('should throw when crypto is null and no generate', () => {
-      const clock = createMockClock();
-      const gen = createTimeOrderedIdGenerator({ clock }, { environment: { crypto: null } });
-      expect(() => gen.timeOrderedId()).toThrow('No crypto implementation available');
-    });
-  });
-
   describe('type branding', () => {
     it('should return TimeOrderedId type', () => {
       const clock = createMockClock();
-      const gen = createTimeOrderedIdGenerator({ clock });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random });
       const id: TimeOrderedId = gen.timeOrderedId();
       expect(typeof id).toBe('string');
     });
@@ -338,23 +363,23 @@ describe('createTimeOrderedIdGenerator', () => {
 describe('createTraceIdGenerator', () => {
   describe('traceId()', () => {
     it('should generate 32 character hex string', () => {
-      const gen = createTraceIdGenerator();
+      const random = createNodeRandom();
+      const gen = createTraceIdGenerator({ random });
       const id = gen.traceId();
       expect(id).toHaveLength(32);
       expect(id).toMatch(/^[0-9a-f]{32}$/);
     });
 
-    it('should request 16 bytes from randomBytes', () => {
-      const { fn, calls } = createCapturingMock();
-      const gen = createTraceIdGenerator({
-        environment: { crypto: { randomBytes: fn } },
-      });
+    it('should request 16 bytes from random', () => {
+      const { random, calls } = createCapturingRandom();
+      const gen = createTraceIdGenerator({ random });
       gen.traceId();
       expect(calls[0]).toBe(16);
     });
 
     it('should generate unique IDs', () => {
-      const gen = createTraceIdGenerator();
+      const random = createNodeRandom();
+      const gen = createTraceIdGenerator({ random });
       const ids = new Set<string>();
       for (let i = 0; i < 100; i++) {
         ids.add(gen.traceId());
@@ -363,12 +388,11 @@ describe('createTraceIdGenerator', () => {
     });
 
     it('should be deterministic with mock', () => {
-      const gen = createTraceIdGenerator({
-        randomBytesFn: createFixedMock([
-          0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
-          0x10,
-        ]),
-      });
+      const random = createFixedRandom([
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+        0x10,
+      ]);
+      const gen = createTraceIdGenerator({ random });
       const id = gen.traceId();
       expect(id).toBe('0102030405060708090a0b0c0d0e0f10');
     });
@@ -376,25 +400,23 @@ describe('createTraceIdGenerator', () => {
 
   describe('spanId()', () => {
     it('should generate 16 character hex string', () => {
-      const gen = createTraceIdGenerator();
+      const random = createNodeRandom();
+      const gen = createTraceIdGenerator({ random });
       const id = gen.spanId();
       expect(id).toHaveLength(16);
       expect(id).toMatch(/^[0-9a-f]{16}$/);
     });
 
-    it('should request 8 bytes from randomBytes', () => {
-      const { fn, calls } = createCapturingMock();
-      const gen = createTraceIdGenerator({
-        environment: { crypto: { randomBytes: fn } },
-      });
+    it('should request 8 bytes from random', () => {
+      const { random, calls } = createCapturingRandom();
+      const gen = createTraceIdGenerator({ random });
       gen.spanId();
       expect(calls[0]).toBe(8);
     });
 
     it('should be deterministic with mock', () => {
-      const gen = createTraceIdGenerator({
-        randomBytesFn: createFixedMock([0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe]),
-      });
+      const random = createFixedRandom([0xde, 0xad, 0xbe, 0xef, 0xca, 0xfe, 0xba, 0xbe]);
+      const gen = createTraceIdGenerator({ random });
       const id = gen.spanId();
       expect(id).toBe('deadbeefcafebabe');
     });
@@ -403,15 +425,14 @@ describe('createTraceIdGenerator', () => {
   describe('W3C compliance', () => {
     it('should not generate all-zero trace IDs', () => {
       let callCount = 0;
-      const gen = createTraceIdGenerator({
-        randomBytesFn: (size: number) => {
-          callCount++;
-          if (callCount === 1) {
-            return new Uint8Array(size).fill(0);
-          }
-          return new Uint8Array(size).fill(1);
-        },
+      const random = createMockRandom((size: number) => {
+        callCount++;
+        if (callCount === 1) {
+          return new Uint8Array(size).fill(0);
+        }
+        return new Uint8Array(size).fill(1);
       });
+      const gen = createTraceIdGenerator({ random });
       const id = gen.traceId();
       expect(id).not.toBe('0'.repeat(32));
       expect(callCount).toBe(2);
@@ -419,15 +440,14 @@ describe('createTraceIdGenerator', () => {
 
     it('should not generate all-zero span IDs', () => {
       let callCount = 0;
-      const gen = createTraceIdGenerator({
-        randomBytesFn: (size: number) => {
-          callCount++;
-          if (callCount === 1) {
-            return new Uint8Array(size).fill(0);
-          }
-          return new Uint8Array(size).fill(1);
-        },
+      const random = createMockRandom((size: number) => {
+        callCount++;
+        if (callCount === 1) {
+          return new Uint8Array(size).fill(0);
+        }
+        return new Uint8Array(size).fill(1);
       });
+      const gen = createTraceIdGenerator({ random });
       const id = gen.spanId();
       expect(id).not.toBe('0'.repeat(16));
       expect(callCount).toBe(2);
@@ -436,13 +456,15 @@ describe('createTraceIdGenerator', () => {
 
   describe('type branding', () => {
     it('should return TraceId type from traceId()', () => {
-      const gen = createTraceIdGenerator();
+      const random = createNodeRandom();
+      const gen = createTraceIdGenerator({ random });
       const id: TraceId = gen.traceId();
       expect(typeof id).toBe('string');
     });
 
     it('should return SpanId type from spanId()', () => {
-      const gen = createTraceIdGenerator();
+      const random = createNodeRandom();
+      const gen = createTraceIdGenerator({ random });
       const id: SpanId = gen.spanId();
       expect(typeof id).toBe('string');
     });
@@ -456,7 +478,8 @@ describe('createTraceIdGenerator', () => {
 describe('createIdGenerator', () => {
   it('should compose all generators', () => {
     const clock = createMockClock(1700000000000);
-    const ids = createIdGenerator({ clock });
+    const random = createNodeRandom();
+    const ids = createIdGenerator({ clock, random });
 
     const randomId = ids.randomId();
     const timeOrderedId = ids.timeOrderedId();
@@ -471,19 +494,17 @@ describe('createIdGenerator', () => {
 
   it('should support extractTimestamp', () => {
     const clock = createMockClock(1700000000000);
-    const ids = createIdGenerator({ clock });
+    const random = createNodeRandom();
+    const ids = createIdGenerator({ clock, random });
 
     const timeOrderedId = ids.timeOrderedId();
     expect(ids.extractTimestamp(timeOrderedId)).toBe(1700000000000);
   });
 
-  it('should share environment across generators', () => {
+  it('should use shared random for all generators', () => {
     const clock = createMockClock();
-    const customCrypto = {
-      randomBytes: (size: number) => new Uint8Array(size).fill(0x42),
-    };
-
-    const ids = createIdGenerator({ clock }, { environment: { crypto: customCrypto } });
+    const random = createFilledRandom(0x42);
+    const ids = createIdGenerator({ clock, random });
 
     expect(ids.randomId()).toBe('42'.repeat(16));
     expect(ids.traceId()).toBe('42'.repeat(16));
@@ -492,9 +513,10 @@ describe('createIdGenerator', () => {
 
   it('should allow per-category configuration', () => {
     const clock = createMockClock();
+    const random = createNodeRandom();
 
     const ids = createIdGenerator(
-      { clock },
+      { clock, random },
       {
         random: {
           generate: () => 'custom-random',
@@ -520,7 +542,8 @@ describe('encoding', () => {
   describe('Crockford Base32', () => {
     it('should encode and decode round-trip', () => {
       const clock = createMockClock(1700000000000);
-      const gen = createTimeOrderedIdGenerator({ clock });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random });
       const id = gen.timeOrderedId();
       const timestamp = gen.extractTimestamp(id);
       expect(timestamp).toBe(1700000000000);
@@ -528,7 +551,8 @@ describe('encoding', () => {
 
     it('should be lexicographically sortable', () => {
       const clock = createMockClock();
-      const gen = createTimeOrderedIdGenerator({ clock });
+      const random = createNodeRandom();
+      const gen = createTimeOrderedIdGenerator({ clock, random });
 
       const ids: string[] = [];
       for (let ts = 1000; ts <= 10000; ts += 1000) {
@@ -548,13 +572,8 @@ describe('encoding', () => {
 
 describe('integration patterns', () => {
   it('should work as generateId function for instrumentation', () => {
-    const gen = createRandomIdGenerator({
-      environment: {
-        crypto: {
-          randomBytes: createIncrementingMock(),
-        },
-      },
-    });
+    const random = createIncrementingRandom();
+    const gen = createRandomIdGenerator({ random });
 
     // Simulating port-instrumentation usage
     const generateId = (): string => gen.randomId();
@@ -569,7 +588,8 @@ describe('integration patterns', () => {
 
   it('should work as database ID generator', () => {
     const clock = createMockClock(Date.now());
-    const gen = createTimeOrderedIdGenerator({ clock });
+    const random = createNodeRandom();
+    const gen = createTimeOrderedIdGenerator({ clock, random });
 
     // Generate IDs simulating database inserts
     const ids: string[] = [];
