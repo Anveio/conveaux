@@ -6,7 +6,7 @@
  *
  * Signal formats:
  * - INITIALIZATION_COMPLETE:featureCount=5
- * - FEATURE_READY:id=F001
+ * - FEATURE_READY:id=F001:impact=low
  * - FEATURE_BLOCKED:id=F001:reason=verification failed
  * - APPROVED:id=F001
  * - REJECTED:id=F001:feedback=missing test coverage
@@ -39,12 +39,13 @@ export function parseSignalLine(line: string): CoordinationSignal | null {
     };
   }
 
-  // FEATURE_READY:id=XXX
-  const readyMatch = trimmed.match(/^FEATURE_READY:id=(\S+)$/);
+  // FEATURE_READY:id=XXX or FEATURE_READY:id=XXX:impact=YYY
+  const readyMatch = trimmed.match(/^FEATURE_READY:id=(\S+?)(?::impact=(\S+))?$/);
   if (readyMatch) {
     return {
       type: 'FEATURE_READY',
       featureId: getMatchGroup(readyMatch, 1),
+      impact: readyMatch[2] ?? undefined,
     };
   }
 

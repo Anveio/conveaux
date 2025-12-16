@@ -33,6 +33,7 @@ export type FeatureStatus = 'pending' | 'in_progress' | 'completed' | 'blocked';
  *   impact: 'low',
  *   files: ['packages/port-logger/src/index.ts'],
  *   status: 'pending',
+ *   retryCount: 0,
  * };
  * ```
  */
@@ -44,6 +45,12 @@ export interface Feature {
   readonly impact: FeatureImpact;
   readonly files: readonly string[];
   readonly status: FeatureStatus;
+  /** Number of implementation attempts (incremented on rejection/failure) */
+  readonly retryCount: number;
+  /** ISO timestamp of last attempt */
+  readonly lastAttempt?: string;
+  /** Reason if blocked after max retries */
+  readonly blockReason?: string;
 }
 
 /**

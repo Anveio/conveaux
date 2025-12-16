@@ -19,6 +19,8 @@ export interface InitializationCompleteSignal {
 export interface FeatureReadySignal {
   readonly type: 'FEATURE_READY';
   readonly featureId: string;
+  /** Impact level for gatekeeper routing (low = skip reviewer) */
+  readonly impact?: string;
 }
 
 /**

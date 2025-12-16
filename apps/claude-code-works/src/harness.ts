@@ -7,12 +7,11 @@
  * Flow:
  * 1. Initializer (once) - scans and creates feature-list.json
  * 2. Coding Agent (loop) - implements ONE feature, self-verifies
- * 3. Reviewer (loop) - approves or rejects
- * 4. Repeat until maxFeatures or no pending features
+ * 3. Reviewer (gatekeeper) - only for HIGH/MEDIUM impact
+ * 4. Repeat until maxFeatures or consecutive blocks limit
  */
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
-import type { Instrumenter } from '@conveaux/contract-instrumentation';
 import type { Logger } from '@conveaux/contract-logger';
 import {
   CODING_PERMISSION_MODE,
@@ -25,33 +24,35 @@ import {
   REVIEWER_PROMPT,
   REVIEWER_TOOLS,
 } from './agents/index.js';
-import type { FeatureCategory } from './contracts/index.js';
-import type { HumanInputStore } from './human-input-store/index.js';
 import { extractSignal } from './signals.js';
 
 /**
+ * Configuration for long-running autonomous operation.
+ */
+const CONFIG = {
+  /** Maximum retries per feature before blocking */
+  maxRetriesPerFeature: 3,
+  /** Stop session after this many consecutive blocks */
+  maxConsecutiveBlocks: 3,
+  /** Timeout per agent call in ms (10 minutes) */
+  agentTimeoutMs: 10 * 60 * 1000,
+} as const;
+
+/**
  * Dependencies for the harness.
- * Follows contract-port pattern - no direct globals.
  */
 export interface HarnessDeps {
-  /** Project root directory */
   readonly projectRoot: string;
-  /** Structured logger for all output */
   readonly logger: Logger;
-  /** Instrumenter for tracing and timing */
-  readonly instrumenter: Instrumenter;
-  /** Human input store for capturing human messages (optional) */
-  readonly humanInputStore?: HumanInputStore;
 }
 
 /**
  * Options for the improvement cycle.
  */
 export interface HarnessOptions {
-  /** Maximum features to complete (default: 5) */
   readonly maxFeatures?: number;
-  /** Filter by category */
-  readonly category?: FeatureCategory;
+  /** Limit scope to specific paths (e.g., ['packages/port-logger']) */
+  readonly scope?: readonly string[];
 }
 
 /**
@@ -64,15 +65,29 @@ export interface HarnessResult {
 }
 
 /**
- * Maximum iterations multiplier for the improvement cycle.
- *
- * We allow 2x maxFeatures iterations to account for:
- * - Rejected features that need revision (each rejection = 1 extra iteration)
- * - Blocked features that are skipped (each block = 1 iteration without completion)
- *
- * This provides a safety bound while allowing reasonable retry capacity.
+ * Wrap an async operation with timeout protection.
  */
-const ITERATION_LIMIT_MULTIPLIER = 2;
+async function withTimeout<T>(
+  operation: () => Promise<T>,
+  timeoutMs: number,
+  operationName: string
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${operationName} timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    operation()
+      .then((result) => {
+        clearTimeout(timer);
+        resolve(result);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
 
 /**
  * Collect text content from agent messages.
@@ -82,7 +97,6 @@ function collectText(message: unknown): string {
 
   const msg = message as Record<string, unknown>;
 
-  // Handle assistant messages with content array
   if (msg.type === 'assistant' && Array.isArray(msg.content)) {
     return msg.content
       .filter((block: unknown) => {
@@ -93,7 +107,6 @@ function collectText(message: unknown): string {
       .join('\n');
   }
 
-  // Handle result messages
   if (msg.type === 'result' && typeof msg.result === 'string') {
     return msg.result;
   }
@@ -102,228 +115,247 @@ function collectText(message: unknown): string {
 }
 
 /**
- * Run the Initializer agent.
- *
- * @returns Number of features discovered, or -1 on error
+ * Build scope-aware prompt for the Initializer.
  */
-async function runInitializer(deps: HarnessDeps): Promise<number> {
-  const { logger, instrumenter, projectRoot } = deps;
+function buildInitializerPrompt(scope?: readonly string[]): string {
+  if (!scope || scope.length === 0) {
+    return INITIALIZER_PROMPT;
+  }
+
+  const scopeDirective = `
+## SCOPE RESTRICTION
+IMPORTANT: Only scan and generate features for these paths:
+${scope.map((p) => `- ${p}`).join('\n')}
+
+Ignore all other directories. Focus your improvement discovery on these specific packages.
+`;
+
+  return INITIALIZER_PROMPT + scopeDirective;
+}
+
+/**
+ * Run the Initializer agent.
+ */
+async function runInitializer(deps: HarnessDeps, scope?: readonly string[]): Promise<number> {
+  const { logger, projectRoot } = deps;
   const log = logger.child({ agent: 'initializer' });
 
-  log.info('Starting Initializer agent');
+  log.info('Starting Initializer agent', { scope: scope ?? 'all' });
 
-  return instrumenter.executeAsync(
-    async () => {
-      let allText = '';
+  const run = async () => {
+    let allText = '';
 
-      for await (const message of query({
-        prompt: INITIALIZER_PROMPT,
-        options: {
-          allowedTools: [...INITIALIZER_TOOLS],
-          permissionMode: INITIALIZER_PERMISSION_MODE,
-          cwd: projectRoot,
-        },
-      })) {
-        allText += collectText(message);
-      }
+    for await (const message of query({
+      prompt: buildInitializerPrompt(scope),
+      options: {
+        allowedTools: [...INITIALIZER_TOOLS],
+        permissionMode: INITIALIZER_PERMISSION_MODE,
+        cwd: projectRoot,
+      },
+    })) {
+      allText += collectText(message);
+    }
 
-      const signal = extractSignal(allText, 'INITIALIZATION_COMPLETE');
-      if (signal) {
-        log.info('Initializer complete', { featureCount: signal.featureCount });
-        return signal.featureCount;
-      }
+    const signal = extractSignal(allText, 'INITIALIZATION_COMPLETE');
+    if (signal) {
+      log.info('Initializer complete', { featureCount: signal.featureCount });
+      return signal.featureCount;
+    }
 
-      log.warn('Initializer did not emit completion signal');
-      return -1;
-    },
-    { operation: 'runInitializer' }
-  );
+    log.warn('Initializer did not emit completion signal');
+    return -1;
+  };
+
+  try {
+    return await withTimeout(run, CONFIG.agentTimeoutMs, 'Initializer');
+  } catch (err) {
+    log.error('Initializer failed', { error: err instanceof Error ? err : new Error(String(err)) });
+    return -1;
+  }
 }
 
 /**
  * Run the Coding agent for one feature.
  *
- * @returns Feature ID if ready for review, null if blocked or no features
+ * @returns Object with featureId and impact if ready for review, null if blocked
  */
-async function runCodingAgent(deps: HarnessDeps): Promise<string | null> {
-  const { logger, instrumenter, projectRoot } = deps;
+async function runCodingAgent(
+  deps: HarnessDeps
+): Promise<{ featureId: string; impact: string } | null> {
+  const { logger, projectRoot } = deps;
   const log = logger.child({ agent: 'coding' });
 
   log.info('Starting Coding agent');
 
-  return instrumenter.executeAsync(
-    async () => {
-      let allText = '';
+  const run = async () => {
+    let allText = '';
 
-      for await (const message of query({
-        prompt: CODING_PROMPT,
-        options: {
-          allowedTools: [...CODING_TOOLS],
-          permissionMode: CODING_PERMISSION_MODE,
-          cwd: projectRoot,
-        },
-      })) {
-        allText += collectText(message);
-      }
+    for await (const message of query({
+      prompt: CODING_PROMPT,
+      options: {
+        allowedTools: [...CODING_TOOLS],
+        permissionMode: CODING_PERMISSION_MODE,
+        cwd: projectRoot,
+      },
+    })) {
+      allText += collectText(message);
+    }
 
-      // Check for ready signal
-      const readySignal = extractSignal(allText, 'FEATURE_READY');
-      if (readySignal) {
-        log.info('Feature ready for review', { featureId: readySignal.featureId });
-        return readySignal.featureId;
-      }
+    const readySignal = extractSignal(allText, 'FEATURE_READY');
+    if (readySignal) {
+      log.info('Feature ready for review', {
+        featureId: readySignal.featureId,
+        impact: readySignal.impact,
+      });
+      return { featureId: readySignal.featureId, impact: readySignal.impact ?? 'medium' };
+    }
 
-      // Check for blocked signal
-      const blockedSignal = extractSignal(allText, 'FEATURE_BLOCKED');
-      if (blockedSignal) {
-        log.warn('Feature blocked', {
-          featureId: blockedSignal.featureId,
-          reason: blockedSignal.reason,
-        });
-        return null;
-      }
-
-      log.warn('Coding Agent did not emit expected signal');
+    const blockedSignal = extractSignal(allText, 'FEATURE_BLOCKED');
+    if (blockedSignal) {
+      log.warn('Feature blocked', {
+        featureId: blockedSignal.featureId,
+        reason: blockedSignal.reason,
+      });
       return null;
-    },
-    { operation: 'runCodingAgent' }
-  );
+    }
+
+    log.warn('Coding Agent did not emit expected signal');
+    return null;
+  };
+
+  try {
+    return await withTimeout(run, CONFIG.agentTimeoutMs, 'CodingAgent');
+  } catch (err) {
+    log.error('Coding Agent failed', {
+      error: err instanceof Error ? err : new Error(String(err)),
+    });
+    return null;
+  }
 }
 
 /**
  * Run the Reviewer agent for a specific feature.
- *
- * @returns true if approved, false if rejected
  */
 async function runReviewer(deps: HarnessDeps, featureId: string): Promise<boolean> {
-  const { logger, instrumenter, projectRoot } = deps;
+  const { logger, projectRoot } = deps;
   const log = logger.child({ agent: 'reviewer', featureId });
 
   log.info('Starting Reviewer agent');
 
-  return instrumenter.executeAsync(
-    async () => {
-      let allText = '';
+  const run = async () => {
+    let allText = '';
 
-      for await (const message of query({
-        prompt: `${REVIEWER_PROMPT}\n\nReview feature: ${featureId}`,
-        options: {
-          allowedTools: [...REVIEWER_TOOLS],
-          permissionMode: REVIEWER_PERMISSION_MODE,
-          cwd: projectRoot,
-        },
-      })) {
-        allText += collectText(message);
-      }
+    for await (const message of query({
+      prompt: `${REVIEWER_PROMPT}\n\nReview feature: ${featureId}`,
+      options: {
+        allowedTools: [...REVIEWER_TOOLS],
+        permissionMode: REVIEWER_PERMISSION_MODE,
+        cwd: projectRoot,
+      },
+    })) {
+      allText += collectText(message);
+    }
 
-      // Check for approved signal
-      const approvedSignal = extractSignal(allText, 'APPROVED');
-      if (approvedSignal && approvedSignal.featureId === featureId) {
-        log.info('Feature APPROVED');
-        return true;
-      }
+    const approvedSignal = extractSignal(allText, 'APPROVED');
+    if (approvedSignal && approvedSignal.featureId === featureId) {
+      log.info('Feature APPROVED');
+      return true;
+    }
 
-      // Check for rejected signal
-      const rejectedSignal = extractSignal(allText, 'REJECTED');
-      if (rejectedSignal) {
-        log.warn('Feature REJECTED', { feedback: rejectedSignal.feedback });
-        return false;
-      }
-
-      log.warn('Reviewer did not emit expected signal');
+    const rejectedSignal = extractSignal(allText, 'REJECTED');
+    if (rejectedSignal) {
+      log.warn('Feature REJECTED', { feedback: rejectedSignal.feedback });
       return false;
-    },
-    { operation: 'runReviewer', context: { featureId } }
-  );
+    }
+
+    log.warn('Reviewer did not emit expected signal');
+    return false;
+  };
+
+  try {
+    return await withTimeout(run, CONFIG.agentTimeoutMs, 'Reviewer');
+  } catch (err) {
+    log.error('Reviewer failed', { error: err instanceof Error ? err : new Error(String(err)) });
+    return false;
+  }
 }
 
 /**
  * Run the complete improvement cycle.
- *
- * @param deps - Harness dependencies
- * @param options - Cycle options
- * @returns Result summary
  */
 export async function runImprovementCycle(
   deps: HarnessDeps,
   options: HarnessOptions = {}
 ): Promise<HarnessResult> {
-  const { logger, instrumenter, humanInputStore } = deps;
+  const { logger } = deps;
   const maxFeatures = options.maxFeatures ?? 5;
+  const scope = options.scope;
 
   const log = logger.child({ component: 'harness' });
 
-  return instrumenter.executeAsync(
-    async () => {
-      // Start a new session for capturing human inputs
-      const sessionId = humanInputStore?.startSession();
-      if (sessionId) {
-        log.debug('Started human input session', { sessionId });
-      }
+  log.info('Starting improvement cycle', { maxFeatures, scope: scope ?? 'all' });
 
-      log.info('Starting improvement cycle', {
-        maxFeatures,
-        category: options.category ?? 'all',
+  // Phase 1: Initialize
+  const featureCount = await runInitializer(deps, scope);
+  if (featureCount <= 0) {
+    log.warn('No features discovered or initialization failed');
+    return { featuresCompleted: 0, featuresBlocked: 0, totalIterations: 0 };
+  }
+
+  // Phase 2 & 3: Code -> Review loop
+  let completed = 0;
+  let blocked = 0;
+  let consecutiveBlocks = 0;
+  let iterations = 0;
+
+  while (completed < maxFeatures && consecutiveBlocks < CONFIG.maxConsecutiveBlocks) {
+    iterations++;
+
+    log.debug('Starting iteration', { iteration: iterations, completed, blocked });
+
+    // Run Coding Agent
+    const result = await runCodingAgent(deps);
+    if (!result) {
+      blocked++;
+      consecutiveBlocks++;
+      log.warn('Feature blocked', {
+        consecutiveBlocks,
+        maxConsecutive: CONFIG.maxConsecutiveBlocks,
       });
+      continue;
+    }
 
-      // Phase 1: Initialize
-      const featureCount = await runInitializer(deps);
-      if (featureCount <= 0) {
-        log.warn('No features discovered or initialization failed');
-        return {
-          featuresCompleted: 0,
-          featuresBlocked: 0,
-          totalIterations: 0,
-        };
-      }
+    // Reset consecutive block counter on success
+    consecutiveBlocks = 0;
 
-      // Phase 2 & 3: Code -> Review loop
-      let completed = 0;
-      let blocked = 0;
-      let iterations = 0;
+    const { featureId, impact } = result;
 
-      while (completed < maxFeatures && iterations < maxFeatures * ITERATION_LIMIT_MULTIPLIER) {
-        iterations++;
+    // Gatekeeper pattern: skip Reviewer for LOW impact features
+    if (impact === 'low') {
+      log.info('LOW impact feature auto-approved (skipping Reviewer)', { featureId });
+      completed++;
+      continue;
+    }
 
-        log.debug('Starting iteration', { iteration: iterations, completed, blocked });
+    // HIGH/MEDIUM: run Reviewer
+    const approved = await runReviewer(deps, featureId);
+    if (approved) {
+      completed++;
+      log.info('Feature completed', { featureId, completed, maxFeatures });
+    } else {
+      log.info('Feature needs revision', { featureId });
+    }
+  }
 
-        // Run Coding Agent
-        const featureId = await runCodingAgent(deps);
-        if (!featureId) {
-          blocked++;
-          if (blocked >= 3) {
-            log.error('Too many blocked features, stopping cycle', { blocked });
-            break;
-          }
-          continue;
-        }
+  if (consecutiveBlocks >= CONFIG.maxConsecutiveBlocks) {
+    log.error('Stopping: too many consecutive blocks', { consecutiveBlocks });
+  }
 
-        // Run Reviewer
-        const approved = await runReviewer(deps, featureId);
-        if (approved) {
-          completed++;
-          log.info('Feature completed', {
-            featureId,
-            completed,
-            maxFeatures,
-          });
-        } else {
-          log.info('Feature needs revision', { featureId });
-        }
-      }
+  log.info('Cycle complete', {
+    featuresCompleted: completed,
+    featuresBlocked: blocked,
+    totalIterations: iterations,
+  });
 
-      log.info('Cycle complete', {
-        featuresCompleted: completed,
-        featuresBlocked: blocked,
-        totalIterations: iterations,
-      });
-
-      return {
-        featuresCompleted: completed,
-        featuresBlocked: blocked,
-        totalIterations: iterations,
-      };
-    },
-    { operation: 'runImprovementCycle', context: { maxFeatures, category: options.category } }
-  );
+  return { featuresCompleted: completed, featuresBlocked: blocked, totalIterations: iterations };
 }
