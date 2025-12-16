@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import type { Logger } from '@conveaux/contract-logger';
 import { ConveauxError, getExitCode } from '@conveaux/port-control-flow';
 import { Command } from 'commander';
 import { pollForApproval } from './checker.js';
@@ -90,7 +91,7 @@ Exit codes:
       };
 
       // Create GitHub client and run the check
-      const github = createGitHubClient({ logger });
+      const github = createGitHubClient({ logger, clock });
       const result = await pollForApproval({ logger, clock, github, scheduler }, config);
 
       // Output result to stdout (always JSON for programmatic consumption)
@@ -106,11 +107,6 @@ Exit codes:
 // ============================================================================
 // Error Handling
 // ============================================================================
-
-interface Logger {
-  error(message: string, context?: Record<string, unknown>): void;
-  fatal(message: string, context?: Record<string, unknown>): void;
-}
 
 function parsedToPrInfo(parsed: { owner: string; repo: string; prNumber: number } | null) {
   if (!parsed) return null;
@@ -131,7 +127,7 @@ function handleError(logger: Logger, error: unknown, prUrl: string): never {
 
   // Unknown error
   const message = error instanceof Error ? error.message : String(error);
-  logger.fatal('Unexpected error', { error });
+  logger.fatal('Unexpected error', { error: error instanceof Error ? error : undefined });
   const result: CheckResult = {
     status: 'error',
     pr: parsedToPrInfo(parsePrUrl(prUrl)),

@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import type { Logger } from '@conveaux/contract-logger';
+import type { WallClock } from '@conveaux/contract-wall-clock';
 import type { GitHubComment, GitHubReaction } from './types.js';
 
 // ============================================================================
@@ -20,6 +21,7 @@ export interface GitHubClient {
 
 export interface GitHubClientDeps {
   readonly logger: Logger;
+  readonly clock: WallClock;
 }
 
 // ============================================================================
@@ -32,10 +34,10 @@ export interface GitHubClientDeps {
  * All API calls are logged at debug level for observability.
  */
 export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
-  const { logger } = deps;
+  const { logger, clock } = deps;
 
   function ghApi<T>(endpoint: string): T {
-    const startTime = Date.now();
+    const startTime = clock.nowMs();
     logger.debug('GitHub API request', { endpoint });
 
     try {
@@ -44,12 +46,12 @@ export function createGitHubClient(deps: GitHubClientDeps): GitHubClient {
         maxBuffer: 10 * 1024 * 1024, // 10MB for large PRs
       });
 
-      const durationMs = Date.now() - startTime;
+      const durationMs = clock.nowMs() - startTime;
       logger.debug('GitHub API response', { endpoint, durationMs });
 
       return JSON.parse(result) as T;
     } catch (error) {
-      const durationMs = Date.now() - startTime;
+      const durationMs = clock.nowMs() - startTime;
       logger.warn('GitHub API error', {
         endpoint,
         durationMs,
