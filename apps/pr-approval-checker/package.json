@@ -1,0 +1,32 @@
+{
+  "name": "@conveaux/pr-approval-checker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "pr-approval-checker": "./src/cli.ts"
+  },
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@conveaux/contract-env": "*",
+    "@conveaux/contract-ephemeral-scheduler": "*",
+    "@conveaux/contract-logger": "*",
+    "@conveaux/contract-wall-clock": "*",
+    "@conveaux/port-control-flow": "*",
+    "@conveaux/port-env": "*",
+    "@conveaux/port-ephemeral-scheduler": "*",
+    "@conveaux/port-logger": "*",
+    "@conveaux/port-outchannel": "*",
+    "@conveaux/port-wall-clock": "*",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
