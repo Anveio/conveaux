@@ -595,3 +595,117 @@ memories:
           ```
 
           This gives actionable file:line:col locations instead of just "lint failed".
+
+  - task: "feat/zero-dep-html-parser"
+    date: "2025-12-15"
+    context: |
+      Built a zero-dependency HTML parser to replace Cheerio for the chatgpt-share package.
+      Created contract-html-parser (interfaces) and port-html-parser (implementation with custom
+      tokenizer and DOM builder). Migrated chatgpt-share to use the new parser via DI.
+    learnings:
+      - type: "command-correction"
+        summary: "ID selector regex must allow underscore at start for HTML5 IDs"
+        detail: |
+          WRONG: `/#([a-zA-Z][a-zA-Z0-9_-]*)/` - only allows letters at start
+          RIGHT: `/#([a-zA-Z_-][a-zA-Z0-9_-]*)/` - allows underscore or hyphen at start
+
+          HTML5 IDs like `__NEXT_DATA__` start with underscores. The initial regex only
+          matched IDs starting with letters, causing getElementById to fail for the
+          primary chatgpt-share use case.
+
+          CSS selectors allow IDs to start with letters, underscores, or hyphens.
+
+      - type: "pattern"
+        summary: "Use charAt() instead of bracket access for string indexing in strict TS"
+        detail: |
+          TypeScript strict mode treats `str[i]` as `string | undefined`, requiring null checks.
+
+          WRONG:
+          ```typescript
+          const char = remaining[i];  // string | undefined
+          if (char === '>') { ... }   // Error: comparison may be undefined
+          ```
+
+          RIGHT:
+          ```typescript
+          const char = remaining.charAt(i);  // string (empty string if out of bounds)
+          if (char === '>') { ... }   // Works - empty string !== '>'
+          ```
+
+          charAt() returns an empty string for out-of-bounds access, which is falsy and
+          fails comparisons cleanly without undefined checks.
+
+      - type: "pattern"
+        summary: "Raw content tags need special tokenizer handling"
+        detail: |
+          Tags like script, style, textarea, and title contain raw text that should NOT
+          be tokenized as HTML. After seeing a start tag for these elements, extract
+          everything until the closing tag as raw text:
+
+          ```typescript
+          const RAW_CONTENT_TAGS = new Set(['script', 'style', 'textarea', 'title']);
+
+          if (RAW_CONTENT_TAGS.has(tagName) && !selfClosing) {
+            const closeTagPattern = `</${tagName}>`;
+            const closePos = html.toLowerCase().indexOf(closeTagPattern.toLowerCase(), startPos);
+            if (closePos !== -1) {
+              const rawContent = html.slice(startPos, closePos);
+              element.children.push(createTextNode(rawContent));
+              // Skip tokens until after close tag
+            }
+          }
+          ```
+
+          This preserves JSON in script tags, CSS in style tags, etc.
+
+      - type: "insight"
+        summary: "Zero-dependency HTML parsers are feasible for targeted use cases"
+        detail: |
+          Cheerio (1.0.0) adds ~200KB to bundle and has 9 dependencies. For chatgpt-share,
+          only these features were needed:
+          - getElementById (find script tag)
+          - innerHTML (get JSON content)
+
+          A custom parser (~500 lines) replaced Cheerio entirely:
+          - Tokenizer: doctypes, start/end/self-closing tags, text, comments, entities
+          - DOM builder: tree construction from tokens
+          - Selector parser: tag, #id, .class, [attr] basics
+
+          Key insight: Evaluate actual feature usage before assuming heavyweight libraries
+          are necessary. The contract-port pattern made this migration low-risk - contract
+          defines full API, implementation can grow progressively.
+
+      - type: "pattern"
+        summary: "HTML entity decoding only needs basics for JSON-in-script scenarios"
+        detail: |
+          For extracting JSON from script tags, minimal entity decoding suffices:
+
+          ```typescript
+          function decodeHtmlEntities(text: string): string {
+            return text
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;|&apos;/g, "'")
+              .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(parseInt(n, 10)))
+              .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(parseInt(hex, 16)));
+          }
+          ```
+
+          HTML5 defines 2,231 named entities, but JSON content only uses these basics.
+          The implementation can grow to support more entities when consumers need them.
+
+      - type: "misconception"
+        summary: "Cheerio wrappers are not the path to zero dependencies"
+        detail: |
+          WRONG: Create a CheerioBackend adapter to abstract over Cheerio
+          RIGHT: Build custom tokenizer and DOM builder from scratch
+
+          Initial approach was to create a backend abstraction that could use Cheerio
+          or other libraries. User feedback: "createCheerioBackend is a bad approach.
+          We don't care about keeping compatibility with cheerio. We want to avoid it."
+
+          The goal was zero external dependencies, not library abstraction. The
+          contract-port pattern works better with a custom implementation that can
+          grow in capability over time.
