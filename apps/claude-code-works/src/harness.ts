@@ -61,6 +61,17 @@ export interface HarnessResult {
 }
 
 /**
+ * Maximum iterations multiplier for the improvement cycle.
+ *
+ * We allow 2x maxFeatures iterations to account for:
+ * - Rejected features that need revision (each rejection = 1 extra iteration)
+ * - Blocked features that are skipped (each block = 1 iteration without completion)
+ *
+ * This provides a safety bound while allowing reasonable retry capacity.
+ */
+const ITERATION_LIMIT_MULTIPLIER = 2;
+
+/**
  * Collect text content from agent messages.
  */
 function collectText(message: unknown): string {
@@ -262,7 +273,7 @@ export async function runImprovementCycle(
       let blocked = 0;
       let iterations = 0;
 
-      while (completed < maxFeatures && iterations < maxFeatures * 2) {
+      while (completed < maxFeatures && iterations < maxFeatures * ITERATION_LIMIT_MULTIPLIER) {
         iterations++;
 
         log.debug('Starting iteration', { iteration: iterations, completed, blocked });
