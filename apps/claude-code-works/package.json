@@ -13,23 +13,24 @@
     }
   },
   "scripts": {
-    "start": "bun run src/cli.ts",
-    "typecheck": "bun x tsc --noEmit",
-    "test": "vitest run",
-    "test:smoke": "vitest run src/cli.smoke.test.ts"
+    "start": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.33.0",
-    "@conveaux/port-env": "*",
-    "@conveaux/port-file-reader": "*",
+    "@anthropic-ai/claude-agent-sdk": "^0.1.0",
+    "@conveaux/contract-logger": "*",
+    "@conveaux/contract-instrumentation": "*",
+    "@conveaux/port-id": "*",
+    "@conveaux/port-instrumentation": "*",
     "@conveaux/port-logger": "*",
     "@conveaux/port-outchannel": "*",
+    "@conveaux/port-random": "*",
     "@conveaux/port-wall-clock": "*",
     "commander": "^12.1.0"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5.7.2",
-    "vitest": "^4.0.15"
+    "@conveaux/tsconfig": "*",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
   }
 }

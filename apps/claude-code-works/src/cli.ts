@@ -1,114 +1,94 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 /**
- * claude-code-works CLI
+ * Claude Code Works CLI
  *
- * A coding agent that follows the instructions framework to execute
- * recursive self-improvement on a target package.
+ * An autonomous coding agent using the Claude Agent SDK.
+ * Implements the three-agent pattern from Anthropic's engineering blog:
+ * https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
  */
 
+import { query } from '@anthropic-ai/claude-agent-sdk';
 import { Command } from 'commander';
-import { runCreate, runDoctor, runImprove, runStatus } from './commands/index';
-import { resolveConfig } from './config';
-import { logger } from './output';
+import { createRuntimeDeps } from './composition.js';
+import type { FeatureCategory } from './contracts/index.js';
+import { runImprovementCycle } from './harness.js';
 
 const program = new Command();
 
 program
   .name('claude-code-works')
-  .description('A coding agent that follows instructions for recursive self-improvement')
+  .description('Autonomous coding agent using Claude Agent SDK')
   .version('0.1.0');
 
-// Improve command
+/**
+ * Quickstart command - reproduces the Agent SDK quickstart example.
+ * Demonstrates basic query() usage with tool access.
+ */
 program
-  .command('improve <package-path>')
-  .description('Improve an existing package')
-  .option('-i, --iterations <n>', 'Maximum iterations', Number.parseInt)
-  .option('-m, --model <model>', 'Claude model to use')
-  .option('-b, --benchmark', 'Enable benchmark output')
-  .action(
-    async (
-      packagePath: string,
-      options: { iterations?: number; model?: string; benchmark?: boolean }
-    ) => {
-      const projectRoot = process.cwd();
-      const config = resolveConfig(projectRoot, {
-        improveIterations: options.iterations,
-        model: options.model,
-        benchmark: options.benchmark,
-      });
+  .command('quickstart')
+  .description('Run Agent SDK quickstart example')
+  .argument('<prompt>', 'Prompt for the agent')
+  .option('-t, --tools <tools>', 'Comma-separated list of tools', 'Read,Glob,Bash')
+  .action(async (prompt: string, options: { tools: string }) => {
+    const allowedTools = options.tools.split(',').map((t) => t.trim());
 
-      await runImprove(
-        packagePath,
-        {
-          iterations: options.iterations,
-          model: options.model,
-          benchmark: options.benchmark,
-        },
-        config
-      );
-    }
-  );
+    console.log(`Running agent with prompt: "${prompt}"`);
+    console.log(`Allowed tools: ${allowedTools.join(', ')}\n`);
 
-// Create command
-program
-  .command('create <package-name>')
-  .description('Create a new package')
-  .option('-t, --type <type>', 'Package type (contract, port, adapter, core, app)', 'core')
-  .option('-d, --description <desc>', 'Package description')
-  .option('-i, --iterations <n>', 'Maximum iterations', Number.parseInt)
-  .option('-m, --model <model>', 'Claude model to use')
-  .option('-b, --benchmark', 'Enable benchmark output')
-  .action(
-    async (
-      packageName: string,
+    for await (const message of query({
+      prompt,
       options: {
-        type?: string;
-        description?: string;
-        iterations?: number;
-        model?: string;
-        benchmark?: boolean;
-      }
-    ) => {
-      const projectRoot = process.cwd();
-      const config = resolveConfig(projectRoot, {
-        createIterations: options.iterations,
-        model: options.model,
-        benchmark: options.benchmark,
+        allowedTools,
+      },
+    })) {
+      console.log(JSON.stringify(message, null, 2));
+    }
+  });
+
+/**
+ * Run command - executes the three-agent improvement cycle.
+ * Initializer -> Coding Agent -> Reviewer
+ */
+program
+  .command('run')
+  .description('Run the improvement cycle (Initializer -> Coding -> Reviewer)')
+  .option('-n, --max-features <n>', 'Maximum features to complete', '5')
+  .option('-c, --category <cat>', 'Filter by category: quality|performance|behavior')
+  .option('-l, --log-level <level>', 'Log level: trace|debug|info|warn|error|fatal', 'info')
+  .option('--no-color', 'Disable colored output')
+  .action(
+    async (options: {
+      maxFeatures: string;
+      category?: string;
+      logLevel: string;
+      color: boolean;
+    }) => {
+      const maxFeatures = Number.parseInt(options.maxFeatures, 10);
+      const category = options.category as FeatureCategory | undefined;
+      const logLevel = options.logLevel as 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+
+      // Create runtime dependencies via composition root
+      const deps = createRuntimeDeps({
+        projectRoot: process.cwd(),
+        logLevel,
+        colors: options.color,
       });
 
-      await runCreate(
-        packageName,
+      const result = await runImprovementCycle(
         {
-          type: options.type,
-          description: options.description,
-          iterations: options.iterations,
-          model: options.model,
-          benchmark: options.benchmark,
+          projectRoot: deps.projectRoot,
+          logger: deps.logger,
+          instrumenter: deps.instrumenter,
         },
-        config
+        {
+          maxFeatures,
+          category,
+        }
       );
+
+      // Final summary logged by harness
+      process.exit(result.featuresCompleted > 0 ? 0 : 1);
     }
   );
 
-// Status command
-program
-  .command('status')
-  .description('Show repository state, lessons, IPs, and verification status')
-  .action(async () => {
-    await runStatus();
-  });
-
-// Doctor command
-program
-  .command('doctor')
-  .description('Validate environment setup')
-  .action(async () => {
-    await runDoctor();
-  });
-
-// Parse arguments
-program.parseAsync(process.argv).catch((error: unknown) => {
-  const err = error instanceof Error ? error : new Error(String(error));
-  logger.error(`Fatal error: ${err.message}`, { error: err });
-  process.exit(1);
-});
+program.parse();
