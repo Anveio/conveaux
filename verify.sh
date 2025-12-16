@@ -13,5 +13,5 @@ if [ ! -d "$SCRIPT_DIR/node_modules" ]; then
   npm install --silent
 fi
 
-# Forward all arguments to the validation-pipeline CLI via tsx
-exec npx tsx "$PIPELINE_CLI" "$@"
+# Forward all arguments to the validation-pipeline CLI via tsx (no npx shim)
+exec node --import tsx "$PIPELINE_CLI" "$@"
