@@ -567,3 +567,67 @@ archived:
           Without all three, JSON.parse() will fail on valid JSONC files.
           Rejected: single occurrence, implementation-specific detail. Useful for
           JSONC parsing but not a generalizable pattern until it recurs.
+
+  - consolidated_date: "2025-12-16"
+    consolidated_into: "rejected"
+    pattern_name: "Rejected: single occurrence, skill-writing audience learnings"
+    sections_added: []
+    memories:
+      - task: "devcontainer-skill-documentation"
+        date: "2025-12-16"
+        type: "misconception"
+        summary: "Skills teach agents, not human operators"
+        detail: |
+          WRONG: I wrote SKILL.md explaining how human operators should set up
+          infrastructure (VM provisioning, container orchestration, resource sizing).
+
+          RIGHT: Skills teach Claude Code instances how to behave. The audience is
+          the agent running inside the environment, not the human setting it up.
+
+          Evidence: User corrected "the audience is a SINGLE claude code instance
+          and we are trying to teach it how to use dev containers within this repository"
+
+          Rejected: Single occurrence. While this represents a fundamental
+          misconception about skill audience, it does not meet the 3+ occurrence
+          threshold. If similar audience-confusion errors recur in future skill-writing
+          tasks, reconsider for consolidation into writing-claude-skills skill.
+
+      - task: "devcontainer-skill-documentation"
+        date: "2025-12-16"
+        type: "pattern"
+        summary: "Agent-centric skill writing uses second person"
+        detail: |
+          Skills should address the agent directly:
+          - "You are running inside an isolated devcontainer"
+          - "You own specific packages"
+          - "You must not modify files outside your owned packages"
+
+          NOT infrastructure documentation like:
+          - "Launch 20 containers using devcontainer up"
+          - "Size your host VM with 64GB RAM"
+
+          Rejected: Single occurrence. Valuable guidance for skill authoring voice,
+          but does not meet 3+ threshold. Watch for recurrence.
+
+      - task: "devcontainer-skill-documentation"
+        date: "2025-12-16"
+        type: "command-correction"
+        summary: "Always invoke coding-loop before PR creation"
+        detail: |
+          The coding-loop skill requires spawning tsc-reviewer agent before merge.
+          I created PR #85 and it was merged before I remembered to invoke coding-loop.
+
+          Correct sequence:
+          1. Invoke coding-loop skill at session start
+          2. Verify baseline green
+          3. Implement changes
+          4. Verify again
+          5. Create PR
+          6. Spawn tsc-reviewer agent
+          7. Wait for APPROVED verdict
+          8. Then merge
+
+          Rejected: Already documented. The coding-loop skill description says
+          "Invoke at session start" and Section 2 "Subagent Review Gate" explicitly
+          requires tsc-reviewer approval before merge. This learning represents
+          failure to follow existing documentation, not a documentation gap.
