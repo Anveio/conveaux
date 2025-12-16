@@ -282,6 +282,53 @@ export function parseDotEnv(content: string): Record<string, string> {
   const result: Record<string, string> = {};
   const lines = content.split(/\r?\n/);
 
+  function unescapeDoubleQuotedValue(input: string): string {
+    let output = '';
+
+    for (let index = 0; index < input.length; index++) {
+      const char = input[index];
+      if (char !== '\\') {
+        output += char;
+        continue;
+      }
+
+      const next = input[index + 1];
+      if (next === undefined) {
+        output += char;
+        continue;
+      }
+
+      switch (next) {
+        case 'n':
+          output += '\n';
+          index++;
+          break;
+        case 'r':
+          output += '\r';
+          index++;
+          break;
+        case 't':
+          output += '\t';
+          index++;
+          break;
+        case '"':
+          output += '"';
+          index++;
+          break;
+        case '\\':
+          output += '\\';
+          index++;
+          break;
+        default:
+          // Preserve unknown escape sequences (e.g. \x) as literal backslash + char.
+          output += '\\';
+          break;
+      }
+    }
+
+    return output;
+  }
+
   for (const line of lines) {
     const trimmed = line.trim();
 
@@ -312,16 +359,7 @@ export function parseDotEnv(content: string): Record<string, string> {
       const endQuote = value.lastIndexOf('"');
       if (endQuote > 0) {
         value = value.slice(1, endQuote);
-        // Expand common escape sequences
-        // IMPORTANT: Process \\\\ first to avoid matching \\t as tab
-        const BACKSLASH_PLACEHOLDER = '__CONVEAUX_BACKSLASH__';
-        value = value
-          .replace(/\\\\/g, BACKSLASH_PLACEHOLDER) // Temp placeholder for literal backslash
-          .replace(/\\n/g, '\n')
-          .replace(/\\r/g, '\r')
-          .replace(/\\t/g, '\t')
-          .replace(/\\"/g, '"')
-          .replace(new RegExp(BACKSLASH_PLACEHOLDER, 'g'), '\\'); // Restore literal backslashes
+        value = unescapeDoubleQuotedValue(value);
       }
     } else if (value.startsWith("'") && value.includes("'", 1)) {
       // Single-quoted: extract content, no expansion
