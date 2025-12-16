@@ -56,22 +56,26 @@ program
   .option('-c, --category <cat>', 'Filter by category: quality|performance|behavior')
   .option('-l, --log-level <level>', 'Log level: trace|debug|info|warn|error|fatal', 'info')
   .option('--no-color', 'Disable colored output')
+  .option('--no-learning', 'Disable human input capture (no SQLite storage)')
   .action(
     async (options: {
       maxFeatures: string;
       category?: string;
       logLevel: string;
       color: boolean;
+      learning: boolean;
     }) => {
       const maxFeatures = Number.parseInt(options.maxFeatures, 10);
       const category = options.category as FeatureCategory | undefined;
       const logLevel = options.logLevel as 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
       // Create runtime dependencies via composition root
+      // Storage is enabled by default for capturing human inputs
       const deps = createRuntimeDeps({
         projectRoot: process.cwd(),
         logLevel,
         colors: options.color,
+        disableStorage: !options.learning,
       });
 
       const result = await runImprovementCycle(
@@ -79,6 +83,7 @@ program
           projectRoot: deps.projectRoot,
           logger: deps.logger,
           instrumenter: deps.instrumenter,
+          humanInputStore: deps.humanInputStore,
         },
         {
           maxFeatures,

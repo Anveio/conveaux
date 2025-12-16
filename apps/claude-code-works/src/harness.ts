@@ -26,6 +26,7 @@ import {
   REVIEWER_TOOLS,
 } from './agents/index.js';
 import type { FeatureCategory } from './contracts/index.js';
+import type { HumanInputStore } from './human-input-store/index.js';
 import { extractSignal } from './signals.js';
 
 /**
@@ -39,6 +40,8 @@ export interface HarnessDeps {
   readonly logger: Logger;
   /** Instrumenter for tracing and timing */
   readonly instrumenter: Instrumenter;
+  /** Human input store for capturing human messages (optional) */
+  readonly humanInputStore?: HumanInputStore;
 }
 
 /**
@@ -245,13 +248,19 @@ export async function runImprovementCycle(
   deps: HarnessDeps,
   options: HarnessOptions = {}
 ): Promise<HarnessResult> {
-  const { logger, instrumenter } = deps;
+  const { logger, instrumenter, humanInputStore } = deps;
   const maxFeatures = options.maxFeatures ?? 5;
 
   const log = logger.child({ component: 'harness' });
 
   return instrumenter.executeAsync(
     async () => {
+      // Start a new session for capturing human inputs
+      const sessionId = humanInputStore?.startSession();
+      if (sessionId) {
+        log.debug('Started human input session', { sessionId });
+      }
+
       log.info('Starting improvement cycle', {
         maxFeatures,
         category: options.category ?? 'all',
