@@ -1,6 +1,7 @@
 {
   "name": "@conveaux/parallel-prompt-generator",
   "version": "0.1.0",
+  "private": true,
   "description": "CLI tool for generating parallel agent prompts",
   "type": "module",
   "bin": {
