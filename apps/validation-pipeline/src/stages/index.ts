@@ -6,6 +6,7 @@
  */
 
 import type { Stage, StageName } from '../contracts/index.js';
+import { agentsStage } from './agents.js';
 import { checkStage } from './check.js';
 import { devcontainerStage } from './devcontainer.js';
 import { docsStage } from './docs.js';
@@ -16,6 +17,7 @@ import { lintStage } from './lint.js';
 import { testStage } from './test.js';
 import { typecheckStage } from './typecheck.js';
 
+export { agentsStage } from './agents.js';
 export { checkStage } from './check.js';
 export { devcontainerStage } from './devcontainer.js';
 export { docsStage } from './docs.js';
@@ -28,6 +30,7 @@ export { typecheckStage } from './typecheck.js';
  * Map of stage names to stage implementations.
  */
 export const stageRegistry: Record<StageName, Stage> = {
+  agents: agentsStage,
   check: checkStage,
   devcontainer: devcontainerStage,
   docs: docsStage,
@@ -46,6 +49,7 @@ export const DEFAULT_STAGE_ORDER: StageName[] = [
   'check',
   'devcontainer',
   'docs',
+  'agents',
   'install',
   'doctor',
   'lint',

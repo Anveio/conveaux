@@ -24,6 +24,16 @@ Use this when the task mentions:
 - E2E is opt-in; default verify skips it unless `--e2e` is set.
 - Prefer root scripts (`npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`) for targeted iteration.
 
+## Slash Commands
+
+Use these for accelerated workflows:
+
+| Command | Purpose |
+|---------|---------|
+| `/verify` | Run full pipeline or specific stage (`/verify lint`) |
+| `/verify-lint [package]` | Quick lint check with optional scope |
+| `/lint-and-learn` | Auto-fix lint + extract lessons + create PR |
+
 ## Canonical repo docs
 
 - Your repo’s verification runner docs (commonly `apps/dev-tooling/README.md` or similar).

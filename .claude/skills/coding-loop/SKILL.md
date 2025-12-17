@@ -105,6 +105,17 @@ git status -sb         # Know your state
 gh pr diff <n>         # Review before merge (mandatory)
 ```
 
+## Slash Commands
+
+Use these for accelerated workflows:
+
+| Command | Purpose |
+|---------|---------|
+| `/verify` | Run full pipeline or specific stage |
+| `/verify-lint [package]` | Quick lint check with optional scope |
+| `/lint-and-learn` | Auto-fix lint + extract lessons + create PR |
+| `/tsc-review <pr>` | Spawn TSC reviewer with auto-merge on APPROVED |
+
 ## Deeper Guidance
 
 - **rsid** → outer context, post-merge reflection

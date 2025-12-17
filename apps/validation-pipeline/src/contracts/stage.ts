@@ -9,6 +9,7 @@ import type { WallClock } from '@conveaux/contract-wall-clock';
  * Note: 'build' was removed - we use source-first development with tsx.
  */
 export type StageName =
+  | 'agents'
   | 'check'
   | 'devcontainer'
   | 'docs'

@@ -63,18 +63,11 @@ export interface SortedSet<T> {
  * Comparator function for ordering values.
  *
  * @template T - The type of values to compare
+ * @param a - First value
+ * @param b - Second value
  * @returns Negative if a < b, zero if a === b, positive if a > b
  */
-export interface Comparator<T> {
-  /**
-   * Compare two values.
-   *
-   * @param a - First value
-   * @param b - Second value
-   * @returns Negative if a < b, zero if a === b, positive if a > b
-   */
-  (a: T, b: T): number;
-}
+export type Comparator<T> = (a: T, b: T) => number;
 
 // =============================================================================
 // Validation Types

@@ -11,8 +11,10 @@ import { PRESETS, PRESET_NAMES } from './presets.js';
 export function listPresets(): void {
   console.log('Available presets:\n');
   for (const name of PRESET_NAMES) {
-    const preset = PRESETS[name]!;
-    console.log(`  ${name.padEnd(16)} - ${preset.displayName}`);
+    const preset = PRESETS[name];
+    if (preset) {
+      console.log(`  ${name.padEnd(16)} - ${preset.displayName}`);
+    }
   }
   console.log(`\nTotal: ${PRESET_NAMES.length} presets`);
 }
@@ -33,12 +35,15 @@ export function generatePrompts(names?: string[]): void {
     process.exit(1);
   }
 
-  // Safe to assert: we've validated all names exist above
-  const configs = requestedNames.map((n) => PRESETS[n]!);
+  // Filter to only valid configs (validated above)
+  const configs = requestedNames
+    .map((n) => PRESETS[n])
+    .filter((c): c is NonNullable<typeof c> => c !== undefined);
   const total = configs.length;
 
   for (let i = 0; i < configs.length; i++) {
-    const config = configs[i]!;
+    const config = configs[i];
+    if (!config) continue;
     const result = renderDataStructurePrompt(config, i + 1, total);
     console.log(result.prompt);
 

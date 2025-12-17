@@ -121,7 +121,20 @@ export const devcontainerStage: Stage = {
       };
     }
 
-    const config = parseResult.data!;
+    const config = parseResult.data;
+    if (!config) {
+      errors.push('Parse succeeded but no data returned');
+      const durationMs = context.clock.nowMs() - startTime;
+      return {
+        success: false,
+        message: 'devcontainer.json parse error',
+        durationMs,
+        errors,
+        output: context.benchmark
+          ? { stdout: capOutput(outputs.join('\n')), stderr: '' }
+          : undefined,
+      };
+    }
     outputs.push(`Parsed devcontainer: ${config.name ?? 'unnamed'}`);
 
     // Run security checks

@@ -17,9 +17,9 @@
 import type {
   ObjectFactory,
   ObjectValidator,
+  RateLimitedAcquireResult,
   RateLimitedPool,
   RateLimitedPoolOptions,
-  RateLimitedAcquireResult,
   RateLimitedPoolValidationError,
   RateLimitedPoolValidationResult,
 } from '@conveaux/contract-rate-limited-pool';
@@ -127,7 +127,10 @@ class RateLimitedPoolImpl<T> {
  * WeakMap to store mutable implementation state.
  * @internal
  */
-const poolImplMap = new WeakMap<RateLimitedPool<any>, RateLimitedPoolImpl<any>>();
+const poolImplMap = new WeakMap<
+  RateLimitedPool<unknown>,
+  RateLimitedPoolImpl<unknown>
+>();
 
 // =============================================================================
 // Factory Functions
@@ -173,13 +176,24 @@ export async function createRateLimitedPool<T>(
   }
 
   // Create the object pool with minSize=0, maxSize=poolSize
-  const objectPool = await createObjectPool<T>(factory, { minSize: 0, maxSize: poolSize }, validator);
+  const objectPool = await createObjectPool<T>(
+    factory,
+    { minSize: 0, maxSize: poolSize },
+    validator
+  );
 
   // Create the semaphore to limit concurrent acquisitions
   const semaphore = createSemaphore({ permits: maxConcurrent });
 
   // Create internal implementation
-  const impl = new RateLimitedPoolImpl(objectPool, semaphore, maxConcurrent, poolSize, factory, validator);
+  const impl = new RateLimitedPoolImpl(
+    objectPool,
+    semaphore,
+    maxConcurrent,
+    poolSize,
+    factory,
+    validator
+  );
 
   // Get snapshot and store mapping
   const pool = impl.getSnapshot();
@@ -218,7 +232,9 @@ export async function createRateLimitedPool<T>(
 export async function acquire<T>(pool: RateLimitedPool<T>): Promise<RateLimitedAcquireResult<T>> {
   const impl = poolImplMap.get(pool);
   if (!impl) {
-    throw new Error('Invalid pool: no implementation found. Pool may have been created incorrectly.');
+    throw new Error(
+      'Invalid pool: no implementation found. Pool may have been created incorrectly.'
+    );
   }
 
   const resource = await impl.acquire();
@@ -252,7 +268,9 @@ export async function acquire<T>(pool: RateLimitedPool<T>): Promise<RateLimitedA
 export function release<T>(pool: RateLimitedPool<T>, resource: T): RateLimitedPool<T> {
   const impl = poolImplMap.get(pool);
   if (!impl) {
-    throw new Error('Invalid pool: no implementation found. Pool may have been created incorrectly.');
+    throw new Error(
+      'Invalid pool: no implementation found. Pool may have been created incorrectly.'
+    );
   }
 
   impl.release(resource);
@@ -311,7 +329,9 @@ export function size<T>(pool: RateLimitedPool<T>): number {
  * }
  * ```
  */
-export function validateRateLimitedPool<T>(pool: RateLimitedPool<T>): RateLimitedPoolValidationResult {
+export function validateRateLimitedPool<T>(
+  pool: RateLimitedPool<T>
+): RateLimitedPoolValidationResult {
   const errors: RateLimitedPoolValidationError[] = [];
 
   // Check maxConcurrent configuration

@@ -135,16 +135,9 @@ Phase 3 milestones are:
 
 I MUST be clear with you when I say this: your first action must always be to figure out where we are in the current mission, either from context or by ensuring that spawned agents are easily able to tell exactly where we are in the mission (perhaps by updating the mission)
 
---
+We are currently in Phase 1, Part 2, so pretty early on.
 
-## Project Rules
-
-- **Never push to main** - Create feature branches, merge via PR. Use the rsid (recursive self-improving development) skill to learn how to get your code merged to main.
-- **Write high quality plans** - Use the plan-writing skill to learn how to plan effectively.
-- **Write high quality code** - use the coding-loop, coding-patterns, error-handling, typescript-coding, pull-request, env-patterns, effective-git skills to learn how to master various aspects of the coding lifecycle.
-- **`./verify.sh --ui=false` must pass** before PR merge. Use the verification-pipeline skill to learn more about how to verify your changes.
-- **Use devcontainer for isolation** - Use the devcontainer-sandboxing skill for secure container-based development.
-
+Our broad goal for you right now is to get our agent loop up and running really well. We want to figure out all the little different subagent tasks we need to spin up in order to quickly improve the code base. Right now I'm thinking we need an agent for a bunch of things like CTO, or CodeReviewResponder or something. We need to set up the framework for skills such that we separate them into role-skills, task-skills, and kpi-skills. E.g. role-software-engineer/SKILL.md, task-coding-loop/SKILL.md, kpi-prs-per-minute and role-software-engineer/SKILL.md. Every agent description must be assigned at least one role-skill, one task-skill, and one kpi-skill. An Agent is a composite of as few task-skills as possible to perform well at its KPI. We should continually refine skills such that each role has a single skill-document that adequately provides all context necessary to perform well at the role towards a KPI.
 
 Messages from Shovon:
 

@@ -1,20 +1,7 @@
 {
-  "extends": "@conveaux/tsconfig/base.json",
+  "extends": "@conveaux/tsconfig/workspace-package-config.json",
   "compilerOptions": {
-    "composite": true,
-    "outDir": "dist",
     "rootDir": "src"
   },
-  "include": ["src/**/*"],
-  "references": [
-    {
-      "path": "../contract-rate-limited-pool"
-    },
-    {
-      "path": "../port-object-pool"
-    },
-    {
-      "path": "../port-semaphore"
-    }
-  ]
+  "include": ["src/**/*"]
 }
