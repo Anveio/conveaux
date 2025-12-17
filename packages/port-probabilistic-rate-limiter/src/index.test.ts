@@ -476,7 +476,7 @@ describe('recordRequest', () => {
       // Actually need to go further: at t=5101, cutoff = 101, so entry at 100 is pruned
       clock.setTime(3501);
       limiter = recordRequest(limiter, 'user');
-      let updatedWindow = limiter.slidingWindows.get('user');
+      const updatedWindow = limiter.slidingWindows.get('user');
       expect(updatedWindow?.count).toBe(4); // 100, 1500, 2000, 3501 - all still valid
 
       // At t=4500, cutoff = 4500 - 5000 = -500, all still valid

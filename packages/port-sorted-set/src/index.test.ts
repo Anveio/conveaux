@@ -14,7 +14,7 @@ import {
   size,
   toArray,
   validateSortedSet,
-} from './index';
+} from './index.js';
 
 describe('createSortedSet', () => {
   describe('creation', () => {
@@ -360,7 +360,7 @@ describe('createSortedSet', () => {
 
       expect(toArray(timeline)).toEqual(['event1', 'event4', 'event3', 'event2']);
 
-      const filtered = toArray(timeline).filter((event) => {
+      const filtered = toArray(timeline).filter((event: string) => {
         const s = score(timeline, event);
         return s !== undefined && s >= 1500 && s <= 2500;
       });

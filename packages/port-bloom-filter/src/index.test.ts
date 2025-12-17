@@ -339,11 +339,12 @@ describe('createBloomFilter', () => {
       }
 
       // Rates should generally increase
+      expect(rates).toHaveLength(5);
       expect(rates[0]).toBe(0); // Empty
       expect(rates[1]).toBeGreaterThan(0); // 50 items
-      expect(rates[2]).toBeGreaterThan(rates[1]); // 100 items
-      expect(rates[3]).toBeGreaterThan(rates[2]); // 150 items
-      expect(rates[4]).toBeGreaterThan(rates[3]); // 200 items
+      expect(rates[2]!).toBeGreaterThan(rates[1]!); // 100 items
+      expect(rates[3]!).toBeGreaterThan(rates[2]!); // 150 items
+      expect(rates[4]!).toBeGreaterThan(rates[3]!); // 200 items
     });
   });
 
@@ -801,7 +802,7 @@ describe('custom hash function factory', () => {
         return {
           hash(item: number): number {
             // Simple number hash using seed
-            return ((item * 2654435761 + seed) >>> 0);
+            return (item * 2654435761 + seed) >>> 0;
           },
         };
       },

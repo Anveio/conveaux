@@ -49,9 +49,7 @@ export type {
  * @returns Optimal bit array size
  */
 function calculateBitArraySize(expectedItems: number, falsePositiveRate: number): number {
-  return Math.ceil(
-    -(expectedItems * Math.log(falsePositiveRate)) / (Math.LN2 * Math.LN2)
-  );
+  return Math.ceil(-(expectedItems * Math.log(falsePositiveRate)) / (Math.LN2 * Math.LN2));
 }
 
 /**
@@ -244,7 +242,7 @@ export function estimatedFalsePositiveRate<T>(filter: BloomFilter<T>): number {
   }
 
   const exponent = (-filter.numHashFunctions * filter.itemCount) / filter.bitArraySize;
-  return Math.pow(1 - Math.exp(exponent), filter.numHashFunctions);
+  return (1 - Math.exp(exponent)) ** filter.numHashFunctions;
 }
 
 /**
