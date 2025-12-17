@@ -90,27 +90,90 @@ When building a port, if you need to abstract something:
 3. Create `@scope/port-clock` with system implementation
 4. Import the contract in your original port
 
-**Key insight**: If you're tempted to put methods on a data structure contract, stop. Those methods are *operations on data*—they belong in the port as pure functions that take the data as input. Design contracts accordingly.
+### 5. Data vs Capability Pattern
 
-**Anti-pattern**:
+A critical distinction in contract design: **Data is not a capability.**
+
+**Data** = Pure values, immutable structures, serializable state
+**Capability** = Something that *does* something (I/O, side effects, platform access)
+
+#### The Rule
+
+If you're tempted to put methods on a data structure contract, stop. Those methods are *operations on data*—they belong in the port as pure functions that take the data as input.
+
+#### Benefits of Data-as-Data
+
+| Benefit | Explanation |
+|---------|-------------|
+| **Serialization** | Pure data can be JSON.stringify'd for persistence, debugging, network transfer |
+| **Time-travel debugging** | Store history of states, replay any point |
+| **Structural sharing** | Immutable updates enable efficient diffing and caching |
+| **Testing without mocks** | Operations are pure functions; just pass data in, check data out |
+| **Composition** | Data flows through pipelines; no hidden state |
+
+#### Anti-pattern: Methods on Data
+
 ```typescript
-// BAD: Methods on a data structure contract
-export interface Dag<T> {
-  nodes: Map<string, DagNode<T>>;
-  getTopologicalOrder(): string[];  // NO - this is an operation
-  validate(): ValidationResult;     // NO - this is an operation
+// BAD: Contract with methods (treats data as capability)
+export interface RingBuffer<T> {
+  push(item: T): void;           // NO - mutates state
+  pop(): T | undefined;          // NO - mutates state
+  peek(): T | undefined;         // NO - operation on data
+  readonly size: number;
+  readonly capacity: number;
 }
 ```
 
-**Correct pattern**:
-```typescript
-// Contract: just the data
-export type Dag<T> = readonly DagNode<T>[];
+#### Correct Pattern: Pure Data + Pure Functions
 
-// Port: operations as pure functions
-export function getTopologicalOrder<T>(dag: Dag<T>): string[];
-export function validateDag<T>(dag: Dag<T>): ValidationResult;
+**Contract** (pure types only):
+```typescript
+// Data is just data - indices and storage reference
+export interface RingBuffer<T> {
+  readonly head: number;
+  readonly tail: number;
+  readonly size: number;
+  readonly capacity: number;
+  readonly storage: RingBufferStorage<T>;
+}
 ```
+
+**Port** (pure functions that transform data):
+```typescript
+// Operations return new state, never mutate
+export function push<T>(buffer: RingBuffer<T>, item: T): RingBuffer<T>;
+export function pop<T>(buffer: RingBuffer<T>): PopResult<T>;
+export function peek<T>(buffer: RingBuffer<T>): T | undefined;
+export function toArray<T>(buffer: RingBuffer<T>): T[];
+```
+
+**Usage** (immutable style):
+```typescript
+let buffer = createRingBuffer(factory, 5);
+buffer = push(buffer, 1);
+buffer = push(buffer, 2);
+const { item, buffer: next } = pop(buffer);
+// `buffer` still has 2 elements - unchanged!
+// `next` has 1 element
+```
+
+#### When Capabilities Are Appropriate
+
+Capabilities (interfaces with methods) are correct for:
+
+1. **Platform abstractions** - `Logger`, `Clock`, `OutChannel` do I/O
+2. **Observer callbacks** - `DagExecutionObserver.onNodeStart()` fires events
+3. **Storage interfaces** - `RingBufferStorage.get()/set()` abstracts platform storage
+
+The distinction: these represent *external capabilities* injected by the platform, not operations on your domain data.
+
+#### Reference Implementations
+
+| Package | Contract | Port |
+|---------|----------|------|
+| DAG | `Dag<T>` = pure array of nodes | `validateDag()`, `executeDag()`, `getTopologicalOrder()` |
+| Ring Buffer | `RingBuffer<T>` = indices + storage | `push()`, `pop()`, `peek()`, `toArray()` |
+| Control Flow | `Result<T,E>`, `ExitCode` = pure types | `ok()`, `err()`, `mapResult()` |
 
 ### 6. Factory Function Argument Order
 
