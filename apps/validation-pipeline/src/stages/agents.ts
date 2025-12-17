@@ -20,6 +20,7 @@ function parseFrontmatter(content: string): Record<string, string> {
   if (!match) return {};
 
   const frontmatter = match[1];
+  if (!frontmatter) return {};
   const result: Record<string, string> = {};
 
   for (const line of frontmatter.split('\n')) {

@@ -1,5 +1,5 @@
 ---
-name: verification-pipeline
+name: task-verification-pipeline
 description: Run and debug a repo verification pipeline (`./verify.sh --ui=false` or equivalent), including stage selection and opt-in E2E tiers.
 ---
 

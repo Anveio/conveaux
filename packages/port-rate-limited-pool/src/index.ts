@@ -125,12 +125,12 @@ class RateLimitedPoolImpl<T> {
 
 /**
  * WeakMap to store mutable implementation state.
+ * Uses `any` for type erasure since WeakMap keys are compared by identity,
+ * and we need to look up pools regardless of their generic type parameter.
  * @internal
  */
-const poolImplMap = new WeakMap<
-  RateLimitedPool<unknown>,
-  RateLimitedPoolImpl<unknown>
->();
+// biome-ignore lint/suspicious/noExplicitAny: WeakMap requires type erasure for generic pool lookup
+const poolImplMap = new WeakMap<RateLimitedPool<any>, RateLimitedPoolImpl<any>>();
 
 // =============================================================================
 // Factory Functions

@@ -55,17 +55,19 @@ export function getTopologicalOrder<T>(dag: Dag<T>): NodeId[] {
   const result: NodeId[] = [];
 
   while (queue.length > 0) {
-    const nodeId = queue.shift()!;
+    const nodeId = queue.shift();
+    if (nodeId === undefined) break;
     result.push(nodeId);
 
     // Reduce in-degree for all dependents
     // nodeId is guaranteed to be in dependents since it came from the queue,
     // which only contains nodes from inDegree (initialized for all DAG nodes)
-    const nodeDependents = dependents.get(nodeId)!;
+    const nodeDependents = dependents.get(nodeId) ?? [];
     for (const depId of nodeDependents) {
       // depId is guaranteed to be in inDegree since it was added to nodeDependents
       // only for nodes that exist in the DAG
-      const newDegree = inDegree.get(depId)! - 1;
+      const currentDegree = inDegree.get(depId) ?? 0;
+      const newDegree = currentDegree - 1;
       inDegree.set(depId, newDegree);
       if (newDegree === 0) {
         queue.push(depId);

@@ -225,9 +225,13 @@ export function recordRequest(
     // Reset bloom filter and all windows
     const hashFactory = createSimpleStringHashFactory();
     const storageFactory = createBooleanArrayStorageFactory();
+    // biome-ignore lint/suspicious/noExplicitAny: Accessing internal state for reset
+    const expectedKeys = (limiter as any)._expectedKeys || 1000;
+    // biome-ignore lint/suspicious/noExplicitAny: Accessing internal state for reset
+    const fpRate = (limiter as any)._falsePositiveRate || 0.01;
     const newBloomFilter = createBloomFilter(hashFactory, storageFactory, {
-      expectedItems: (limiter as any)._expectedKeys || 1000,
-      falsePositiveRate: (limiter as any)._falsePositiveRate || 0.01,
+      expectedItems: expectedKeys,
+      falsePositiveRate: fpRate,
     });
 
     const newBloomFilterState: BloomFilterState = {
@@ -316,9 +320,13 @@ export function recordRequest(
 export function reset(limiter: ProbabilisticRateLimiter): ProbabilisticRateLimiter {
   const hashFactory = createSimpleStringHashFactory();
   const storageFactory = createBooleanArrayStorageFactory();
+  // biome-ignore lint/suspicious/noExplicitAny: Accessing internal state for reset
+  const expectedKeys = (limiter as any)._expectedKeys || 1000;
+  // biome-ignore lint/suspicious/noExplicitAny: Accessing internal state for reset
+  const fpRate = (limiter as any)._falsePositiveRate || 0.01;
   const newBloomFilter = createBloomFilter(hashFactory, storageFactory, {
-    expectedItems: (limiter as any)._expectedKeys || 1000,
-    falsePositiveRate: (limiter as any)._falsePositiveRate || 0.01,
+    expectedItems: expectedKeys,
+    falsePositiveRate: fpRate,
   });
 
   const newBloomFilterState: BloomFilterState = {

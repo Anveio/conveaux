@@ -1,5 +1,5 @@
 ---
-name: plan-writing
+name: task-plan-writing
 description: Write rigorous implementation plans as if presenting to distinguished engineers. Use when entering plan mode, designing architecture, or when the user asks to plan a feature. Raises plan quality through expert audience framing.
 ---
 

@@ -138,12 +138,12 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
-      board = updateScore(board, 'charlie', 1200);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
+      board = updateScore(board, 'charlie', 1200, 3000);
       expect(size(board)).toBe(3);
 
-      board = updateScore(board, 'dave', 1600);
+      board = updateScore(board, 'dave', 1600, 4000);
       expect(size(board)).toBe(3);
       expect(hasItem(board, 'charlie')).toBe(false); // Lowest score removed
       expect(hasItem(board, 'dave')).toBe(true);
@@ -155,11 +155,11 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
-      board = updateScore(board, 'charlie', 1200);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
+      board = updateScore(board, 'charlie', 1200, 3000);
 
-      board = updateScore(board, 'alice', 2000); // Alice moves to top
+      board = updateScore(board, 'alice', 2000, 4000); // Alice moves to top
       expect(size(board)).toBe(3);
       expect(hasItem(board, 'alice')).toBe(true);
       expect(hasItem(board, 'bob')).toBe(true);
@@ -172,7 +172,7 @@ describe('createBoundedLeaderboard', () => {
         historySize: 5,
       });
 
-      const modified = updateScore(original, 'alice', 1500);
+      const modified = updateScore(original, 'alice', 1500, 1000);
 
       expect(size(original)).toBe(0);
       expect(size(modified)).toBe(1);
@@ -186,10 +186,10 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
 
-      const result = removeItem(board, 'alice', 1000);
+      const result = removeItem(board, 'alice', 3000);
       expect(result.removed).toBe(true);
       expect(size(result.board)).toBe(1);
       expect(hasItem(result.board, 'alice')).toBe(false);
@@ -202,9 +202,9 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
+      board = updateScore(board, 'alice', 1500, 1000);
 
-      const result = removeItem(board, 'bob');
+      const result = removeItem(board, 'bob', 2000);
       expect(result.removed).toBe(false);
       expect(size(result.board)).toBe(1);
     });
@@ -234,10 +234,10 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
 
-      const result = removeItem(board, 'alice');
+      const result = removeItem(board, 'alice', 3000);
 
       expect(size(board)).toBe(2);
       expect(size(result.board)).toBe(1);
@@ -251,9 +251,9 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
-      board = updateScore(board, 'charlie', 1200);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
+      board = updateScore(board, 'charlie', 1200, 3000);
 
       expect(getRank(board, 'bob')).toBe(0); // Highest score
       expect(getRank(board, 'alice')).toBe(1);
@@ -275,12 +275,12 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
 
       expect(getRank(board, 'alice')).toBe(1);
 
-      board = updateScore(board, 'alice', 2000);
+      board = updateScore(board, 'alice', 2000, 3000);
       expect(getRank(board, 'alice')).toBe(0); // Now highest
     });
   });
@@ -292,10 +292,10 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
-      board = updateScore(board, 'charlie', 1200);
-      board = updateScore(board, 'dave', 1600);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
+      board = updateScore(board, 'charlie', 1200, 3000);
+      board = updateScore(board, 'dave', 1600, 4000);
 
       const top2 = getTopN(board, 2);
       expect(top2).toEqual([
@@ -310,8 +310,8 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
 
       const top10 = getTopN(board, 10);
       expect(top10).toHaveLength(2);
@@ -334,7 +334,7 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
+      board = updateScore(board, 'alice', 1500, 1000);
       expect(getScore(board, 'alice')).toBe(1500);
     });
 
@@ -355,7 +355,7 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
+      board = updateScore(board, 'alice', 1500, 1000);
       expect(hasItem(board, 'alice')).toBe(true);
     });
 
@@ -376,9 +376,9 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'charlie', 1200);
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'charlie', 1200, 1000);
+      board = updateScore(board, 'alice', 1500, 2000);
+      board = updateScore(board, 'bob', 1800, 3000);
 
       const entries = getAllEntries(board);
       expect(entries).toEqual([
@@ -454,14 +454,14 @@ describe('createBoundedLeaderboard', () => {
       expect(size(board)).toBe(0);
       expect(isEmpty(board)).toBe(true);
 
-      board = updateScore(board, 'alice', 1500);
+      board = updateScore(board, 'alice', 1500, 1000);
       expect(size(board)).toBe(1);
       expect(isEmpty(board)).toBe(false);
 
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'bob', 1800, 2000);
       expect(size(board)).toBe(2);
 
-      const result = removeItem(board, 'alice');
+      const result = removeItem(board, 'alice', 3000);
       expect(size(result.board)).toBe(1);
     });
   });
@@ -475,10 +475,10 @@ describe('createBoundedLeaderboard', () => {
 
       expect(isFull(board)).toBe(false);
 
-      board = updateScore(board, 'alice', 1500);
+      board = updateScore(board, 'alice', 1500, 1000);
       expect(isFull(board)).toBe(false);
 
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'bob', 1800, 2000);
       expect(isFull(board)).toBe(true);
     });
 
@@ -488,8 +488,8 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
 
       expect(isFull(board)).toBe(false);
     });
@@ -502,7 +502,7 @@ describe('createBoundedLeaderboard', () => {
         historySize: 5,
       });
 
-      board = updateScore(board, 'alice', 1500);
+      board = updateScore(board, 'alice', 1500, 1000);
 
       const result = validateBoundedLeaderboard(board);
       expect(result.valid).toBe(true);
@@ -546,10 +546,10 @@ describe('createBoundedLeaderboard', () => {
       });
 
       // Players join and get scores
-      board = updateScore(board, 'player1', 1000);
-      board = updateScore(board, 'player2', 1500);
-      board = updateScore(board, 'player3', 1200);
-      board = updateScore(board, 'player4', 1800);
+      board = updateScore(board, 'player1', 1000, 1000);
+      board = updateScore(board, 'player2', 1500, 2000);
+      board = updateScore(board, 'player3', 1200, 3000);
+      board = updateScore(board, 'player4', 1800, 4000);
 
       // Check top 3
       const top3 = getTopN(board, 3);
@@ -560,7 +560,7 @@ describe('createBoundedLeaderboard', () => {
       ]);
 
       // Player improves score
-      board = updateScore(board, 'player1', 2000);
+      board = updateScore(board, 'player1', 2000, 5000);
       expect(getRank(board, 'player1')).toBe(0);
 
       // History tracks all changes
@@ -574,14 +574,14 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'a', 100);
-      board = updateScore(board, 'b', 200);
-      board = updateScore(board, 'c', 300);
+      board = updateScore(board, 'a', 100, 1000);
+      board = updateScore(board, 'b', 200, 2000);
+      board = updateScore(board, 'c', 300, 3000);
 
       expect(size(board)).toBe(3);
 
       // Adding higher score evicts lowest
-      board = updateScore(board, 'd', 250);
+      board = updateScore(board, 'd', 250, 4000);
       expect(size(board)).toBe(3);
       expect(hasItem(board, 'a')).toBe(false);
       expect(hasItem(board, 'd')).toBe(true);
@@ -605,8 +605,8 @@ describe('createBoundedLeaderboard', () => {
       const player1: Player = { id: 1, name: 'Alice' };
       const player2: Player = { id: 2, name: 'Bob' };
 
-      board = updateScore(board, player1, 1500);
-      board = updateScore(board, player2, 1800);
+      board = updateScore(board, player1, 1500, 1000);
+      board = updateScore(board, player2, 1800, 2000);
 
       expect(getRank(board, player1)).toBe(1);
       expect(getScore(board, player2)).toBe(1800);
@@ -639,7 +639,7 @@ describe('createBoundedLeaderboard', () => {
         historySize: 5,
       });
 
-      const modified = updateScore(original, 'alice', 1500);
+      const modified = updateScore(original, 'alice', 1500, 1000);
 
       expect(size(original)).toBe(0);
       expect(size(modified)).toBe(1);
@@ -653,11 +653,11 @@ describe('createBoundedLeaderboard', () => {
         historySize: 5,
       });
 
-      board = updateScore(board, 'alice', 1500);
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'alice', 1500, 1000);
+      board = updateScore(board, 'bob', 1800, 2000);
 
       const originalSize = size(board);
-      const result = removeItem(board, 'alice');
+      const result = removeItem(board, 'alice', 3000);
 
       expect(size(board)).toBe(originalSize);
       expect(size(result.board)).toBe(originalSize - 1);
@@ -671,9 +671,9 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', -100);
-      board = updateScore(board, 'bob', 100);
-      board = updateScore(board, 'charlie', 0);
+      board = updateScore(board, 'alice', -100, 1000);
+      board = updateScore(board, 'bob', 100, 2000);
+      board = updateScore(board, 'charlie', 0, 3000);
 
       const entries = getAllEntries(board);
       expect(entries[0]?.item).toBe('bob');
@@ -687,9 +687,9 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1.5);
-      board = updateScore(board, 'bob', 1.2);
-      board = updateScore(board, 'charlie', 1.8);
+      board = updateScore(board, 'alice', 1.5, 1000);
+      board = updateScore(board, 'bob', 1.2, 2000);
+      board = updateScore(board, 'charlie', 1.8, 3000);
 
       const top = getTopN(board, 1);
       expect(top[0]?.item).toBe('charlie');
@@ -702,8 +702,8 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', Number.MAX_SAFE_INTEGER);
-      board = updateScore(board, 'bob', Number.MIN_SAFE_INTEGER);
+      board = updateScore(board, 'alice', Number.MAX_SAFE_INTEGER, 1000);
+      board = updateScore(board, 'bob', Number.MIN_SAFE_INTEGER, 2000);
 
       expect(getRank(board, 'alice')).toBe(0);
       expect(getRank(board, 'bob')).toBe(1);
@@ -715,7 +715,7 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
+      board = updateScore(board, 'alice', 1500, 1000);
 
       expect(getRank(board, 'alice')).toBe(0);
       expect(getTopN(board, 1)).toEqual([{ item: 'alice', score: 1500 }]);
@@ -728,10 +728,10 @@ describe('createBoundedLeaderboard', () => {
         historySize: 10,
       });
 
-      board = updateScore(board, 'alice', 1500);
+      board = updateScore(board, 'alice', 1500, 1000);
       expect(size(board)).toBe(1);
 
-      board = updateScore(board, 'bob', 1800);
+      board = updateScore(board, 'bob', 1800, 2000);
       expect(size(board)).toBe(1);
       expect(hasItem(board, 'bob')).toBe(true);
       expect(hasItem(board, 'alice')).toBe(false);

@@ -1,5 +1,5 @@
 ---
-name: lint-fixer
+name: task-lint-fixer
 description: Fix lint errors and update typescript-coding skill with lessons learned. Use when fixing Biome lint errors, resolving linting issues, or when lint check fails. Automatically extracts patterns from fixes and adds prevention tips to typescript-coding skill.
 ---
 

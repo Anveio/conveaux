@@ -24,7 +24,7 @@ export function parseVersion(versionString: string): Version | null {
   }
 
   const [, major, minor, patch] = match;
-  if (!major || !minor || !patch) {
+  if (!(major && minor && patch)) {
     return null;
   }
   return {

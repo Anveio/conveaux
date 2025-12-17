@@ -386,8 +386,9 @@ function removeFromList<K, V>(
  * @internal
  */
 function evictTail<K, V>(cache: LRUCache<K, V>, storage: LRUCacheStorage<K, V>): LRUCache<K, V> {
-  // Safe to assert: caller ensures tail is defined
-  return removeFromList(cache, cache.tail!, storage);
+  // Caller ensures tail is defined, but handle gracefully
+  if (!cache.tail) return cache;
+  return removeFromList(cache, cache.tail, storage);
 }
 
 // =============================================================================

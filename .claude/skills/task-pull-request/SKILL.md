@@ -1,5 +1,5 @@
 ---
-name: pull-request
+name: task-pull-request
 description: Author pull requests and respond to review feedback. Use when creating PRs, requesting reviews, reading comments, addressing feedback, or merging changes.
 ---
 

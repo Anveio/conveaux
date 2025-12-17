@@ -120,24 +120,22 @@ export function createBoundedLeaderboard<T>(
  * @param board - The bounded leaderboard
  * @param item - The item to update
  * @param newScore - The new score
- * @param timestamp - Optional timestamp (defaults to Date.now())
+ * @param timestamp - Timestamp for the update (use clock.nowMs())
  * @returns A new leaderboard with the score updated
  *
  * @example
  * ```typescript
  * let board = createBoundedLeaderboard<string>({ maxEntries: 10, historySize: 20 });
- * board = updateScore(board, 'player1', 1500);
- * board = updateScore(board, 'player1', 1600); // Updates existing score
+ * board = updateScore(board, 'player1', 1500, clock.nowMs());
+ * board = updateScore(board, 'player1', 1600, clock.nowMs()); // Updates existing score
  * ```
  */
 export function updateScore<T>(
   board: BoundedLeaderboard<T>,
   item: T,
   newScore: number,
-  timestamp?: number
+  timestamp: number
 ): BoundedLeaderboard<T> {
-  const actualTimestamp = timestamp ?? Date.now();
-
   // Get old score if item exists
   const scores = internalSortedSetFromData(board.sortedSetData);
   const oldScore = sortedSetScore(scores, item);
@@ -163,7 +161,7 @@ export function updateScore<T>(
     item,
     oldScore,
     newScore,
-    timestamp: actualTimestamp,
+    timestamp,
   };
 
   // Add change to history
@@ -185,12 +183,12 @@ export function updateScore<T>(
  *
  * @param board - The bounded leaderboard
  * @param item - The item to remove
- * @param timestamp - Optional timestamp (defaults to Date.now())
+ * @param timestamp - Timestamp for the removal (use clock.nowMs())
  * @returns A new leaderboard with the item removed, and a boolean indicating if it was found
  *
  * @example
  * ```typescript
- * const { board: newBoard, removed } = removeItem(board, 'player1');
+ * const { board: newBoard, removed } = removeItem(board, 'player1', clock.nowMs());
  * if (removed) {
  *   console.log('Player removed');
  * }
@@ -199,9 +197,9 @@ export function updateScore<T>(
 export function removeItem<T>(
   board: BoundedLeaderboard<T>,
   item: T,
-  timestamp?: number
+  timestamp: number
 ): { board: BoundedLeaderboard<T>; removed: boolean } {
-  const actualTimestamp = timestamp ?? Date.now();
+  const actualTimestamp = timestamp;
 
   const scores = internalSortedSetFromData(board.sortedSetData);
   const oldScore = sortedSetScore(scores, item);

@@ -261,8 +261,9 @@ export function validateSortedSet<T>(set: SortedSet<T>): SortedSetValidationResu
 
   // Check entries are sorted
   for (let i = 1; i < set.entries.length; i++) {
-    const prev = set.entries[i - 1]!;
-    const curr = set.entries[i]!;
+    const prev = set.entries[i - 1];
+    const curr = set.entries[i];
+    if (!(prev && curr)) continue;
     if (set.comparator(prev.score, curr.score) > 0) {
       errors.push({
         type: 'invalid_order',

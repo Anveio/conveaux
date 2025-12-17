@@ -1,5 +1,5 @@
 ---
-name: effective-git
+name: task-effective-git
 description: Git workflow patterns for agents. Invoke at session start when working in a git repository, before any git operations (status, add, commit, push, rebase), when making code changes, or when the user asks to commit, create PRs, or manage branches. Covers atomic commits, intentional staging, history restructuring, and safe parallel work patterns.
 ---
 

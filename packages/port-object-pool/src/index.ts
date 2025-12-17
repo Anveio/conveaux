@@ -111,7 +111,8 @@ export async function createObjectPool<T>(
 export async function acquire<T>(pool: ObjectPool<T>): Promise<AcquireResult<T>> {
   // Try to find a valid object from available
   for (let i = 0; i < pool.available.length; i++) {
-    const obj = pool.available[i]!;
+    const obj = pool.available[i];
+    if (obj === undefined) continue;
 
     // Validate if validator exists
     if (pool.validator) {

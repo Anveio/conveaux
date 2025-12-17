@@ -1,5 +1,5 @@
 ---
-name: handoff-writing
+name: task-handoff-writing
 description: Write high-signal handoffs (`HANDOFF.md` or `docs/handoffs/<slug>.md`) with concrete validation evidence and actionable next steps.
 ---
 

@@ -122,7 +122,8 @@ export function detectCycles<T>(dag: Dag<T>): NodeId[][] {
     recursionStack.add(nodeId);
     path.push(nodeId);
 
-    const node = nodeMap.get(nodeId)!;
+    const node = nodeMap.get(nodeId);
+    if (!node) return;
     for (const depId of node.dependencies) {
       if (!visited.has(depId)) {
         dfs(depId);

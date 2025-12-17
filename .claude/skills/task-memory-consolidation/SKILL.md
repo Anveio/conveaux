@@ -1,5 +1,5 @@
 ---
-name: memory-consolidation
+name: task-memory-consolidation
 description: Parse memory.yaml and consolidate recurring patterns into skills. Use when memory.yaml grows large, when patterns recur 3+ times, or during RSID Ideate stage. Automates the memory-to-skill pipeline.
 ---
 

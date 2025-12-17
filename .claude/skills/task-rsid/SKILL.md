@@ -1,5 +1,5 @@
 ---
-name: rsid
+name: task-rsid
 description: Recursive Self-Improvement Development. Continually improve the codebase.
 ---
 Your task is to continually improve our codebase. The core loop is as follows:

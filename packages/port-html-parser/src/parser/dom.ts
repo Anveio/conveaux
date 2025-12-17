@@ -50,7 +50,8 @@ export function buildDom(html: string): DomDocument {
   let i = 0;
 
   while (i < tokens.length) {
-    const token = tokens[i]!;
+    const token = tokens[i];
+    if (!token) break;
 
     if (token.type === 'start-tag') {
       const startTag = token as StartTagToken;
@@ -226,8 +227,8 @@ function wrapElement(node: ElementNode): DomElement {
 
     get lastElementChild(): DomElement | null {
       for (let i = node.children.length - 1; i >= 0; i--) {
-        const child = node.children[i]!;
-        if (child.type === 'element') {
+        const child = node.children[i];
+        if (child?.type === 'element') {
           return wrapElement(child);
         }
       }
@@ -239,8 +240,8 @@ function wrapElement(node: ElementNode): DomElement {
       const siblings = node.parent.children;
       const index = siblings.indexOf(node);
       for (let i = index + 1; i < siblings.length; i++) {
-        const sibling = siblings[i]!;
-        if (sibling.type === 'element') {
+        const sibling = siblings[i];
+        if (sibling?.type === 'element') {
           return wrapElement(sibling);
         }
       }
@@ -252,8 +253,8 @@ function wrapElement(node: ElementNode): DomElement {
       const siblings = node.parent.children;
       const index = siblings.indexOf(node);
       for (let i = index - 1; i >= 0; i--) {
-        const sibling = siblings[i]!;
-        if (sibling.type === 'element') {
+        const sibling = siblings[i];
+        if (sibling?.type === 'element') {
           return wrapElement(sibling);
         }
       }

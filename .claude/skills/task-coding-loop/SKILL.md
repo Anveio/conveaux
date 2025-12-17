@@ -1,5 +1,5 @@
 ---
-name: coding-loop
+name: task-coding-loop
 description: Earn trust through verification. Invoke at session start to establish verifiable checkpoints (environment, baseline, completion). Trust comes from gates, not claims.
 ---
 
