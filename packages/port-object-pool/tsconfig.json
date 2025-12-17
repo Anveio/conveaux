@@ -1,0 +1,14 @@
+{
+  "extends": "@conveaux/tsconfig/base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"],
+  "references": [
+    {
+      "path": "../contract-object-pool"
+    }
+  ]
+}
