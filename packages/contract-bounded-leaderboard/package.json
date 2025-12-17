@@ -11,5 +11,12 @@
       "default": "./src/index.ts"
     }
   },
-  "files": ["src"]
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["src"],
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
+  }
 }

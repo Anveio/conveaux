@@ -11,8 +11,15 @@
       "default": "./src/index.ts"
     }
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "files": ["src"],
   "dependencies": {
     "@conveaux/contract-object-pool": "*"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
   }
 }

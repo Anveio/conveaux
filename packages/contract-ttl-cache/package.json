@@ -11,9 +11,16 @@
       "default": "./src/index.ts"
     }
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "files": ["src"],
   "dependencies": {
     "@conveaux/contract-wall-clock": "*",
     "@conveaux/contract-lru-cache": "*"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
   }
 }

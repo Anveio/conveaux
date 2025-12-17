@@ -18,9 +18,7 @@
   },
   "files": ["src"],
   "dependencies": {
-    "@conveaux/contract-bounded-leaderboard": "*",
-    "@conveaux/port-sorted-set": "*",
-    "@conveaux/port-ring-buffer": "*"
+    "@conveaux/contract-bounded-leaderboard": "*"
   },
   "devDependencies": {
     "@conveaux/tsconfig": "*",
