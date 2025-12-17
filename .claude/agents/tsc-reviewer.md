@@ -2,7 +2,15 @@
 name: tsc-reviewer
 description: Technical Steering Committee reviewer. Reviews PRs and merges when approved. Use for impartial review before merge.
 tools: Read, Grep, Glob, Bash
-skills: coding-patterns, effective-git, env-patterns, 
+skills: coding-patterns, task-effective-git, env-patterns, task-pull-request, role-code-reviewer, kpi-verification-pass-rate
+role: role-code-reviewer
+kpi: kpi-verification-pass-rate
+tasks:
+  - task-effective-git
+  - task-pull-request
+domain-skills:
+  - coding-patterns
+  - env-patterns
 model: opus
 ---
 

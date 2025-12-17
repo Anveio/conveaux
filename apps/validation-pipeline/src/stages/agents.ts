@@ -98,18 +98,38 @@ async function getAgentFiles(projectRoot: string): Promise<string[]> {
 /**
  * Expected skills for specific agent types.
  * Agents should have at minimum these skills based on their role.
+ *
+ * Structure follows the role/task/kpi skill framework:
+ * - role-* skills define job responsibilities
+ * - task-* skills define procedural workflows
+ * - kpi-* skills define measurable targets
+ * - Domain skills (no prefix) provide reference knowledge
  */
 const EXPECTED_AGENT_SKILLS: Record<string, string[]> = {
   'software-engineer': [
-    'coding-loop',
+    'role-software-engineer',
+    'task-coding-loop',
     'coding-patterns',
-    'effective-git',
-    'verification-pipeline',
-    'pull-request',
-    'rsid',
+    'task-effective-git',
+    'task-verification-pipeline',
+    'task-pull-request',
+    'task-rsid',
+    'kpi-pr-throughput',
   ],
-  'tsc-reviewer': ['coding-patterns', 'effective-git'],
-  'lint-fixer': ['typescript-coding', 'verification-pipeline'],
+  'tsc-reviewer': [
+    'role-code-reviewer',
+    'coding-patterns',
+    'task-effective-git',
+    'task-pull-request',
+    'kpi-verification-pass-rate',
+  ],
+  'lint-fixer': [
+    'role-software-engineer',
+    'typescript-coding',
+    'task-verification-pipeline',
+    'task-lint-fixer',
+    'kpi-code-quality',
+  ],
 };
 
 export const agentsStage: Stage = {

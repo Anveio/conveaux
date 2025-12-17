@@ -2,7 +2,16 @@
 name: lint-fixer
 description: Fix lint errors and update typescript-coding skill with prevention tips. Spawn when lint check fails, when cleaning up code quality issues, or when Biome reports errors.
 tools: Read, Write, Edit, Bash, Grep, Glob
-skills: lint-fixer, typescript-coding, coding-patterns, effective-git, verification-pipeline
+skills: task-lint-fixer, typescript-coding, coding-patterns, task-effective-git, task-verification-pipeline, role-software-engineer, kpi-code-quality
+role: role-software-engineer
+kpi: kpi-code-quality
+tasks:
+  - task-lint-fixer
+  - task-effective-git
+  - task-verification-pipeline
+domain-skills:
+  - typescript-coding
+  - coding-patterns
 model: sonnet
 ---
 

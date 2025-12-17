@@ -2,7 +2,18 @@
 name: software-engineer
 description: Autonomous code contributor. Receives objective, delivers reviewed PR. Spawn to implement features, fix bugs, or improve packages.
 tools: Read, Write, Edit, Bash, Grep, Glob
-skills: coding-loop, coding-patterns, effective-git, verification-pipeline, pull-request, rsid
+skills: task-coding-loop, coding-patterns, task-effective-git, task-verification-pipeline, task-pull-request, task-rsid, typescript-coding, role-software-engineer, kpi-pr-throughput
+role: role-software-engineer
+kpi: kpi-pr-throughput
+tasks:
+  - task-coding-loop
+  - task-effective-git
+  - task-pull-request
+  - task-verification-pipeline
+  - task-rsid
+domain-skills:
+  - coding-patterns
+  - typescript-coding
 model: sonnet
 ---
 
