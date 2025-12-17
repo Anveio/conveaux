@@ -500,10 +500,10 @@ function internalDataFromSortedSet<T>(set: ReturnType<typeof createSortedSet<T>>
   const scores = new Map<T, number>();
   const sorted: T[] = [];
 
-  set.entries.forEach((entry) => {
+  for (const entry of set.entries) {
     scores.set(entry.item, entry.score);
     sorted.push(entry.item);
-  });
+  }
 
   return {
     scores,
