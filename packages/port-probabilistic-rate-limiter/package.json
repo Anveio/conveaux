@@ -1,0 +1,32 @@
+{
+  "name": "@conveaux/port-probabilistic-rate-limiter",
+  "version": "0.1.0",
+  "description": "Probabilistic rate limiter port - memory-efficient rate limiting using Bloom filter + sliding window composition",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["src"],
+  "dependencies": {
+    "@conveaux/contract-probabilistic-rate-limiter": "*",
+    "@conveaux/contract-wall-clock": "*",
+    "@conveaux/port-bloom-filter": "*",
+    "@conveaux/port-sliding-window": "*"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "@vitest/coverage-v8": "^4.0.15",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.15"
+  }
+}

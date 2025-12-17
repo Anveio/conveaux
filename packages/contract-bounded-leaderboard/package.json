@@ -1,0 +1,15 @@
+{
+  "name": "@conveaux/contract-bounded-leaderboard",
+  "version": "0.1.0",
+  "description": "Bounded leaderboard contract - types for ranked scores with history",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["src"]
+}
