@@ -12,6 +12,7 @@
       "Skill(env-patterns)",
       "Skill(error-handling)",
       "Skill(handoff-writing)",
+      "Skill(lint-fixer)",
       "Skill(memory-consolidation)",
       "Skill(plan-writing)",
       "Skill(pull-request)",
