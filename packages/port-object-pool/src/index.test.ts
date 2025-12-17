@@ -1,4 +1,4 @@
-import type { ObjectFactory, ObjectValidator } from '@conveaux/contract-object-pool';
+import type { ObjectFactory, ObjectValidator, ObjectPool } from '@conveaux/contract-object-pool';
 import { describe, expect, it } from 'vitest';
 import {
   acquire,
