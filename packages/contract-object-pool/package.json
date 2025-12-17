@@ -1,0 +1,22 @@
+{
+  "name": "@conveaux/contract-object-pool",
+  "version": "0.1.0",
+  "description": "Object pool contract - types for reusable object pooling",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["src"],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
+  }
+}
