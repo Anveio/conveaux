@@ -245,7 +245,7 @@ describe('createSemaphore', () => {
       expect(sem.availablePermits).toBe(0);
 
       // Queue up waiters
-      const p1 = sem.acquire();
+      const _p1 = sem.acquire();
       const p2 = sem.acquire();
 
       await Promise.resolve();
@@ -317,7 +317,7 @@ describe('createSemaphore', () => {
       let concurrentCount = 0;
       let maxConcurrent = 0;
 
-      const task = async (id: number) => {
+      const task = async (_id: number) => {
         await sem.acquire();
         try {
           concurrentCount++;

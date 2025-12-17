@@ -910,5 +910,4 @@ describe('custom storage factory', () => {
 
     expect(cache2).toBeDefined();
   });
-
 });

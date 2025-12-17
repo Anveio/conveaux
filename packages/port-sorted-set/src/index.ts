@@ -43,7 +43,7 @@ export type {
  */
 export function createSortedSet<T>(
   comparator: Comparator<number>,
-  options?: { initialCapacity?: number }
+  _options?: { initialCapacity?: number }
 ): SortedSet<T> {
   return {
     entries: [],
@@ -80,11 +80,7 @@ export function add<T>(set: SortedSet<T>, item: T, score: number): SortedSet<T> 
 
   // Insert in sorted order using binary search
   const insertIndex = findInsertIndex(filtered, score, set.comparator);
-  const newEntries = [
-    ...filtered.slice(0, insertIndex),
-    newEntry,
-    ...filtered.slice(insertIndex),
-  ];
+  const newEntries = [...filtered.slice(0, insertIndex), newEntry, ...filtered.slice(insertIndex)];
 
   return {
     entries: newEntries,
@@ -107,10 +103,7 @@ export function add<T>(set: SortedSet<T>, item: T, score: number): SortedSet<T> 
  * }
  * ```
  */
-export function remove<T>(
-  set: SortedSet<T>,
-  item: T
-): { set: SortedSet<T>; removed: boolean } {
+export function remove<T>(set: SortedSet<T>, item: T): { set: SortedSet<T>; removed: boolean } {
   const initialLength = set.entries.length;
   const newEntries = set.entries.filter((entry) => entry.item !== item);
 
@@ -281,7 +274,7 @@ export function validateSortedSet<T>(set: SortedSet<T>): SortedSetValidationResu
   // Check for duplicate items
   const items = new Set<T>();
   for (let i = 0; i < set.entries.length; i++) {
-    const item = set.entries[i]!.item;
+    const item = set.entries[i]?.item;
     if (items.has(item)) {
       errors.push({
         type: 'duplicate_items',
@@ -316,7 +309,7 @@ function findInsertIndex<T>(
 
   while (left < right) {
     const mid = Math.floor((left + right) / 2);
-    const midScore = entries[mid]!.score;
+    const midScore = entries[mid]?.score;
 
     if (comparator(midScore, score) < 0) {
       left = mid + 1;

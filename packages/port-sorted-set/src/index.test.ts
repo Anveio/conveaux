@@ -382,7 +382,7 @@ describe('createSortedSet', () => {
     });
 
     it('supports time-travel debugging pattern', () => {
-      const history: typeof set[] = [];
+      const history: (typeof set)[] = [];
       let set = createSortedSet<string>(numberComparator);
       history.push(set);
 
