@@ -1,0 +1,22 @@
+{
+  "name": "@conveaux/contract-sliding-window",
+  "version": "0.1.0",
+  "description": "Sliding window contract - interface for time-based or count-based sliding windows",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["src"],
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
+  }
+}
