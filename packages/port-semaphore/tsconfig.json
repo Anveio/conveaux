@@ -1,0 +1,9 @@
+{
+  "extends": "@conveaux/tsconfig/base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [{ "path": "../contract-semaphore" }]
+}
