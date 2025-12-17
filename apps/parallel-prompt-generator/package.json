@@ -1,0 +1,25 @@
+{
+  "name": "@conveaux/parallel-prompt-generator",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CLI tool for generating parallel agent prompts",
+  "type": "module",
+  "bin": {
+    "ccw": "./src/cli.ts"
+  },
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@conveaux/domain-prompt-template": "*",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "tsx": "^4.19.4",
+    "typescript": "^5.7.2"
+  }
+}
