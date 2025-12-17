@@ -1,9 +1,60 @@
 /**
  * @conveaux/contract-ring-buffer
  *
- * Ring buffer contract for fixed-size circular buffers.
- * Platform agnostic with injectable storage.
+ * Pure types for fixed-size circular buffers.
+ * No runtime code - all operations are pure functions in @conveaux/port-ring-buffer.
+ *
+ * Design principle (following DAG pattern): A ring buffer is data, not a capability.
+ * - Contract: pure types (RingBuffer, RingBufferStorage)
+ * - Port: pure functions (push, pop, peek, toArray, etc.)
+ *
+ * This separation enables:
+ * - Serialization/persistence of buffer state
+ * - Time-travel debugging
+ * - Structural sharing for efficient immutable updates
+ * - Testing without mocks
  */
+
+// =============================================================================
+// Core Data Types
+// =============================================================================
+
+/**
+ * A ring buffer is pure data - indices and a reference to storage.
+ *
+ * All operations on the ring buffer are pure functions in the port.
+ * The buffer is immutable; operations return new buffer instances.
+ *
+ * @template T - The type of elements stored
+ *
+ * @example
+ * ```typescript
+ * import { createRingBuffer, push, pop, toArray } from '@conveaux/port-ring-buffer';
+ *
+ * const empty = createRingBuffer<number>(5);
+ * const buf1 = push(empty, 1);
+ * const buf2 = push(buf1, 2);
+ * const [item, buf3] = pop(buf2);
+ * console.log(item); // 1
+ * console.log(toArray(buf3)); // [2]
+ * ```
+ */
+export interface RingBuffer<T> {
+  /** Index of oldest element (read position) */
+  readonly head: number;
+
+  /** Index where next element will be written */
+  readonly tail: number;
+
+  /** Current number of elements in the buffer */
+  readonly size: number;
+
+  /** Maximum capacity of the buffer */
+  readonly capacity: number;
+
+  /** Reference to the backing storage */
+  readonly storage: RingBufferStorage<T>;
+}
 
 /**
  * Storage interface for ring buffer backing store.
@@ -14,7 +65,11 @@
  * - TypedArrays for numeric data
  * - Custom memory-efficient implementations
  *
- * @typeParam T - The type of elements stored
+ * Note: While storage has methods (get/set), this is a capability interface
+ * that represents platform-provided functionality, similar to how DAG execution
+ * accepts an observer callback. The RingBuffer itself remains pure data.
+ *
+ * @template T - The type of elements stored
  */
 export interface RingBufferStorage<T> {
   /**
@@ -32,6 +87,14 @@ export interface RingBufferStorage<T> {
    * @param value - The value to store
    */
   set(index: number, value: T): void;
+
+  /**
+   * Clone the storage for immutable operations.
+   * Returns a new storage instance with the same contents.
+   *
+   * @returns A new storage instance with copied data
+   */
+  clone(): RingBufferStorage<T>;
 }
 
 /**
@@ -39,7 +102,7 @@ export interface RingBufferStorage<T> {
  *
  * Injected by the host platform to provide storage implementation.
  *
- * @typeParam T - The type of elements to store
+ * @template T - The type of elements to store
  */
 export interface RingBufferStorageFactory<T> {
   /**
@@ -51,80 +114,47 @@ export interface RingBufferStorageFactory<T> {
   create(capacity: number): RingBufferStorage<T>;
 }
 
+// =============================================================================
+// Operation Result Types
+// =============================================================================
+
 /**
- * A fixed-size circular buffer that overwrites oldest elements when full.
+ * Result of a pop operation.
  *
- * Ring buffers are useful for:
- * - Bounded queues (recent N items)
- * - Streaming data windows
- * - Memory-efficient logging
- *
- * @typeParam T - The type of elements stored
+ * @template T - The type of element that was popped
  */
-export interface RingBuffer<T> {
-  /**
-   * Push an element to the buffer.
-   * If the buffer is full, overwrites the oldest element.
-   *
-   * @param item - The element to add
-   */
-  push(item: T): void;
+export interface PopResult<T> {
+  /** The element that was removed, or undefined if buffer was empty */
+  readonly item: T | undefined;
 
-  /**
-   * Remove and return the oldest element.
-   *
-   * @returns The oldest element, or undefined if empty
-   */
-  pop(): T | undefined;
+  /** The new buffer state after the pop */
+  readonly buffer: RingBuffer<T>;
+}
 
-  /**
-   * Return the oldest element without removing it.
-   *
-   * @returns The oldest element, or undefined if empty
-   */
-  peek(): T | undefined;
+// =============================================================================
+// Validation Types
+// =============================================================================
 
-  /**
-   * Return the newest element without removing it.
-   *
-   * @returns The newest element, or undefined if empty
-   */
-  peekLast(): T | undefined;
+/**
+ * Types of validation errors that can occur.
+ */
+export type RingBufferValidationErrorType =
+  | 'invalid_capacity'
+  | 'invalid_indices'
+  | 'size_mismatch';
 
-  /**
-   * Current number of elements in the buffer.
-   */
-  readonly size: number;
+/**
+ * A validation error found in a ring buffer.
+ */
+export interface RingBufferValidationError {
+  readonly type: RingBufferValidationErrorType;
+  readonly details: string;
+}
 
-  /**
-   * Maximum capacity of the buffer.
-   */
-  readonly capacity: number;
-
-  /**
-   * Check if the buffer is empty.
-   *
-   * @returns True if the buffer contains no elements
-   */
-  isEmpty(): boolean;
-
-  /**
-   * Check if the buffer is full.
-   *
-   * @returns True if the buffer is at capacity
-   */
-  isFull(): boolean;
-
-  /**
-   * Remove all elements from the buffer.
-   */
-  clear(): void;
-
-  /**
-   * Convert the buffer contents to an array.
-   * Elements are ordered from oldest to newest.
-   *
-   * @returns Array of elements from oldest to newest
-   */
-  toArray(): T[];
+/**
+ * Result of validating a ring buffer.
+ */
+export interface RingBufferValidationResult {
+  readonly valid: boolean;
+  readonly errors: readonly RingBufferValidationError[];
 }
