@@ -1,0 +1,25 @@
+{
+  "name": "@conveaux/contract-probabilistic-rate-limiter",
+  "version": "0.0.1",
+  "description": "Probabilistic rate limiter contract - types for memory-efficient rate limiting",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["src"],
+  "dependencies": {
+    "@conveaux/contract-wall-clock": "*"
+  },
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "typescript": "^5.7.2"
+  }
+}

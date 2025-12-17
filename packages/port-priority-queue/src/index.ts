@@ -77,9 +77,7 @@ export function createPriorityQueue<T>(
   const initialCapacity = options.initialCapacity ?? DEFAULT_INITIAL_CAPACITY;
 
   if (initialCapacity < 1 || !Number.isInteger(initialCapacity)) {
-    throw new Error(
-      `Initial capacity must be a positive integer, got: ${initialCapacity}`
-    );
+    throw new Error(`Initial capacity must be a positive integer, got: ${initialCapacity}`);
   }
 
   return {
@@ -111,11 +109,7 @@ export function createPriorityQueue<T>(
  * // Pop order: task2 (1), task3 (2), task1 (3)
  * ```
  */
-export function push<T>(
-  queue: PriorityQueue<T>,
-  item: T,
-  priority: number
-): PriorityQueue<T> {
+export function push<T>(queue: PriorityQueue<T>, item: T, priority: number): PriorityQueue<T> {
   let storage = queue.storage;
 
   // Resize if needed
@@ -313,7 +307,7 @@ function bubbleUp<T>(queue: PriorityQueue<T>, index: number): PriorityQueue<T> {
   const node = queue.storage.get(index);
   const parent = queue.storage.get(parentIndex);
 
-  if (!node || !parent) {
+  if (!(node && parent)) {
     return queue;
   }
 
@@ -355,7 +349,7 @@ function bubbleDown<T>(queue: PriorityQueue<T>, index: number): PriorityQueue<T>
   const leftChild = queue.storage.get(leftChildIndex);
   const rightChild = rightChildIndex < queue.size ? queue.storage.get(rightChildIndex) : undefined;
 
-  if (!node || !leftChild) {
+  if (!(node && leftChild)) {
     return queue;
   }
 
@@ -406,9 +400,7 @@ function bubbleDown<T>(queue: PriorityQueue<T>, index: number): PriorityQueue<T>
  * }
  * ```
  */
-export function validatePriorityQueue<T>(
-  queue: PriorityQueue<T>
-): PriorityQueueValidationResult {
+export function validatePriorityQueue<T>(queue: PriorityQueue<T>): PriorityQueueValidationResult {
   const errors: PriorityQueueValidationError[] = [];
 
   // Check size
@@ -477,7 +469,9 @@ export function validatePriorityQueue<T>(
  *
  * @internal Used by createArrayStorageFactory
  */
-function createArrayStorage<T>(array: (PriorityQueueNode<T> | undefined)[]): PriorityQueueStorage<T> {
+function createArrayStorage<T>(
+  array: (PriorityQueueNode<T> | undefined)[]
+): PriorityQueueStorage<T> {
   return {
     get(index: number): PriorityQueueNode<T> | undefined {
       return array[index];

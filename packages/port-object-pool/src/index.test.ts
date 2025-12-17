@@ -1,4 +1,4 @@
-import type { ObjectFactory, ObjectValidator, ObjectPool } from '@conveaux/contract-object-pool';
+import type { ObjectFactory, ObjectPool, ObjectValidator } from '@conveaux/contract-object-pool';
 import { describe, expect, it } from 'vitest';
 import {
   acquire,
@@ -66,37 +66,37 @@ describe('createObjectPool', () => {
     it('throws for invalid minSize', async () => {
       const factory = createTestFactory();
 
-      await expect(
-        createObjectPool(factory, { minSize: -1, maxSize: 5 })
-      ).rejects.toThrow('minSize must be a non-negative integer, got: -1');
+      await expect(createObjectPool(factory, { minSize: -1, maxSize: 5 })).rejects.toThrow(
+        'minSize must be a non-negative integer, got: -1'
+      );
 
-      await expect(
-        createObjectPool(factory, { minSize: 2.5, maxSize: 5 })
-      ).rejects.toThrow('minSize must be a non-negative integer, got: 2.5');
+      await expect(createObjectPool(factory, { minSize: 2.5, maxSize: 5 })).rejects.toThrow(
+        'minSize must be a non-negative integer, got: 2.5'
+      );
     });
 
     it('throws for invalid maxSize', async () => {
       const factory = createTestFactory();
 
-      await expect(
-        createObjectPool(factory, { minSize: 0, maxSize: 0 })
-      ).rejects.toThrow('maxSize must be a positive integer, got: 0');
+      await expect(createObjectPool(factory, { minSize: 0, maxSize: 0 })).rejects.toThrow(
+        'maxSize must be a positive integer, got: 0'
+      );
 
-      await expect(
-        createObjectPool(factory, { minSize: 0, maxSize: -1 })
-      ).rejects.toThrow('maxSize must be a positive integer, got: -1');
+      await expect(createObjectPool(factory, { minSize: 0, maxSize: -1 })).rejects.toThrow(
+        'maxSize must be a positive integer, got: -1'
+      );
 
-      await expect(
-        createObjectPool(factory, { minSize: 0, maxSize: 3.5 })
-      ).rejects.toThrow('maxSize must be a positive integer, got: 3.5');
+      await expect(createObjectPool(factory, { minSize: 0, maxSize: 3.5 })).rejects.toThrow(
+        'maxSize must be a positive integer, got: 3.5'
+      );
     });
 
     it('throws when minSize > maxSize', async () => {
       const factory = createTestFactory();
 
-      await expect(
-        createObjectPool(factory, { minSize: 10, maxSize: 5 })
-      ).rejects.toThrow('minSize (10) cannot be greater than maxSize (5)');
+      await expect(createObjectPool(factory, { minSize: 10, maxSize: 5 })).rejects.toThrow(
+        'minSize (10) cannot be greater than maxSize (5)'
+      );
     });
   });
 
@@ -133,7 +133,7 @@ describe('createObjectPool', () => {
 
     it('throws when pool is exhausted (no available objects)', async () => {
       const factory = createTestFactory();
-      let pool = await createObjectPool(factory, { minSize: 2, maxSize: 2 });
+      const pool = await createObjectPool(factory, { minSize: 2, maxSize: 2 });
 
       // Acquire both objects
       const result1 = await acquire(pool);
@@ -153,7 +153,14 @@ describe('createObjectPool', () => {
       const pool = await createObjectPool(factory, { minSize: 1, maxSize: 3 });
 
       // Clear available to force creation
-      const emptyPool = { ...pool, available: [], inUse: [], factory: pool.factory, minSize: pool.minSize, maxSize: pool.maxSize };
+      const emptyPool = {
+        ...pool,
+        available: [],
+        inUse: [],
+        factory: pool.factory,
+        minSize: pool.minSize,
+        maxSize: pool.maxSize,
+      };
 
       const { item, pool: newPool } = await acquire(emptyPool);
 
@@ -208,7 +215,7 @@ describe('createObjectPool', () => {
       const validator = createTestValidator();
 
       // Create pool at max capacity with validator
-      let pool = await createObjectPool(factory, { minSize: 2, maxSize: 2 }, validator);
+      const pool = await createObjectPool(factory, { minSize: 2, maxSize: 2 }, validator);
 
       // Acquire one object to get 1 in use, 1 available
       const r1 = await acquire(pool);
@@ -263,7 +270,7 @@ describe('createObjectPool', () => {
   describe('release', () => {
     it('releases an object back to available', async () => {
       const factory = createTestFactory();
-      let pool = await createObjectPool(factory, { minSize: 2, maxSize: 5 });
+      const pool = await createObjectPool(factory, { minSize: 2, maxSize: 5 });
 
       const { item, pool: afterAcquire } = await acquire(pool);
 
@@ -282,14 +289,12 @@ describe('createObjectPool', () => {
 
       const fakeObject: TestObject = { id: 999, valid: true };
 
-      expect(() => release(pool, fakeObject)).toThrow(
-        'Cannot release object that is not in use'
-      );
+      expect(() => release(pool, fakeObject)).toThrow('Cannot release object that is not in use');
     });
 
     it('allows object to be reacquired after release', async () => {
       const factory = createTestFactory();
-      let pool = await createObjectPool(factory, { minSize: 1, maxSize: 5 });
+      const pool = await createObjectPool(factory, { minSize: 1, maxSize: 5 });
 
       const result1 = await acquire(pool);
       const firstId = result1.item.id;
@@ -303,7 +308,7 @@ describe('createObjectPool', () => {
 
     it('does not modify original pool', async () => {
       const factory = createTestFactory();
-      let pool = await createObjectPool(factory, { minSize: 2, maxSize: 5 });
+      const pool = await createObjectPool(factory, { minSize: 2, maxSize: 5 });
 
       const { item, pool: afterAcquire } = await acquire(pool);
       const afterRelease = release(afterAcquire, item);
@@ -321,7 +326,7 @@ describe('createObjectPool', () => {
   describe('size helpers', () => {
     it('size returns total objects', async () => {
       const factory = createTestFactory();
-      let pool = await createObjectPool(factory, { minSize: 3, maxSize: 5 });
+      const pool = await createObjectPool(factory, { minSize: 3, maxSize: 5 });
 
       expect(size(pool)).toBe(3);
 
@@ -339,7 +344,7 @@ describe('createObjectPool', () => {
 
     it('available returns count of available objects', async () => {
       const factory = createTestFactory();
-      let pool = await createObjectPool(factory, { minSize: 3, maxSize: 5 });
+      const pool = await createObjectPool(factory, { minSize: 3, maxSize: 5 });
 
       expect(available(pool)).toBe(3);
 
@@ -352,7 +357,7 @@ describe('createObjectPool', () => {
 
     it('inUse returns count of in-use objects', async () => {
       const factory = createTestFactory();
-      let pool = await createObjectPool(factory, { minSize: 2, maxSize: 5 });
+      const pool = await createObjectPool(factory, { minSize: 2, maxSize: 5 });
 
       expect(inUse(pool)).toBe(0);
 
@@ -581,7 +586,7 @@ describe('createObjectPool', () => {
   describe('complex scenarios', () => {
     it('handles multiple acquire and release cycles', async () => {
       const factory = createTestFactory();
-      let pool = await createObjectPool(factory, { minSize: 2, maxSize: 4 });
+      const pool = await createObjectPool(factory, { minSize: 2, maxSize: 4 });
 
       // Acquire all initial objects
       const r1 = await acquire(pool);
@@ -606,7 +611,7 @@ describe('createObjectPool', () => {
 
     it('works with minSize = maxSize', async () => {
       const factory = createTestFactory();
-      let pool = await createObjectPool(factory, { minSize: 2, maxSize: 2 });
+      const pool = await createObjectPool(factory, { minSize: 2, maxSize: 2 });
 
       expect(size(pool)).toBe(2);
 
@@ -633,7 +638,7 @@ describe('createObjectPool', () => {
         },
       };
 
-      let pool = await createObjectPool(
+      const pool = await createObjectPool(
         factory,
         { minSize: 2, maxSize: 3 },
         alwaysInvalidValidator
@@ -688,11 +693,7 @@ describe('createObjectPool', () => {
         },
       };
 
-      const pool = await createObjectPool(
-        connectionFactory,
-        { minSize: 1, maxSize: 3 },
-        validator
-      );
+      const pool = await createObjectPool(connectionFactory, { minSize: 1, maxSize: 3 }, validator);
 
       const { item, pool: newPool } = await acquire(pool);
 

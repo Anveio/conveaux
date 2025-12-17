@@ -41,18 +41,18 @@ describe('createPriorityQueue', () => {
     });
 
     it('throws for non-positive initial capacity', () => {
-      expect(() =>
-        createPriorityQueue(factory, (a, b) => a - b, { initialCapacity: 0 })
-      ).toThrow('Initial capacity must be a positive integer, got: 0');
-      expect(() =>
-        createPriorityQueue(factory, (a, b) => a - b, { initialCapacity: -1 })
-      ).toThrow('Initial capacity must be a positive integer, got: -1');
+      expect(() => createPriorityQueue(factory, (a, b) => a - b, { initialCapacity: 0 })).toThrow(
+        'Initial capacity must be a positive integer, got: 0'
+      );
+      expect(() => createPriorityQueue(factory, (a, b) => a - b, { initialCapacity: -1 })).toThrow(
+        'Initial capacity must be a positive integer, got: -1'
+      );
     });
 
     it('throws for non-integer initial capacity', () => {
-      expect(() =>
-        createPriorityQueue(factory, (a, b) => a - b, { initialCapacity: 2.5 })
-      ).toThrow('Initial capacity must be a positive integer, got: 2.5');
+      expect(() => createPriorityQueue(factory, (a, b) => a - b, { initialCapacity: 2.5 })).toThrow(
+        'Initial capacity must be a positive integer, got: 2.5'
+      );
     });
   });
 
@@ -446,7 +446,7 @@ describe('createPriorityQueue', () => {
       corruptedStorage.set(2, { item: 'right', priority: 3 });
 
       // Create queue
-      let queue = {
+      const queue = {
         size: 3,
         storage: corruptedStorage,
         comparator: (a: number, b: number) => a - b,
@@ -501,7 +501,6 @@ describe('createPriorityQueue', () => {
       const items = toArray(corruptedQueue);
       expect(items).toEqual([]);
     });
-
   });
 
   describe('complex scenarios', () => {

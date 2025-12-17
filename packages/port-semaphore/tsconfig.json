@@ -1,9 +1,7 @@
 {
-  "extends": "@conveaux/tsconfig/base.json",
+  "extends": "@conveaux/tsconfig/workspace-package-config.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "dist"
+    "rootDir": "src"
   },
-  "include": ["src/**/*.ts"],
-  "references": [{ "path": "../contract-semaphore" }]
+  "include": ["src/**/*"]
 }

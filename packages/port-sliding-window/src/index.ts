@@ -8,7 +8,6 @@
  * The original window is never mutated.
  */
 
-import type { WallClock } from '@conveaux/contract-wall-clock';
 import type {
   SlidingWindow,
   SlidingWindowOptions,
@@ -16,6 +15,7 @@ import type {
   SlidingWindowValidationResult,
   WindowEntry,
 } from '@conveaux/contract-sliding-window';
+import type { WallClock } from '@conveaux/contract-wall-clock';
 
 // Re-export contract types for convenience
 export type {
@@ -111,15 +111,14 @@ export function add<T>(
       options: window.options,
       entries: entriesWithNew.slice(startIndex),
     };
-  } else {
-    // Time-based: remove entries older than or equal to windowSize milliseconds
-    const cutoffTime = now - window.options.windowSize;
-    const validEntries = entriesWithNew.filter((entry) => entry.timestamp >= cutoffTime);
-    return {
-      options: window.options,
-      entries: validEntries,
-    };
   }
+  // Time-based: remove entries older than or equal to windowSize milliseconds
+  const cutoffTime = now - window.options.windowSize;
+  const validEntries = entriesWithNew.filter((entry) => entry.timestamp >= cutoffTime);
+  return {
+    options: window.options,
+    entries: validEntries,
+  };
 }
 
 /**

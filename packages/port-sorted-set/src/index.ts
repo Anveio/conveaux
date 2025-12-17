@@ -274,14 +274,15 @@ export function validateSortedSet<T>(set: SortedSet<T>): SortedSetValidationResu
   // Check for duplicate items
   const items = new Set<T>();
   for (let i = 0; i < set.entries.length; i++) {
-    const item = set.entries[i]?.item;
-    if (items.has(item)) {
+    const entry = set.entries[i];
+    if (entry === undefined) continue;
+    if (items.has(entry.item)) {
       errors.push({
         type: 'duplicate_items',
         details: `Duplicate item found at index ${i}`,
       });
     }
-    items.add(item);
+    items.add(entry.item);
   }
 
   return {
@@ -309,9 +310,10 @@ function findInsertIndex<T>(
 
   while (left < right) {
     const mid = Math.floor((left + right) / 2);
-    const midScore = entries[mid]?.score;
+    const entry = entries[mid];
+    if (entry === undefined) break;
 
-    if (comparator(midScore, score) < 0) {
+    if (comparator(entry.score, score) < 0) {
       left = mid + 1;
     } else {
       right = mid;

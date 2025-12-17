@@ -56,29 +56,29 @@ describe('createSlidingWindow', () => {
     });
 
     it('throws for non-positive window size', () => {
-      expect(() =>
-        createSlidingWindow({ windowType: 'count', windowSize: 0 })
-      ).toThrow('Window size must be a positive number, got: 0');
+      expect(() => createSlidingWindow({ windowType: 'count', windowSize: 0 })).toThrow(
+        'Window size must be a positive number, got: 0'
+      );
 
-      expect(() =>
-        createSlidingWindow({ windowType: 'count', windowSize: -1 })
-      ).toThrow('Window size must be a positive number, got: -1');
+      expect(() => createSlidingWindow({ windowType: 'count', windowSize: -1 })).toThrow(
+        'Window size must be a positive number, got: -1'
+      );
     });
 
     it('throws for non-finite window size', () => {
       expect(() =>
-        createSlidingWindow({ windowType: 'count', windowSize: Infinity })
+        createSlidingWindow({ windowType: 'count', windowSize: Number.POSITIVE_INFINITY })
       ).toThrow('Window size must be a positive number, got: Infinity');
 
-      expect(() =>
-        createSlidingWindow({ windowType: 'count', windowSize: NaN })
-      ).toThrow('Window size must be a positive number, got: NaN');
+      expect(() => createSlidingWindow({ windowType: 'count', windowSize: Number.NaN })).toThrow(
+        'Window size must be a positive number, got: NaN'
+      );
     });
 
     it('throws for invalid window type', () => {
-      expect(() =>
-        createSlidingWindow({ windowType: 'invalid' as any, windowSize: 5 })
-      ).toThrow("Window type must be 'count' or 'time', got: invalid");
+      expect(() => createSlidingWindow({ windowType: 'invalid' as any, windowSize: 5 })).toThrow(
+        "Window type must be 'count' or 'time', got: invalid"
+      );
     });
   });
 });
@@ -438,7 +438,7 @@ describe('time-based sliding window', () => {
       const window = createSlidingWindow<number>({ windowType: 'time', windowSize: 1000 });
 
       clock.setTime(1000);
-      let w = add(window, 1, clock);
+      const w = add(window, 1, clock);
 
       expect(isEmpty(w, clock)).toBe(false);
 
@@ -504,7 +504,7 @@ describe('time-based sliding window', () => {
       const window = createSlidingWindow<number>({ windowType: 'time', windowSize: 1000 });
 
       clock.setTime(1000);
-      let w = add(window, 1, clock);
+      const w = add(window, 1, clock);
 
       expect(peekFirst(w, clock)).toBe(1);
 
@@ -517,7 +517,7 @@ describe('time-based sliding window', () => {
       const window = createSlidingWindow<number>({ windowType: 'time', windowSize: 1000 });
 
       clock.setTime(1000);
-      let w = add(window, 1, clock);
+      const w = add(window, 1, clock);
 
       expect(peekLast(w, clock)).toBe(1);
 
@@ -740,7 +740,7 @@ describe('validateSlidingWindow', () => {
 
   it('detects infinite window size', () => {
     const invalidWindow = {
-      options: { windowType: 'time' as const, windowSize: Infinity },
+      options: { windowType: 'time' as const, windowSize: Number.POSITIVE_INFINITY },
       entries: [],
     };
 
@@ -769,7 +769,7 @@ describe('edge cases', () => {
     const window = createSlidingWindow<number>({ windowType: 'time', windowSize: 1 });
 
     clock.setTime(1000);
-    let w = add(window, 1, clock);
+    const w = add(window, 1, clock);
 
     // Even 1ms later, entry expires
     clock.setTime(1002);
