@@ -1,0 +1,26 @@
+{
+  "name": "@conveaux/domain-prompt-template",
+  "version": "0.1.0",
+  "description": "Typed prompt templates for spawning parallel Claude agents",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "files": ["src"],
+  "devDependencies": {
+    "@conveaux/tsconfig": "*",
+    "@vitest/coverage-v8": "^4.0.15",
+    "typescript": "^5.7.2",
+    "vitest": "^4.0.15"
+  }
+}
